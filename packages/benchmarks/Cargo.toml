@@ -1,0 +1,27 @@
+[package]
+name = "llmtrack-bench"
+version = "0.1.0"
+edition = "2021"
+description = "Load tests for llmtrack: added latency, throughput and resources, against a mock provider and against LiteLLM"
+license = "GPL-3.0-only"
+
+# A crate of its own, like Rustrak's: benchmark dependencies never reach the
+# server's lockfile.
+
+[dependencies]
+actix-web = { version = "4.15.0", default-features = false, features = ["macros"] }
+anyhow = "1.0.104"
+bytes = "1.12.1"
+chrono = { version = "0.4.45", features = ["serde"] }
+clap = { version = "4.6.7", features = ["derive", "env"] }
+futures-util = "0.3.34"
+hdrhistogram = "7.6.0"
+reqwest = { version = "0.13.5", default-features = false, features = ["json", "rustls", "stream"] }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.151"
+tokio = { version = "1.53.2", features = ["full"] }
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1

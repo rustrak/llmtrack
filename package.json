@@ -1,0 +1,30 @@
+{
+  "name": "llmtrack",
+  "private": true,
+  "scripts": {
+    "ci": "pnpm run ci:web && pnpm run ci:rust",
+    "ci:web": "turbo run build test lint check-types --filter=!@llmtrack/server --filter=!@llmtrack/benchmarks",
+    "ci:rust": "turbo run format:check lint test --filter=@llmtrack/server --filter=@llmtrack/benchmarks",
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "format": "turbo run format",
+    "check-types": "turbo run check-types",
+    "format:check": "turbo run format:check",
+    "changeset": "changeset",
+    "version-packages": "changeset version && bash scripts/sync-version.sh",
+    "release": "changeset publish"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.15",
+    "@changesets/changelog-github": "1.0.1",
+    "@changesets/cli": "3.0.3",
+    "turbo": "2.11.7",
+    "typescript": "6.0.3"
+  },
+  "packageManager": "pnpm@12.10.1",
+  "engines": {
+    "node": ">=22.12"
+  }
+}

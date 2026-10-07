@@ -1,0 +1,22 @@
+{
+  "$schema": "https://turborepo.dev/schema.json",
+  "ui": "tui",
+  "//": "The Rust crate is a turbo package so `pnpm build`, `pnpm test` and `pnpm run ci` reach it, but turbo never caches a cargo task: target/ carries fingerprints turbo cannot see.",
+  "globalDependencies": ["biome.json", "scripts/bundle-dashboard.sh"],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"]
+    },
+    "lint": {},
+    "check-types": {},
+    "test": {},
+    "dev": { "cache": false, "persistent": true },
+    "format": { "cache": false },
+    "format:check": {},
+    "@llmtrack/server#build": { "dependsOn": ["@llmtrack/dashboard#build"], "cache": false },
+    "@llmtrack/server#test": { "cache": false },
+    "@llmtrack/server#lint": { "cache": false },
+    "@llmtrack/server#format:check": { "cache": false }
+  }
+}

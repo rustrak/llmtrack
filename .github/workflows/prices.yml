@@ -1,0 +1,31 @@
+name: Sync price list
+
+# Keeps pricing/model_prices.json (the URL the dashboard syncs from) and the
+# snapshot compiled into the binary up to date with the upstream list.
+on:
+  schedule:
+    - cron: "0 5 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Download and check
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json -o /tmp/prices.json
+          # Same floor as the server: refuse a truncated or broken list.
+          test "$(jq 'length' /tmp/prices.json)" -ge 500
+          cp /tmp/prices.json pricing/model_prices.json
+          gzip -9n -c pricing/model_prices.json > apps/server/assets/model_prices.json.gz
+      - name: Commit if changed
+        run: |
+          git diff --quiet && exit 0
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "chore(pricing): sync price list"
+          git push

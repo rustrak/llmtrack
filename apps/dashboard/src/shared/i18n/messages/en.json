@@ -1,0 +1,971 @@
+{
+  "locale": {
+    "en": "English",
+    "es": "Español",
+    "label": "Language",
+    "followBrowser": "Follow the browser",
+    "storedOnAccount": "Saved to your account, so it follows you to every device.",
+    "saveFailed": "Could not save your preference.",
+    "timeZoneLabel": "Time zone",
+    "timeZoneHint": "Every date and time is shown in this zone. Daily usage is always counted in UTC days.",
+    "currencyLabel": "Currency",
+    "USD": "US dollar ($)",
+    "EUR": "Euro (€)",
+    "currencyHint": "Spend and budgets are shown and typed in this currency. Providers bill in dollars.",
+    "rateLabel": "{currency} per US dollar",
+    "rateHint": "The rate dollars are converted at. Set it by hand; it does not update on its own."
+  },
+  "theme": {
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "roles": {
+    "admin": "Admin",
+    "member": "Member"
+  },
+  "common": {
+    "cancel": "Cancel",
+    "close": "Close",
+    "copy": "Copy",
+    "copied": "Copied",
+    "working": "Working…",
+    "noLimit": "no limit",
+    "noModelsYet": "No models registered yet.",
+    "selectedCount": "{count, plural, one {# selected} other {# selected}}",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "sidebar": "Sidebar",
+    "sidebarMobileDescription": "Displays the mobile sidebar.",
+    "toggleSidebar": "Toggle sidebar"
+  },
+  "formErrors": {
+    "required": "This field is required",
+    "invalid": "This value is not valid",
+    "alreadyExists": "This is already taken",
+    "tooLong": "This is too long"
+  },
+  "errors": {
+    "outageTitle": "llmtrack is not answering",
+    "tryAgain": "Try again",
+    "somethingWrong": "Something went wrong",
+    "reload": "Reload",
+    "notFound": "This page does not exist.",
+    "goHome": "Go home"
+  },
+  "auth": {
+    "meta": {
+      "title": "Sign in · llmtrack"
+    },
+    "heroTitle": "Every model. One key per team",
+    "heroDescription": "Route any OpenAI or Anthropic client to every provider, and know what every team spent.",
+    "statOverhead": "Gateway overhead",
+    "statEndpoint": "Endpoint for every provider",
+    "statSpend": "Spend per team, per key",
+    "title": "Welcome back",
+    "subtitle": "Sign in to manage models, teams and keys.",
+    "form": {
+      "email": "Email",
+      "password": "Password",
+      "emailInvalid": "Enter your email address",
+      "passwordRequired": "Enter your password",
+      "invalidCredentials": "Invalid email or password",
+      "unavailable": "The server did not answer. Try again in a moment.",
+      "submit": "Sign in",
+      "submitting": "Signing in…"
+    }
+  },
+  "nav": {
+    "gateway": "Gateway",
+    "insights": "Insights",
+    "manage": "Manage",
+    "keys": "Virtual Keys",
+    "models": "Models",
+    "teams": "Teams",
+    "usage": "Usage",
+    "logs": "Logs",
+    "users": "Users",
+    "settings": "Settings",
+    "profile": "Profile and settings",
+    "logout": "Log out",
+    "tagline": "AI gateway",
+    "builtBy": "Built by",
+    "breadcrumb": "Breadcrumb",
+    "people": "People",
+    "playground": "Playground"
+  },
+  "keys": {
+    "meta": {
+      "title": "Virtual Keys · llmtrack",
+      "detailTitle": "{name} · llmtrack"
+    },
+    "title": "Virtual Keys",
+    "subtitle": "The keys applications call the gateway with. A team key bills to its team; a personal key to you.",
+    "filterByTeam": "Filter by team",
+    "allTeams": "All teams",
+    "allTeamModels": "All team models",
+    "never": "Never",
+    "expired": "Expired",
+    "edit": {
+      "title": "Edit {name}",
+      "submit": "Save",
+      "saved": "Key {name} updated"
+    },
+    "revoke": "Revoke",
+    "actionsFor": "Actions for {name}",
+    "table": {
+      "name": "Key name",
+      "key": "Key",
+      "models": "Models",
+      "spend": "Spend / Budget",
+      "expires": "Expires",
+      "lastUsed": "Last used",
+      "createdBy": "Created by",
+      "owner": "Owner",
+      "allModels": "All"
+    },
+    "empty": {
+      "title": "No keys yet",
+      "description": "Create a key and hand it to an application in place of a provider key."
+    },
+    "create": {
+      "button": "Create key",
+      "title": "Create virtual key",
+      "description": "Applications send it as their OpenAI or Anthropic API key. Its spend counts against the key and its owner.",
+      "submit": "Create key"
+    },
+    "form": {
+      "name": "Key name",
+      "nameRequired": "Give the key a name",
+      "models": "Models",
+      "modelsEmpty": "Nothing selected: the key may call every model its team may.",
+      "budget": "Max budget (USD)",
+      "budgetInvalid": "Enter an amount in dollars, or leave it empty for no limit",
+      "noLimit": "No limit",
+      "expires": "Expires",
+      "fromToday": "From today.",
+      "owner": "Owner",
+      "personal": "Personal (just me)",
+      "personalHint": "Bills to you; may call every model.",
+      "teamHint": "Bills to the team and shares its budget and models.",
+      "limitInvalid": "Enter a whole number of at least 1, or leave it empty",
+      "expiresOnHint": "Leave empty so it never expires.",
+      "modelsEmptyPersonal": "Nothing selected: the key may call every model.",
+      "ownerTeam": "Team",
+      "ownerPersonal": "Personal",
+      "sections": {
+        "expiry": "Expiration"
+      },
+      "person": "Person",
+      "personNone": "No one",
+      "personHint": "Whose spend this key is. The team still pays for it.",
+      "personEmpty": "This team has no people yet.",
+      "personAdd": "Add them in People"
+    },
+    "expiry": {
+      "never": "Never",
+      "days7": "7 days",
+      "days30": "30 days",
+      "days90": "90 days",
+      "year": "1 year"
+    },
+    "reveal": {
+      "title": "Save your key",
+      "description": "This is the only time it is shown. Only its hash is stored, so a lost key cannot be recovered, only revoked and replaced.",
+      "done": "Done",
+      "usage": "Call the gateway with it"
+    },
+    "revokeDialog": {
+      "title": "Revoke {name}?",
+      "description": "Applications using it start getting 401 at once. Its spend history stays.",
+      "confirm": "Revoke key",
+      "done": "Key {name} revoked"
+    },
+    "editAction": "Edit",
+    "personal": "Personal",
+    "blocked": "Blocked",
+    "allModels": "All models",
+    "details": "View details",
+    "regenerate": "Regenerate",
+    "block": "Block",
+    "unblock": "Unblock",
+    "backToKeys": "Back to keys",
+    "blockDialog": {
+      "blocked": "{name} blocked: it gets 401 until unblocked",
+      "unblocked": "{name} unblocked"
+    },
+    "regenerateDialog": {
+      "title": "Regenerate {name}?",
+      "description": "It gets a new secret and the current one stops working at once. Its settings, spend and history stay.",
+      "confirm": "Regenerate key"
+    },
+    "detail": {
+      "resets": "Resets {date}",
+      "lifetime": "Lifetime",
+      "spend30d": "Spend · last 30 days",
+      "requests30d": "{count} requests",
+      "openUsage": "Open in Usage",
+      "ofBudget": "{spent} of {budget} budget",
+      "details": "Details",
+      "active": "Active",
+      "personalOf": "Personal · {email}",
+      "createdBy": "Created {date} by {email}",
+      "createdOn": "Created {date}",
+      "lastUsedAt": "Last used {date}",
+      "neverUsed": "Never used",
+      "byModel": "By model"
+    },
+    "search": "Search by name, team or owner",
+    "filters": {
+      "team": "Team",
+      "status": "Status"
+    },
+    "statusFilter": {
+      "active": "Active",
+      "blocked": "Blocked",
+      "expired": "Expired"
+    }
+  },
+  "models": {
+    "meta": {
+      "title": "Models · llmtrack"
+    },
+    "title": "Models",
+    "subtitle": "What clients can ask for by name, where each goes, and what it costs.",
+    "add": "Add model",
+    "edit": "Edit",
+    "delete": "Delete",
+    "actionsFor": "Actions for {name}",
+    "activeLabel": "{name} active",
+    "keyStored": "Stored",
+    "keyNone": "None",
+    "pricesPerMillion": "Prices in dollars per million tokens.",
+    "table": {
+      "name": "Public name",
+      "provider": "Provider",
+      "upstream": "Provider model",
+      "pricing": "Pricing",
+      "input": "Input",
+      "output": "Output",
+      "cacheRead": "Cached",
+      "key": "Key",
+      "active": "Active"
+    },
+    "empty": {
+      "title": "No models yet",
+      "description": "Register a model to make it callable through the gateway."
+    },
+    "dialog": {
+      "addTitle": "Add model",
+      "editTitle": "Edit {name}",
+      "description": "Clients ask for the public name; the gateway calls the provider's model and bills at its price.",
+      "connection": "Connection",
+      "add": "Add model",
+      "save": "Save",
+      "created": "{name} is ready to route",
+      "updated": "{name} updated",
+      "unpricedWarning": "{name} has no price: its requests are logged at $0 until you pick a catalog entry or set rates.",
+      "createdMany": "{count, plural, one {# model added} other {# models added}}"
+    },
+    "form": {
+      "provider": "Provider",
+      "providerRequired": "Choose a provider",
+      "name": "Public model name",
+      "nameHint": "What applications send as model.",
+      "nameRequired": "Name the model the way clients will ask for it",
+      "nameInvalid": "Letters, digits and . _ - : / only",
+      "upstream": "Provider model",
+      "deployment": "Deployment name",
+      "upstreamRequired": "The provider's model id",
+      "apiBase": "API base",
+      "apiBaseDefault": "Leave empty for the provider default.",
+      "apiBaseRequired": "Required: where this server lives.",
+      "apiVersion": "API version",
+      "apiKey": "Provider API key",
+      "apiKeyStored": "Stored; type to replace",
+      "apiKeyHint": "Encrypted at rest, never shown again.",
+      "clearApiKey": "Remove the stored key",
+      "rateInvalid": "Enter a price in dollars",
+      "model": "Model",
+      "models": "Models",
+      "modelsRequired": "Pick at least one model, or type one",
+      "weightInvalid": "Enter a whole number of 0 or more, or leave it empty",
+      "changeModel": "Change provider model",
+      "providerDefault": "Provider default",
+      "keySet": "Key set",
+      "noKey": "No key"
+    },
+    "deleteDialog": {
+      "title": "Delete {name}?",
+      "description": "Requests for it start failing with 404 and it leaves every team and key allowlist. Its spend history stays. To pause it instead, switch it off.",
+      "confirm": "Delete model"
+    },
+    "picker": {
+      "search": "Search {count} models",
+      "searchLabel": "Search the provider's models",
+      "noMatch": "No model matches.",
+      "customPlaceholder": "Or type a model id that is not listed",
+      "customOnly": "Model id, e.g. llama-3.1-8b-instruct",
+      "customLabel": "Custom model id",
+      "addCustom": "Add"
+    },
+    "mappings": {
+      "publicName": "Public model name",
+      "providerModel": "Provider model",
+      "remove": "Remove {name}",
+      "unpriced": "Not in the price list: logged at $0. Pick an entry, or choose own rates or no price."
+    },
+    "advanced": {
+      "title": "Advanced settings",
+      "weight": "Weight",
+      "weightPlaceholder": "Even share",
+      "weightHint": "Several models can share a public name; requests are spread by weight. Leave it empty on all of them for an even share; once any has a weight, those without one (or with 0) only take traffic when the others are down.",
+      "weightSummary": "Weight {weight}"
+    },
+    "test": {
+      "button": "Test connect",
+      "running": "Testing…",
+      "ok": "Connected in {ms} ms",
+      "failed": "Failed ({status}): {message}"
+    },
+    "deployment": "Deployment",
+    "deploymentWeight": "Deployment · weight {weight}",
+    "tabs": {
+      "models": "Models",
+      "router": "Router settings"
+    },
+    "router": {
+      "reliability": "Retries and cooldowns",
+      "num_retries": "Retries",
+      "num_retriesHint": "How many more times a failed request is tried, on another deployment when there is one.",
+      "allowed_fails": "Allowed failures",
+      "allowed_failsHint": "Failures a minute before a deployment sits out. A 429 makes it sit out at once.",
+      "cooldown_time": "Cooldown (seconds)",
+      "cooldown_timeHint": "How long a failing deployment sits out.",
+      "numberInvalid": "Enter a whole number in range",
+      "fallbacks": "Fallbacks",
+      "fallbacksHint": "When a model still fails after its retries, these models are tried, in order.",
+      "context_window_fallbacks": "Context window fallbacks",
+      "context_window_fallbacksHint": "When the prompt does not fit, these take over. Without a rule here, the fallbacks above apply.",
+      "content_policy_fallbacks": "Content policy fallbacks",
+      "content_policy_fallbacksHint": "When the provider refuses the content, these take over. Without a rule here, the fallbacks above apply.",
+      "addRule": "Add rule",
+      "removeRule": "Remove rule",
+      "whenModel": "When this model fails",
+      "anyModel": "Any model (*)",
+      "addFallback": "Add fallback",
+      "removeFallback": "Remove {name}",
+      "save": "Save router settings",
+      "saved": "Router settings saved"
+    },
+    "pricingMode": {
+      "title": "Pricing",
+      "catalog": "Price list",
+      "catalogHint": "The price list's rates for each model, matched by name. Shown below; change it if the match is wrong.",
+      "custom": "Own rates",
+      "customHint": "Your rates for every model added here, e.g. to charge teams back.",
+      "free": "No price",
+      "freeHint": "Logged at $0 on purpose: tokens still count, budgets never stop it.",
+      "freeRow": "No price: logged at $0.",
+      "billedBy": "Billed as",
+      "change": "Change",
+      "search": "Search the price list",
+      "automatic": "Match automatically by name"
+    },
+    "search": "Search by name or provider model",
+    "filters": {
+      "provider": "Provider",
+      "status": "Status"
+    },
+    "statusFilter": {
+      "active": "Active",
+      "inactive": "Inactive"
+    }
+  },
+  "pricing": {
+    "title": "Pricing",
+    "source": {
+      "catalog": "Price list",
+      "custom": "Own rates",
+      "none": "Not in price list",
+      "noneHint": "Meant to be priced by the price list, which does not have it: logged at $0. Pick an entry, set own rates or mark it free.",
+      "free": "No price",
+      "freeHint": "No price on purpose: requests are logged at $0 and never stopped by a budget."
+    },
+    "rates": {
+      "input": "Input $/1M",
+      "output": "Output $/1M",
+      "cacheRead": "Cache read $/1M",
+      "cacheWrite": "Cache write $/1M",
+      "cacheWrite1h": "Cache write 1h $/1M",
+      "reasoning": "Reasoning $/1M",
+      "advanced": "Advanced rates",
+      "longContext": "Long context",
+      "longContextHint": "Past this many prompt tokens every rate switches to the one below; blank ones keep the base rate.",
+      "threshold": "Above tokens",
+      "perUnit": "Per unit",
+      "perImage": "$ per image",
+      "perSecond": "$ per second",
+      "perMillionCharacters": "$ per 1M characters"
+    },
+    "summary": {
+      "input": "{price} in",
+      "output": "{price} out",
+      "cacheRead": "{price} cached",
+      "above": "tier above {tokens}",
+      "perImage": "{price} per image",
+      "perSecond": "{price} per second"
+    }
+  },
+  "teams": {
+    "meta": {
+      "title": "Teams · llmtrack",
+      "detailTitle": "{name} · llmtrack"
+    },
+    "title": "Teams",
+    "subtitle": "The customers and groups you bill. Budgets and model access are set per team.",
+    "create": "Create team",
+    "allModels": "All models",
+    "modelCount": "{count, plural, one {# model} other {# models}}",
+    "backToTeams": "Back to teams",
+    "table": {
+      "team": "Team",
+      "spend": "Spend / Budget",
+      "models": "Models",
+      "members": "Members",
+      "keys": "Keys",
+      "yourRole": "Your role",
+      "created": "Created"
+    },
+    "empty": {
+      "title": "No teams yet",
+      "admin": "Create a team for each customer or group you want to bill separately.",
+      "member": "You are not in any team yet. Ask an admin to add you."
+    },
+    "dialog": {
+      "createTitle": "Create team",
+      "editTitle": "Edit {name}",
+      "description": "A team is who you bill: its keys share its budget and model access.",
+      "create": "Create team",
+      "save": "Save",
+      "created": "{name} created",
+      "updated": "{name} updated"
+    },
+    "form": {
+      "name": "Team name",
+      "nameRequired": "Name the team",
+      "budget": "Max budget (USD)",
+      "budgetInvalid": "Enter an amount in dollars, or leave it empty for no limit",
+      "budgetHint": "Every key of the team stops with 429 once the team has spent it.",
+      "noLimit": "No limit",
+      "models": "Models",
+      "allModelsHint": "Every model on the proxy, including ones added later.",
+      "someModelsHint": "Only the models ticked below.",
+      "modelsNone": "Nothing ticked: the team may call no model.",
+      "limitInvalid": "Enter a whole number of at least 1, or leave it empty"
+    },
+    "detail": {
+      "subtitle": "Keys, members and spend of this team.",
+      "edit": "Edit team",
+      "delete": "Delete",
+      "spend": "Spend",
+      "lifetime": "Lifetime",
+      "budget": "Budget",
+      "neverStopped": "Keys are never stopped",
+      "used": "{percent}% used",
+      "activeKeys": "Active keys",
+      "members": "Members",
+      "everyModel": "Every registered model",
+      "keysTab": "Virtual keys",
+      "membersTab": "Access",
+      "resets": "Resets {date}",
+      "noModels": "No models: its keys cannot call anything",
+      "peopleTab": "People",
+      "yourRole": "You: {role}",
+      "createdOn": "Created {date}",
+      "spend30d": "Spend · last 30 days",
+      "requests30d": "{count} requests",
+      "openUsage": "Open in Usage",
+      "ofBudget": "{spent} of {budget} budget",
+      "details": "Details",
+      "modelAccess": "Model access",
+      "moreActions": "More actions",
+      "deleteTeam": "Delete team"
+    },
+    "members": {
+      "add": "Add member",
+      "added": "{email} added",
+      "email": "Email",
+      "emailLabel": "Email of the user to add",
+      "emailPlaceholder": "teammate@company.com",
+      "role": "Role",
+      "roleMember": "Member",
+      "roleAdmin": "Team admin",
+      "roleOf": "Role of {email}",
+      "roleUpdated": "Role updated",
+      "remove": "Remove {email}",
+      "removed": "{email} removed",
+      "empty": "No members. Global admins can still manage this team.",
+      "hint": "Dashboard users who can open and manage this team. Access only: it does not change spend.",
+      "pickUser": "Pick a user",
+      "everyoneIn": "Every user already has access"
+    },
+    "deleteDialog": {
+      "title": "Delete {name}?",
+      "description": "Its keys stop working at once and its members lose access. Its spend history stays in Usage and Logs.",
+      "confirm": "Delete team"
+    },
+    "search": "Search teams",
+    "filters": {
+      "models": "Model access"
+    },
+    "access": {
+      "all": "All models",
+      "restricted": "Selected models"
+    },
+    "people": {
+      "hint": "People spend through this team’s keys without signing in. Assign them a key to see the team’s spend per person.",
+      "name": "Name",
+      "email": "Email",
+      "add": "Add to team",
+      "added": "{name} added to the team",
+      "keys": "Keys",
+      "spend": "Spend",
+      "empty": "No people yet.",
+      "remove": "Take {name} out of the team",
+      "removed": "{name} is out of the team. Their keys stay with it, unassigned.",
+      "manage": "Create or delete people in People.",
+      "pick": "Pick someone without a team"
+    }
+  },
+  "usage": {
+    "meta": {
+      "title": "Usage · llmtrack"
+    },
+    "title": "Usage",
+    "subtitle": "What was spent, by whom, on what. The numbers to bill each team by.",
+    "team": "Team",
+    "key": "Key",
+    "model": "Model",
+    "allTeams": "All teams",
+    "dateRange": "Date range",
+    "spend": "Spend",
+    "requests": "Requests",
+    "tokens": "Tokens",
+    "tokensHint": "{input} in ({cached} cached) · {output} out",
+    "errorRate": "Error rate",
+    "failed": "{count, plural, one {# failed} other {# failed}}",
+    "dailySpend": "Daily spend",
+    "byTeam": "By team",
+    "byKey": "By key",
+    "byModel": "By model",
+    "range": {
+      "days7": "Last 7 days",
+      "days30": "Last 30 days",
+      "days90": "Last 90 days",
+      "month": "This month",
+      "lastMonth": "Last month",
+      "custom": "Custom range",
+      "from": "From",
+      "to": "To"
+    },
+    "table": {
+      "requests": "Requests",
+      "tokens": "Tokens",
+      "cached": "Cached",
+      "share": "Share",
+      "empty": "No requests in this range.",
+      "errors": "Errors",
+      "latency": "Avg latency"
+    },
+    "personal": "Personal keys",
+    "export": "Export CSV",
+    "avgCost": "Average cost",
+    "perRequest": "Per request",
+    "byEndUser": "By customer",
+    "byTag": "By tag",
+    "endUser": "Customer",
+    "tag": "Tag",
+    "endUserHint": "The customer is the request's `user` field, or the x-litellm-customer-id header.",
+    "tagHint": "Tags come from metadata.tags or the x-litellm-tags header; a request with several counts under each.",
+    "avgLatency": "Average latency",
+    "costPer1k": "Cost per 1K requests",
+    "ranking": "By {group}",
+    "deletedTeam": "Deleted team #{id}",
+    "deletedKey": "Deleted key #{id}",
+    "kpi": {
+      "vsPrevious": "{change} vs previous",
+      "noPrevious": "No earlier data",
+      "comparedWith": "Compared with {from} – {to}"
+    },
+    "metric": {
+      "spend": "Spend",
+      "requests": "Requests",
+      "tokens": "Tokens"
+    },
+    "group": {
+      "model": "model",
+      "team": "team",
+      "key": "key",
+      "end_user": "customer",
+      "tag": "tag",
+      "person": "Person"
+    },
+    "latency": {
+      "ms": "{value} ms",
+      "s": "{value} s"
+    },
+    "chart": {
+      "total": "Total",
+      "other": "Other",
+      "requests": "Requests",
+      "ok": "Successful",
+      "failed": "Failed",
+      "tokens": "Tokens by type",
+      "input": "Input",
+      "cached": "Cached input",
+      "output": "Output",
+      "reasoning": "Reasoning",
+      "latency": "Average latency",
+      "noModelSplit": "Customers and tags are not split by model: clear the model filter to see them."
+    },
+    "chartTitle": "{metric} by {group}",
+    "splitBy": "Split by",
+    "deletedPerson": "Deleted person #{id}",
+    "noPerson": "No one",
+    "person": "Person",
+    "personalOf": "{name} · personal"
+  },
+  "logs": {
+    "meta": {
+      "title": "Logs · llmtrack"
+    },
+    "title": "Logs",
+    "subtitle": "Every request through the gateway: who sent it, what it cost, how long it took. Prompts are never stored.",
+    "clientLeft": "499 client left",
+    "stream": "stream",
+    "cached": "{count} cached",
+    "cacheWritten": "{count} cache write",
+    "reasoning": "{count} reasoning",
+    "ms": "{value} ms",
+    "filters": {
+      "team": "Team",
+      "allTeams": "All teams",
+      "model": "Model",
+      "allModels": "All models",
+      "status": "Status",
+      "anyStatus": "Any status",
+      "success": "Success",
+      "errors": "Errors",
+      "window": "Time range",
+      "key": "Key",
+      "allKeys": "All keys",
+      "endUser": "Customer",
+      "tag": "Tag"
+    },
+    "table": {
+      "time": "Time",
+      "status": "Status",
+      "model": "Model",
+      "team": "Team",
+      "key": "Key",
+      "tokens": "Tokens",
+      "cost": "Cost",
+      "latency": "Latency"
+    },
+    "empty": {
+      "title": "No requests yet",
+      "description": "Requests show up here a moment after they finish."
+    },
+    "personal": "Personal",
+    "window": {
+      "hour": "Last hour",
+      "day": "Last 24 hours",
+      "week": "Last 7 days",
+      "month": "Last 30 days",
+      "all": "All time"
+    },
+    "detail": {
+      "requestId": "Request ID",
+      "endpoint": "Endpoint",
+      "provider": "Provider",
+      "prompt": "Prompt tokens",
+      "completion": "Completion tokens",
+      "cachedRead": "Cache read",
+      "cacheWrite": "Cache write",
+      "reasoning": "Reasoning",
+      "total": "Total tokens",
+      "error": "Error",
+      "noContent": "Prompts and completions are never stored.",
+      "deployment": "deployment #{id}",
+      "endUser": "Customer",
+      "tags": "Tags"
+    },
+    "forEndUser": "for {user}",
+    "search": "Search model, customer or request"
+  },
+  "users": {
+    "meta": {
+      "title": "Users · llmtrack"
+    },
+    "title": "Users",
+    "subtitle": "Who can sign in to this dashboard. Invite them with a link, or add them with a password.",
+    "add": "Add user",
+    "you": "you",
+    "never": "Never",
+    "roleOf": "Role of {email}",
+    "activeOf": "{email} active",
+    "deleteOf": "Delete {email}",
+    "table": {
+      "user": "User",
+      "role": "Role",
+      "active": "Active",
+      "lastLogin": "Last login",
+      "created": "Created",
+      "spend": "Spend",
+      "keys": "Keys"
+    },
+    "create": {
+      "title": "Add user",
+      "description": "Share the password with them; they can change it from their settings.",
+      "submit": "Add user",
+      "done": "{email} can now sign in"
+    },
+    "form": {
+      "email": "Email",
+      "emailInvalid": "Enter an email address",
+      "password": "Initial password",
+      "passwordShort": "At least 8 characters",
+      "role": "Role",
+      "roleMember": "Member: sees their teams",
+      "roleAdmin": "Admin: manages everything"
+    },
+    "deleteDialog": {
+      "title": "Delete {email}?",
+      "description": "They lose access at once and leave every team. Their personal keys are deleted; team keys they created keep working.",
+      "confirm": "Delete user"
+    },
+    "invite": {
+      "button": "Invite user",
+      "title": "Invite user",
+      "description": "No email is sent: the invitation link is copied for you to share. It works once, for 48 hours, and they choose their own password.",
+      "submit": "Create invitation",
+      "created": "Invitation for {email} created",
+      "linkCopied": "Invitation link copied",
+      "copyLink": "Copy this invitation link",
+      "copy": "Copy link",
+      "pending": "Pending invitations",
+      "none": "No pending invitations.",
+      "expires": "Expires {date}",
+      "expired": "Expired",
+      "revoked": "Invitation for {email} revoked",
+      "revokeOf": "Revoke invitation for {email}"
+    },
+    "search": "Search by name or email",
+    "filters": {
+      "role": "Role",
+      "status": "Status"
+    },
+    "statusFilter": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "tabs": {
+      "users": "Users",
+      "invitations": "Invitations"
+    }
+  },
+  "settings": {
+    "meta": {
+      "title": "Settings · llmtrack"
+    },
+    "nav": {
+      "title": "Settings",
+      "personal": "Your account",
+      "instance": "This instance",
+      "profile": "Profile",
+      "appearance": "Appearance",
+      "general": "General",
+      "pricing": "Pricing"
+    },
+    "profile": {
+      "meta": "Profile · llmtrack",
+      "title": "Profile",
+      "subtitle": "How you appear and how the dashboard reads for you.",
+      "account": "Account",
+      "accountDescription": "Your name is shown instead of your email where there is room.",
+      "role": "Role",
+      "name": "Name",
+      "namePlaceholder": "Ada Lovelace",
+      "email": "Email",
+      "emailHint": "Only an admin can change the email you sign in with.",
+      "save": "Save",
+      "saved": "Profile saved",
+      "regional": "Language and region",
+      "regionalDescription": "The language of the dashboard and the zone dates are shown in."
+    },
+    "password": {
+      "title": "Password",
+      "description": "Your other sessions stay signed in.",
+      "current": "Current password",
+      "new": "New password",
+      "confirm": "Repeat the new password",
+      "currentRequired": "Enter your current password",
+      "tooShort": "At least 8 characters",
+      "mismatch": "The two passwords differ",
+      "wrongCurrent": "That is not your current password",
+      "submit": "Change password",
+      "changed": "Password changed"
+    },
+    "appearance": {
+      "meta": "Appearance · llmtrack",
+      "title": "Appearance",
+      "subtitle": "How the dashboard looks on this device.",
+      "theme": "Theme",
+      "themeDescription": "System follows your operating system."
+    },
+    "general": {
+      "meta": "General · llmtrack",
+      "title": "General",
+      "subtitle": "Settings that apply to everyone on this instance.",
+      "gateway": "Gateway",
+      "publicUrl": "Public URL",
+      "publicUrlHint": "Where applications reach the gateway. Code samples for new keys use it; empty uses this page's address.",
+      "save": "Save",
+      "saved": "Settings saved"
+    },
+    "pricing": {
+      "meta": "Pricing · llmtrack",
+      "title": "Pricing",
+      "subtitle": "The price list models are billed by.",
+      "source": "Source",
+      "builtin": "Built in",
+      "syncedSource": "Synced",
+      "entries": "Priced models",
+      "lastSync": "Last sync",
+      "never": "Never",
+      "url": "Price list URL",
+      "urlHint": "A model_prices.json in the standard format (the default is llmtrack's own copy).",
+      "sync": "Sync now",
+      "synced": "Price list synced: {count} models",
+      "howTitle": "How requests are priced",
+      "howCatalog": "A model picks an entry of this list (or one is matched from its provider model) and is billed by its rates, which change when the list is synced.",
+      "howCustom": "A model with its own rates ignores the list.",
+      "howCache": "Cached prompt tokens, cache writes, reasoning tokens and prompts past the long-context threshold are billed at their own rates.",
+      "listTitle": "Price list"
+    },
+    "subtitle": "Your account, and this instance for admins."
+  },
+  "limits": {
+    "budget": "Max budget ({currency})",
+    "noLimit": "No limit",
+    "period": "Budget resets",
+    "periodNone": "Never",
+    "periodDaily": "Daily",
+    "periodWeekly": "Weekly",
+    "periodMonthly": "Monthly",
+    "rpm": "Requests per minute",
+    "tpm": "Tokens per minute",
+    "parallel": "Parallel requests",
+    "sections": {
+      "budget": "Budget",
+      "limits": "Rate limits"
+    },
+    "rpmLabel": "Requests / min",
+    "tpmLabel": "Tokens / min",
+    "parallelLabel": "At once",
+    "rpmShort": "{n} req/min",
+    "tpmShort": "{n} tok/min",
+    "parallelShort": "{n} at once",
+    "budgetShort": "Budget"
+  },
+  "invite": {
+    "meta": {
+      "title": "Accept invitation · llmtrack"
+    },
+    "title": "Join llmtrack",
+    "subtitle": "Choose a password to finish setting up your account.",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Repeat password",
+    "passwordShort": "At least 8 characters",
+    "passwordMismatch": "The passwords do not match",
+    "submit": "Create account",
+    "unavailableTitle": "This invitation cannot be used",
+    "unavailableDescription": "It has expired, was revoked, or was already accepted. Ask an admin for a new one."
+  },
+  "table": {
+    "clearFilter": "Clear filter",
+    "clearFilters": "Clear filters",
+    "range": "{from}–{to} of {total}",
+    "perPage": "Rows per page",
+    "pages": "Pages",
+    "previous": "Previous page",
+    "next": "Next page",
+    "noResults": "No results",
+    "noResultsHint": "Nothing matches these filters. Try other ones, or clear them."
+  },
+  "people": {
+    "meta": {
+      "title": "People · llmtrack"
+    },
+    "title": "People",
+    "subtitle": "Who spends through your teams’ keys without signing in. Each person belongs to a team, which pays for them.",
+    "search": "Search by name, email or team",
+    "table": {
+      "name": "Name",
+      "team": "Team",
+      "keys": "Keys",
+      "spend": "Spend",
+      "created": "Added"
+    },
+    "empty": {
+      "title": "No people yet",
+      "description": "Add the people who use your teams’ keys to see each team’s spend per person."
+    },
+    "create": {
+      "button": "Add person",
+      "title": "Add a person",
+      "description": "Someone who uses a team’s keys but never signs in here. Without a team, any team can pick them later.",
+      "teamHint": "The team pays for what they spend.",
+      "email": "Email (optional)",
+      "submit": "Add",
+      "added": "{name} added"
+    },
+    "noTeam": "No team",
+    "delete": {
+      "label": "Delete {name}",
+      "title": "Delete {name}?",
+      "description": "Their keys stay with their team, assigned to no one. Their past spend stays in the reports.",
+      "confirm": "Delete"
+    }
+  },
+  "playground": {
+    "meta": {
+      "title": "Playground · llmtrack"
+    },
+    "title": "Playground",
+    "subtitle": "Chat with a model to check it answers. It goes through one of your keys, which pays for it like any other request.",
+    "key": "Key",
+    "keyHint": "Its limits apply and its spend counts, tagged “playground”.",
+    "personal": "Personal",
+    "model": "Model",
+    "noModels": "No models for this key",
+    "system": "System prompt",
+    "systemPlaceholder": "Optional instructions for the model",
+    "temperature": "Temperature",
+    "maxTokens": "Max tokens",
+    "default": "Default",
+    "clear": "Clear chat",
+    "empty": "Send a message to start.",
+    "message": "Message",
+    "messagePlaceholder": "Write a message… (Enter sends, Shift+Enter adds a line)",
+    "send": "Send",
+    "stop": "Stop",
+    "ms": "{value} ms",
+    "ttft": "first token {value}",
+    "total": "total {value}",
+    "tokens": "{input} in / {output} out",
+    "noKeys": "You need a key to use the Playground. Create one in Virtual keys."
+  }
+}

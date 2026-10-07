@@ -1,0 +1,971 @@
+{
+  "locale": {
+    "en": "English",
+    "es": "Español",
+    "label": "Idioma",
+    "followBrowser": "Seguir al navegador",
+    "storedOnAccount": "Se guarda en tu cuenta, así que te sigue en todos tus dispositivos.",
+    "saveFailed": "No se pudo guardar tu preferencia.",
+    "timeZoneLabel": "Zona horaria",
+    "timeZoneHint": "Todas las fechas y horas se muestran en esta zona. El uso diario siempre se cuenta en días UTC.",
+    "currencyLabel": "Moneda",
+    "USD": "Dólar estadounidense ($)",
+    "EUR": "Euro (€)",
+    "currencyHint": "El gasto y los presupuestos se muestran y se introducen en esta moneda. Los proveedores cobran en dólares.",
+    "rateLabel": "{currency} por dólar estadounidense",
+    "rateHint": "El tipo al que se convierten los dólares. Se fija a mano; no se actualiza solo."
+  },
+  "theme": {
+    "light": "Claro",
+    "dark": "Oscuro",
+    "system": "Sistema"
+  },
+  "roles": {
+    "admin": "Administrador",
+    "member": "Miembro"
+  },
+  "common": {
+    "cancel": "Cancelar",
+    "close": "Cerrar",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "working": "Procesando…",
+    "noLimit": "sin límite",
+    "noModelsYet": "Todavía no hay modelos registrados.",
+    "selectedCount": "{count, plural, one {# seleccionado} other {# seleccionados}}",
+    "showPassword": "Mostrar contraseña",
+    "hidePassword": "Ocultar contraseña",
+    "sidebar": "Barra lateral",
+    "sidebarMobileDescription": "Muestra la barra lateral en móvil.",
+    "toggleSidebar": "Mostrar u ocultar la barra lateral"
+  },
+  "formErrors": {
+    "required": "Este campo es obligatorio",
+    "invalid": "Este valor no es válido",
+    "alreadyExists": "Ya está en uso",
+    "tooLong": "Es demasiado largo"
+  },
+  "errors": {
+    "outageTitle": "llmtrack no responde",
+    "tryAgain": "Reintentar",
+    "somethingWrong": "Algo ha ido mal",
+    "reload": "Recargar",
+    "notFound": "Esta página no existe.",
+    "goHome": "Ir al inicio"
+  },
+  "auth": {
+    "meta": {
+      "title": "Iniciar sesión · llmtrack"
+    },
+    "heroTitle": "Todos los modelos. Una clave por equipo",
+    "heroDescription": "Conecta cualquier cliente de OpenAI o Anthropic a todos los proveedores y sabe cuánto ha gastado cada equipo.",
+    "statOverhead": "Latencia añadida",
+    "statEndpoint": "Endpoint para todos los proveedores",
+    "statSpend": "Gasto por equipo y por clave",
+    "title": "Bienvenido de nuevo",
+    "subtitle": "Inicia sesión para gestionar modelos, equipos y claves.",
+    "form": {
+      "email": "Email",
+      "password": "Contraseña",
+      "emailInvalid": "Introduce tu email",
+      "passwordRequired": "Introduce tu contraseña",
+      "invalidCredentials": "Email o contraseña incorrectos",
+      "unavailable": "El servidor no ha respondido. Inténtalo de nuevo en un momento.",
+      "submit": "Iniciar sesión",
+      "submitting": "Iniciando sesión…"
+    }
+  },
+  "nav": {
+    "gateway": "Gateway",
+    "insights": "Análisis",
+    "manage": "Gestión",
+    "keys": "Claves virtuales",
+    "models": "Modelos",
+    "teams": "Equipos",
+    "usage": "Uso",
+    "logs": "Registros",
+    "users": "Usuarios",
+    "settings": "Ajustes",
+    "profile": "Perfil y ajustes",
+    "logout": "Cerrar sesión",
+    "tagline": "Gateway de IA",
+    "builtBy": "Hecho por",
+    "breadcrumb": "Ruta de navegación",
+    "people": "Personas",
+    "playground": "Playground"
+  },
+  "keys": {
+    "meta": {
+      "title": "Claves virtuales · llmtrack",
+      "detailTitle": "{name} · llmtrack"
+    },
+    "title": "Claves virtuales",
+    "subtitle": "Las claves con las que las aplicaciones llaman al gateway. Una clave de equipo factura a su equipo; una personal, a ti.",
+    "filterByTeam": "Filtrar por equipo",
+    "allTeams": "Todos los equipos",
+    "allTeamModels": "Todos los modelos del equipo",
+    "never": "Nunca",
+    "expired": "Caducada",
+    "edit": {
+      "title": "Editar {name}",
+      "submit": "Guardar",
+      "saved": "Clave {name} actualizada"
+    },
+    "revoke": "Revocar",
+    "actionsFor": "Acciones para {name}",
+    "table": {
+      "name": "Nombre",
+      "key": "Clave",
+      "models": "Modelos",
+      "spend": "Gasto / Presupuesto",
+      "expires": "Caduca",
+      "lastUsed": "Último uso",
+      "createdBy": "Creada por",
+      "owner": "Propietario",
+      "allModels": "Todos"
+    },
+    "empty": {
+      "title": "Todavía no hay claves",
+      "description": "Crea una clave y dásela a una aplicación en lugar de la del proveedor."
+    },
+    "create": {
+      "button": "Crear clave",
+      "title": "Crear clave virtual",
+      "description": "Las aplicaciones la envían como su clave de OpenAI o Anthropic. Su gasto cuenta para la clave y su propietario.",
+      "submit": "Crear clave"
+    },
+    "form": {
+      "name": "Nombre de la clave",
+      "nameRequired": "Ponle un nombre a la clave",
+      "models": "Modelos",
+      "modelsEmpty": "Nada seleccionado: la clave puede usar todos los modelos que pueda usar su equipo.",
+      "budget": "Presupuesto máximo (USD)",
+      "budgetInvalid": "Introduce una cantidad en dólares o déjalo vacío para no poner límite",
+      "noLimit": "Sin límite",
+      "expires": "Caduca",
+      "fromToday": "A partir de hoy.",
+      "owner": "Propietario",
+      "personal": "Personal (solo yo)",
+      "personalHint": "Se te factura a ti; puede llamar a todos los modelos.",
+      "teamHint": "Se factura al equipo y comparte su presupuesto y modelos.",
+      "limitInvalid": "Introduce un número entero de al menos 1, o déjalo vacío",
+      "expiresOnHint": "Déjalo vacío para que no caduque.",
+      "modelsEmptyPersonal": "Nada seleccionado: la clave puede llamar a todos los modelos.",
+      "ownerTeam": "Equipo",
+      "ownerPersonal": "Personal",
+      "sections": {
+        "expiry": "Caducidad"
+      },
+      "person": "Persona",
+      "personNone": "Nadie",
+      "personHint": "De quién es el gasto de esta clave. Lo sigue pagando el equipo.",
+      "personEmpty": "Este equipo aún no tiene personas.",
+      "personAdd": "Añádelas en Personas"
+    },
+    "expiry": {
+      "never": "Nunca",
+      "days7": "7 días",
+      "days30": "30 días",
+      "days90": "90 días",
+      "year": "1 año"
+    },
+    "reveal": {
+      "title": "Guarda tu clave",
+      "description": "Es la única vez que se muestra. Solo se guarda su hash, así que una clave perdida no se puede recuperar: solo revocarla y crear otra.",
+      "done": "Hecho",
+      "usage": "Úsala para llamar al gateway"
+    },
+    "revokeDialog": {
+      "title": "¿Revocar {name}?",
+      "description": "Las aplicaciones que la usan empiezan a recibir 401 al momento. Su historial de gasto se conserva.",
+      "confirm": "Revocar clave",
+      "done": "Clave {name} revocada"
+    },
+    "editAction": "Editar",
+    "personal": "Personal",
+    "blocked": "Bloqueada",
+    "allModels": "Todos los modelos",
+    "details": "Ver detalle",
+    "regenerate": "Regenerar",
+    "block": "Bloquear",
+    "unblock": "Desbloquear",
+    "backToKeys": "Volver a claves",
+    "blockDialog": {
+      "blocked": "{name} bloqueada: recibe 401 hasta que la desbloquees",
+      "unblocked": "{name} desbloqueada"
+    },
+    "regenerateDialog": {
+      "title": "¿Regenerar {name}?",
+      "description": "Recibe un secreto nuevo y el actual deja de funcionar al momento. Su configuración, gasto e historial se mantienen.",
+      "confirm": "Regenerar clave"
+    },
+    "detail": {
+      "resets": "Se reinicia el {date}",
+      "lifetime": "Total",
+      "spend30d": "Gasto · últimos 30 días",
+      "requests30d": "{count} peticiones",
+      "openUsage": "Abrir en Uso",
+      "ofBudget": "{spent} de {budget} de presupuesto",
+      "details": "Detalles",
+      "active": "Activa",
+      "personalOf": "Personal · {email}",
+      "createdBy": "Creada el {date} por {email}",
+      "createdOn": "Creada el {date}",
+      "lastUsedAt": "Último uso {date}",
+      "neverUsed": "Nunca usada",
+      "byModel": "Por modelo"
+    },
+    "search": "Buscar por nombre, equipo o propietario",
+    "filters": {
+      "team": "Equipo",
+      "status": "Estado"
+    },
+    "statusFilter": {
+      "active": "Activa",
+      "blocked": "Bloqueada",
+      "expired": "Caducada"
+    }
+  },
+  "models": {
+    "meta": {
+      "title": "Modelos · llmtrack"
+    },
+    "title": "Modelos",
+    "subtitle": "Qué pueden pedir los clientes por nombre, a dónde va cada uno y cuánto cuesta.",
+    "add": "Añadir modelo",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "actionsFor": "Acciones para {name}",
+    "activeLabel": "{name} activo",
+    "keyStored": "Guardada",
+    "keyNone": "Ninguna",
+    "pricesPerMillion": "Precios en dólares por millón de tokens.",
+    "table": {
+      "name": "Nombre público",
+      "provider": "Proveedor",
+      "upstream": "Modelo del proveedor",
+      "pricing": "Precio",
+      "input": "Entrada",
+      "output": "Salida",
+      "cacheRead": "En caché",
+      "key": "Clave",
+      "active": "Activo"
+    },
+    "empty": {
+      "title": "Todavía no hay modelos",
+      "description": "Registra un modelo para poder llamarlo a través del gateway."
+    },
+    "dialog": {
+      "addTitle": "Añadir modelo",
+      "editTitle": "Editar {name}",
+      "description": "Los clientes piden el nombre público; el gateway llama al modelo del proveedor y factura a su precio.",
+      "connection": "Conexión",
+      "add": "Añadir modelo",
+      "save": "Guardar",
+      "created": "{name} ya se puede enrutar",
+      "updated": "{name} actualizado",
+      "unpricedWarning": "{name} no tiene precio: sus peticiones se registran a 0 $ hasta que elijas una entrada de la lista o pongas tarifas.",
+      "createdMany": "{count, plural, one {# modelo añadido} other {# modelos añadidos}}"
+    },
+    "form": {
+      "provider": "Proveedor",
+      "providerRequired": "Elige un proveedor",
+      "name": "Nombre público del modelo",
+      "nameHint": "Lo que las aplicaciones envían como model.",
+      "nameRequired": "Pon el nombre con el que lo pedirán los clientes",
+      "nameInvalid": "Solo letras, dígitos y . _ - : /",
+      "upstream": "Modelo del proveedor",
+      "deployment": "Nombre del deployment",
+      "upstreamRequired": "El id del modelo en el proveedor",
+      "apiBase": "URL base de la API",
+      "apiBaseDefault": "Déjalo vacío para usar la del proveedor.",
+      "apiBaseRequired": "Obligatorio: dónde está este servidor.",
+      "apiVersion": "Versión de la API",
+      "apiKey": "API key del proveedor",
+      "apiKeyStored": "Guardada; escribe para reemplazarla",
+      "apiKeyHint": "Se guarda cifrada y no se vuelve a mostrar.",
+      "clearApiKey": "Eliminar la clave guardada",
+      "rateInvalid": "Introduce un precio en dólares",
+      "model": "Modelo",
+      "models": "Modelos",
+      "modelsRequired": "Elige al menos un modelo o escribe uno",
+      "weightInvalid": "Introduce un número entero de 0 o más, o déjalo vacío",
+      "changeModel": "Cambiar modelo del proveedor",
+      "providerDefault": "Por defecto del proveedor",
+      "keySet": "Con clave",
+      "noKey": "Sin clave"
+    },
+    "deleteDialog": {
+      "title": "¿Eliminar {name}?",
+      "description": "Las peticiones a este modelo empiezan a fallar con 404 y sale de las listas de modelos de todos los equipos y claves. Su historial de gasto se conserva. Para pausarlo, desactívalo.",
+      "confirm": "Eliminar modelo"
+    },
+    "picker": {
+      "search": "Busca entre {count} modelos",
+      "searchLabel": "Buscar entre los modelos del proveedor",
+      "noMatch": "Ningún modelo coincide.",
+      "customPlaceholder": "O escribe un id de modelo que no esté en la lista",
+      "customOnly": "Id del modelo, p. ej. llama-3.1-8b-instruct",
+      "customLabel": "Id de modelo personalizado",
+      "addCustom": "Añadir"
+    },
+    "mappings": {
+      "publicName": "Nombre público",
+      "providerModel": "Modelo del proveedor",
+      "remove": "Quitar {name}",
+      "unpriced": "No está en la lista de precios: se registra a $0. Elige una entrada, o usa tarifa propia o sin precio."
+    },
+    "advanced": {
+      "title": "Ajustes avanzados",
+      "weight": "Peso",
+      "weightPlaceholder": "Reparto igual",
+      "weightHint": "Varios modelos pueden compartir nombre público; las peticiones se reparten por peso. Déjalo vacío en todos para repartir por igual; si alguno tiene peso, los que no lo tienen (o tienen 0) solo reciben tráfico cuando los demás fallan.",
+      "weightSummary": "Peso {weight}"
+    },
+    "test": {
+      "button": "Probar conexión",
+      "running": "Probando…",
+      "ok": "Conectado en {ms} ms",
+      "failed": "Falló ({status}): {message}"
+    },
+    "deployment": "Despliegue",
+    "deploymentWeight": "Despliegue · peso {weight}",
+    "tabs": {
+      "models": "Modelos",
+      "router": "Ajustes del router"
+    },
+    "router": {
+      "reliability": "Reintentos y enfriamiento",
+      "num_retries": "Reintentos",
+      "num_retriesHint": "Cuántas veces más se intenta una petición fallida, en otro despliegue si lo hay.",
+      "allowed_fails": "Fallos permitidos",
+      "allowed_failsHint": "Fallos por minuto antes de que un despliegue quede fuera. Un 429 lo deja fuera al momento.",
+      "cooldown_time": "Enfriamiento (segundos)",
+      "cooldown_timeHint": "Cuánto tiempo queda fuera un despliegue que falla.",
+      "numberInvalid": "Introduce un número entero dentro del rango",
+      "fallbacks": "Alternativas",
+      "fallbacksHint": "Si un modelo sigue fallando tras sus reintentos, se prueban estos modelos, en orden.",
+      "context_window_fallbacks": "Alternativas por ventana de contexto",
+      "context_window_fallbacksHint": "Si el prompt no cabe, toman el relevo estos. Sin regla aquí, se usan las alternativas de arriba.",
+      "content_policy_fallbacks": "Alternativas por política de contenido",
+      "content_policy_fallbacksHint": "Si el proveedor rechaza el contenido, toman el relevo estos. Sin regla aquí, se usan las alternativas de arriba.",
+      "addRule": "Añadir regla",
+      "removeRule": "Quitar regla",
+      "whenModel": "Cuando falle este modelo",
+      "anyModel": "Cualquier modelo (*)",
+      "addFallback": "Añadir alternativa",
+      "removeFallback": "Quitar {name}",
+      "save": "Guardar ajustes del router",
+      "saved": "Ajustes del router guardados"
+    },
+    "pricingMode": {
+      "title": "Precio",
+      "catalog": "Lista de precios",
+      "catalogHint": "Las tarifas de la lista de precios para cada modelo, emparejadas por nombre. Se muestran abajo; cámbialas si no es la correcta.",
+      "custom": "Tarifa propia",
+      "customHint": "Tus tarifas para todos los modelos que añades, por ejemplo para repercutir el coste a los equipos.",
+      "free": "Sin precio",
+      "freeHint": "Se registra a $0 a propósito: los tokens se cuentan igual, los presupuestos nunca lo frenan.",
+      "freeRow": "Sin precio: se registra a $0.",
+      "billedBy": "Se factura como",
+      "change": "Cambiar",
+      "search": "Buscar en la lista de precios",
+      "automatic": "Emparejar automáticamente por nombre"
+    },
+    "search": "Buscar por nombre o modelo del proveedor",
+    "filters": {
+      "provider": "Proveedor",
+      "status": "Estado"
+    },
+    "statusFilter": {
+      "active": "Activo",
+      "inactive": "Inactivo"
+    }
+  },
+  "pricing": {
+    "title": "Precio",
+    "source": {
+      "catalog": "Lista de precios",
+      "custom": "Tarifas propias",
+      "none": "Fuera de la lista",
+      "noneHint": "Debería tener el precio de la lista de precios, pero no aparece en ella: se registra a $0. Elige una entrada, pon tarifa propia o márcalo sin precio.",
+      "free": "Sin precio",
+      "freeHint": "Sin precio a propósito: se registra a $0 y ningún presupuesto lo frena."
+    },
+    "rates": {
+      "input": "Entrada $/1M",
+      "output": "Salida $/1M",
+      "cacheRead": "Lectura de caché $/1M",
+      "cacheWrite": "Escritura de caché $/1M",
+      "cacheWrite1h": "Escritura de caché 1h $/1M",
+      "reasoning": "Razonamiento $/1M",
+      "advanced": "Tarifas avanzadas",
+      "longContext": "Contexto largo",
+      "longContextHint": "A partir de esta cantidad de tokens de prompt todas las tarifas pasan a las de abajo; las vacías mantienen la tarifa base.",
+      "threshold": "Más de N tokens",
+      "perUnit": "Por unidad",
+      "perImage": "$ por imagen",
+      "perSecond": "$ por segundo",
+      "perMillionCharacters": "$ por 1M caracteres"
+    },
+    "summary": {
+      "input": "{price} entrada",
+      "output": "{price} salida",
+      "cacheRead": "{price} en caché",
+      "above": "tramo por encima de {tokens}",
+      "perImage": "{price} por imagen",
+      "perSecond": "{price} por segundo"
+    }
+  },
+  "teams": {
+    "meta": {
+      "title": "Equipos · llmtrack",
+      "detailTitle": "{name} · llmtrack"
+    },
+    "title": "Equipos",
+    "subtitle": "Los clientes y grupos a los que facturas. El presupuesto y los modelos se configuran por equipo.",
+    "create": "Crear equipo",
+    "allModels": "Todos los modelos",
+    "modelCount": "{count, plural, one {# modelo} other {# modelos}}",
+    "backToTeams": "Volver a equipos",
+    "table": {
+      "team": "Equipo",
+      "spend": "Gasto / Presupuesto",
+      "models": "Modelos",
+      "members": "Miembros",
+      "keys": "Claves",
+      "yourRole": "Tu rol",
+      "created": "Creado"
+    },
+    "empty": {
+      "title": "Todavía no hay equipos",
+      "admin": "Crea un equipo por cada cliente o grupo al que quieras facturar por separado.",
+      "member": "Todavía no estás en ningún equipo. Pide a un administrador que te añada."
+    },
+    "dialog": {
+      "createTitle": "Crear equipo",
+      "editTitle": "Editar {name}",
+      "description": "Un equipo es a quien facturas: sus claves comparten presupuesto y acceso a modelos.",
+      "create": "Crear equipo",
+      "save": "Guardar",
+      "created": "{name} creado",
+      "updated": "{name} actualizado"
+    },
+    "form": {
+      "name": "Nombre del equipo",
+      "nameRequired": "Ponle un nombre al equipo",
+      "budget": "Presupuesto máximo (USD)",
+      "budgetInvalid": "Introduce una cantidad en dólares o déjalo vacío para no poner límite",
+      "budgetHint": "Todas las claves del equipo se detienen con 429 cuando el equipo lo ha gastado.",
+      "noLimit": "Sin límite",
+      "models": "Modelos",
+      "allModelsHint": "Todos los modelos del proxy, también los que se añadan después.",
+      "someModelsHint": "Solo los modelos marcados abajo.",
+      "modelsNone": "Nada marcado: el equipo no puede llamar a ningún modelo.",
+      "limitInvalid": "Introduce un número entero de al menos 1, o déjalo vacío"
+    },
+    "detail": {
+      "subtitle": "Claves, miembros y gasto de este equipo.",
+      "edit": "Editar equipo",
+      "delete": "Eliminar",
+      "spend": "Gasto",
+      "lifetime": "Total",
+      "budget": "Presupuesto",
+      "neverStopped": "Las claves nunca se detienen",
+      "used": "{percent}% usado",
+      "activeKeys": "Claves activas",
+      "members": "Miembros",
+      "everyModel": "Todos los modelos registrados",
+      "keysTab": "Claves virtuales",
+      "membersTab": "Acceso",
+      "resets": "Se reinicia el {date}",
+      "noModels": "Sin modelos: sus claves no pueden llamar a nada",
+      "peopleTab": "Personas",
+      "yourRole": "Tú: {role}",
+      "createdOn": "Creado el {date}",
+      "spend30d": "Gasto · últimos 30 días",
+      "requests30d": "{count} peticiones",
+      "openUsage": "Abrir en Uso",
+      "ofBudget": "{spent} de {budget} de presupuesto",
+      "details": "Detalles",
+      "modelAccess": "Acceso a modelos",
+      "moreActions": "Más acciones",
+      "deleteTeam": "Eliminar equipo"
+    },
+    "members": {
+      "add": "Añadir miembro",
+      "added": "{email} añadido",
+      "email": "Email",
+      "emailLabel": "Email del usuario a añadir",
+      "emailPlaceholder": "compañero@empresa.com",
+      "role": "Rol",
+      "roleMember": "Miembro",
+      "roleAdmin": "Admin del equipo",
+      "roleOf": "Rol de {email}",
+      "roleUpdated": "Rol actualizado",
+      "remove": "Quitar a {email}",
+      "removed": "{email} quitado",
+      "empty": "Sin miembros. Los administradores globales pueden gestionar el equipo igualmente.",
+      "hint": "Usuarios del panel que pueden ver y gestionar este equipo. Solo es acceso: no afecta al gasto.",
+      "pickUser": "Elige un usuario",
+      "everyoneIn": "Todos los usuarios ya tienen acceso"
+    },
+    "deleteDialog": {
+      "title": "¿Eliminar {name}?",
+      "description": "Sus claves dejan de funcionar al momento y sus miembros pierden el acceso. Su historial de gasto se conserva en Uso y Registros.",
+      "confirm": "Eliminar equipo"
+    },
+    "search": "Buscar equipos",
+    "filters": {
+      "models": "Acceso a modelos"
+    },
+    "access": {
+      "all": "Todos los modelos",
+      "restricted": "Modelos elegidos"
+    },
+    "people": {
+      "hint": "Las personas gastan con las claves de este equipo sin entrar al panel. Asígnales una clave para ver el gasto del equipo por persona.",
+      "name": "Nombre",
+      "email": "Email",
+      "add": "Añadir al equipo",
+      "added": "{name} añadida al equipo",
+      "keys": "Claves",
+      "spend": "Gasto",
+      "empty": "Aún no hay personas.",
+      "remove": "Sacar a {name} del equipo",
+      "removed": "{name} ya no está en el equipo. Sus claves siguen en él, sin asignar.",
+      "manage": "Se crean y borran en Personas.",
+      "pick": "Elige a alguien sin equipo"
+    }
+  },
+  "usage": {
+    "meta": {
+      "title": "Uso · llmtrack"
+    },
+    "title": "Uso",
+    "subtitle": "Qué se ha gastado, quién y en qué. Las cifras para facturar a cada equipo.",
+    "team": "Equipo",
+    "key": "Clave",
+    "model": "Modelo",
+    "allTeams": "Todos los equipos",
+    "dateRange": "Periodo",
+    "spend": "Gasto",
+    "requests": "Peticiones",
+    "tokens": "Tokens",
+    "tokensHint": "{input} de entrada ({cached} en caché) · {output} de salida",
+    "errorRate": "Tasa de error",
+    "failed": "{count, plural, one {# fallida} other {# fallidas}}",
+    "dailySpend": "Gasto diario",
+    "byTeam": "Por equipo",
+    "byKey": "Por clave",
+    "byModel": "Por modelo",
+    "range": {
+      "days7": "Últimos 7 días",
+      "days30": "Últimos 30 días",
+      "days90": "Últimos 90 días",
+      "month": "Este mes",
+      "lastMonth": "Mes pasado",
+      "custom": "Rango personalizado",
+      "from": "Desde",
+      "to": "Hasta"
+    },
+    "table": {
+      "requests": "Peticiones",
+      "tokens": "Tokens",
+      "cached": "En caché",
+      "share": "Proporción",
+      "empty": "No hay peticiones en este periodo.",
+      "errors": "Errores",
+      "latency": "Latencia media"
+    },
+    "personal": "Claves personales",
+    "export": "Exportar CSV",
+    "avgCost": "Coste medio",
+    "perRequest": "Por petición",
+    "byEndUser": "Por cliente",
+    "byTag": "Por etiqueta",
+    "endUser": "Cliente",
+    "tag": "Etiqueta",
+    "endUserHint": "El cliente es el campo `user` de la petición, o la cabecera x-litellm-customer-id.",
+    "tagHint": "Las etiquetas vienen de metadata.tags o de la cabecera x-litellm-tags; una petición con varias cuenta en cada una.",
+    "avgLatency": "Latencia media",
+    "costPer1k": "Coste por 1K peticiones",
+    "ranking": "Por {group}",
+    "deletedTeam": "Equipo borrado #{id}",
+    "deletedKey": "Clave borrada #{id}",
+    "kpi": {
+      "vsPrevious": "{change} vs anterior",
+      "noPrevious": "Sin datos antes",
+      "comparedWith": "Comparado con {from} – {to}"
+    },
+    "metric": {
+      "spend": "Gasto",
+      "requests": "Peticiones",
+      "tokens": "Tokens"
+    },
+    "group": {
+      "model": "modelo",
+      "team": "equipo",
+      "key": "clave",
+      "end_user": "cliente",
+      "tag": "etiqueta",
+      "person": "Persona"
+    },
+    "latency": {
+      "ms": "{value} ms",
+      "s": "{value} s"
+    },
+    "chart": {
+      "total": "Total",
+      "other": "Otros",
+      "requests": "Peticiones",
+      "ok": "Correctas",
+      "failed": "Fallidas",
+      "tokens": "Tokens por tipo",
+      "input": "Entrada",
+      "cached": "Entrada en caché",
+      "output": "Salida",
+      "reasoning": "Razonamiento",
+      "latency": "Latencia media",
+      "noModelSplit": "Clientes y etiquetas no se desglosan por modelo: quita el filtro de modelo para verlos."
+    },
+    "chartTitle": "{metric} por {group}",
+    "splitBy": "Desglosar por",
+    "deletedPerson": "Persona eliminada #{id}",
+    "noPerson": "Nadie",
+    "person": "Persona",
+    "personalOf": "{name} · personal"
+  },
+  "logs": {
+    "meta": {
+      "title": "Registros · llmtrack"
+    },
+    "title": "Registros",
+    "subtitle": "Cada petición que pasa por el gateway: quién la envió, cuánto costó y cuánto tardó. Los prompts nunca se guardan.",
+    "clientLeft": "499 el cliente se fue",
+    "stream": "stream",
+    "cached": "{count} en caché",
+    "cacheWritten": "{count} escritos en caché",
+    "reasoning": "{count} de razonamiento",
+    "ms": "{value} ms",
+    "filters": {
+      "team": "Equipo",
+      "allTeams": "Todos los equipos",
+      "model": "Modelo",
+      "allModels": "Todos los modelos",
+      "status": "Estado",
+      "anyStatus": "Cualquier estado",
+      "success": "Correctas",
+      "errors": "Errores",
+      "window": "Periodo",
+      "key": "Clave",
+      "allKeys": "Todas las claves",
+      "endUser": "Cliente",
+      "tag": "Etiqueta"
+    },
+    "table": {
+      "time": "Hora",
+      "status": "Estado",
+      "model": "Modelo",
+      "team": "Equipo",
+      "key": "Clave",
+      "tokens": "Tokens",
+      "cost": "Coste",
+      "latency": "Latencia"
+    },
+    "empty": {
+      "title": "Todavía no hay peticiones",
+      "description": "Las peticiones aparecen aquí un momento después de terminar."
+    },
+    "personal": "Personal",
+    "window": {
+      "hour": "Última hora",
+      "day": "Últimas 24 horas",
+      "week": "Últimos 7 días",
+      "month": "Últimos 30 días",
+      "all": "Todo"
+    },
+    "detail": {
+      "requestId": "ID de petición",
+      "endpoint": "Endpoint",
+      "provider": "Proveedor",
+      "prompt": "Tokens de entrada",
+      "completion": "Tokens de salida",
+      "cachedRead": "Leídos de caché",
+      "cacheWrite": "Escritos en caché",
+      "reasoning": "Razonamiento",
+      "total": "Tokens totales",
+      "error": "Error",
+      "noContent": "Los prompts y las respuestas nunca se guardan.",
+      "deployment": "despliegue #{id}",
+      "endUser": "Cliente",
+      "tags": "Etiquetas"
+    },
+    "forEndUser": "para {user}",
+    "search": "Buscar modelo, cliente o petición"
+  },
+  "users": {
+    "meta": {
+      "title": "Usuarios · llmtrack"
+    },
+    "title": "Usuarios",
+    "subtitle": "Quién puede entrar en este panel. Invítalos con un enlace o añádelos con una contraseña.",
+    "add": "Añadir usuario",
+    "you": "tú",
+    "never": "Nunca",
+    "roleOf": "Rol de {email}",
+    "activeOf": "{email} activo",
+    "deleteOf": "Eliminar a {email}",
+    "table": {
+      "user": "Usuario",
+      "role": "Rol",
+      "active": "Activo",
+      "lastLogin": "Último acceso",
+      "created": "Creado",
+      "spend": "Gasto",
+      "keys": "Claves"
+    },
+    "create": {
+      "title": "Añadir usuario",
+      "description": "Compártele la contraseña; puede cambiarla desde sus ajustes.",
+      "submit": "Añadir usuario",
+      "done": "{email} ya puede iniciar sesión"
+    },
+    "form": {
+      "email": "Email",
+      "emailInvalid": "Introduce un email",
+      "password": "Contraseña inicial",
+      "passwordShort": "Al menos 8 caracteres",
+      "role": "Rol",
+      "roleMember": "Miembro: ve sus equipos",
+      "roleAdmin": "Administrador: gestiona todo"
+    },
+    "deleteDialog": {
+      "title": "¿Eliminar a {email}?",
+      "description": "Pierde el acceso al momento y sale de todos los equipos. Sus claves personales se eliminan; las claves de equipo que creó siguen funcionando.",
+      "confirm": "Eliminar usuario"
+    },
+    "invite": {
+      "button": "Invitar usuario",
+      "title": "Invitar usuario",
+      "description": "No se envía ningún email: se copia el enlace de invitación para que lo compartas. Sirve una vez, durante 48 horas, y la persona elige su propia contraseña.",
+      "submit": "Crear invitación",
+      "created": "Invitación para {email} creada",
+      "linkCopied": "Enlace de invitación copiado",
+      "copyLink": "Copia este enlace de invitación",
+      "copy": "Copiar enlace",
+      "pending": "Invitaciones pendientes",
+      "none": "No hay invitaciones pendientes.",
+      "expires": "Caduca el {date}",
+      "expired": "Caducada",
+      "revoked": "Invitación para {email} revocada",
+      "revokeOf": "Revocar la invitación para {email}"
+    },
+    "search": "Buscar por nombre o email",
+    "filters": {
+      "role": "Rol",
+      "status": "Estado"
+    },
+    "statusFilter": {
+      "active": "Activo",
+      "inactive": "Inactivo"
+    },
+    "tabs": {
+      "users": "Usuarios",
+      "invitations": "Invitaciones"
+    }
+  },
+  "settings": {
+    "meta": {
+      "title": "Ajustes · llmtrack"
+    },
+    "nav": {
+      "title": "Ajustes",
+      "personal": "Tu cuenta",
+      "instance": "Esta instancia",
+      "profile": "Perfil",
+      "appearance": "Apariencia",
+      "general": "General",
+      "pricing": "Precios"
+    },
+    "profile": {
+      "meta": "Perfil · llmtrack",
+      "title": "Perfil",
+      "subtitle": "Cómo apareces y cómo se lee el panel para ti.",
+      "account": "Cuenta",
+      "accountDescription": "Tu nombre se muestra en lugar de tu email donde hay espacio.",
+      "role": "Rol",
+      "name": "Nombre",
+      "namePlaceholder": "Ada Lovelace",
+      "email": "Email",
+      "emailHint": "Solo un administrador puede cambiar el email con el que inicias sesión.",
+      "save": "Guardar",
+      "saved": "Perfil guardado",
+      "regional": "Idioma y región",
+      "regionalDescription": "El idioma del panel y la zona en la que se muestran las fechas."
+    },
+    "password": {
+      "title": "Contraseña",
+      "description": "Tus otras sesiones siguen abiertas.",
+      "current": "Contraseña actual",
+      "new": "Nueva contraseña",
+      "confirm": "Repite la nueva contraseña",
+      "currentRequired": "Introduce tu contraseña actual",
+      "tooShort": "Al menos 8 caracteres",
+      "mismatch": "Las dos contraseñas no coinciden",
+      "wrongCurrent": "Esa no es tu contraseña actual",
+      "submit": "Cambiar contraseña",
+      "changed": "Contraseña cambiada"
+    },
+    "appearance": {
+      "meta": "Apariencia · llmtrack",
+      "title": "Apariencia",
+      "subtitle": "Cómo se ve el panel en este dispositivo.",
+      "theme": "Tema",
+      "themeDescription": "Sistema sigue al de tu sistema operativo."
+    },
+    "general": {
+      "meta": "General · llmtrack",
+      "title": "General",
+      "subtitle": "Ajustes que se aplican a todos en esta instancia.",
+      "gateway": "Gateway",
+      "publicUrl": "URL pública",
+      "publicUrlHint": "Dónde llegan las aplicaciones al gateway. Los ejemplos de código de las claves nuevas la usan; vacía, se usa la dirección de esta página.",
+      "save": "Guardar",
+      "saved": "Ajustes guardados"
+    },
+    "pricing": {
+      "meta": "Precios · llmtrack",
+      "title": "Precios",
+      "subtitle": "La lista de precios con la que se facturan los modelos.",
+      "source": "Origen",
+      "builtin": "Incluida",
+      "syncedSource": "Sincronizada",
+      "entries": "Modelos con precio",
+      "lastSync": "Última sincronización",
+      "never": "Nunca",
+      "url": "URL de la lista de precios",
+      "urlHint": "Un model_prices.json en el formato estándar (por defecto, la copia de llmtrack).",
+      "sync": "Sincronizar ahora",
+      "synced": "Lista sincronizada: {count} modelos",
+      "howTitle": "Cómo se calcula el precio de cada petición",
+      "howCatalog": "Un modelo elige una entrada de esta lista (o se busca a partir de su modelo del proveedor) y se factura con sus tarifas, que cambian al sincronizar la lista.",
+      "howCustom": "Un modelo con tarifas propias ignora la lista.",
+      "howCache": "Los tokens de prompt en caché, las escrituras en caché, los tokens de razonamiento y los prompts por encima del umbral de contexto largo se facturan con sus propias tarifas.",
+      "listTitle": "Lista de precios"
+    },
+    "subtitle": "Tu cuenta y, para administradores, esta instancia."
+  },
+  "limits": {
+    "budget": "Presupuesto máximo ({currency})",
+    "noLimit": "Sin límite",
+    "period": "Reinicio del presupuesto",
+    "periodNone": "Nunca",
+    "periodDaily": "Diario",
+    "periodWeekly": "Semanal",
+    "periodMonthly": "Mensual",
+    "rpm": "Peticiones por minuto",
+    "tpm": "Tokens por minuto",
+    "parallel": "Peticiones simultáneas",
+    "sections": {
+      "budget": "Presupuesto",
+      "limits": "Límites de uso"
+    },
+    "rpmLabel": "Peticiones / min",
+    "tpmLabel": "Tokens / min",
+    "parallelLabel": "A la vez",
+    "rpmShort": "{n} pet/min",
+    "tpmShort": "{n} tok/min",
+    "parallelShort": "{n} a la vez",
+    "budgetShort": "Presupuesto"
+  },
+  "invite": {
+    "meta": {
+      "title": "Aceptar invitación · llmtrack"
+    },
+    "title": "Únete a llmtrack",
+    "subtitle": "Elige una contraseña para terminar de crear tu cuenta.",
+    "email": "Email",
+    "password": "Contraseña",
+    "confirmPassword": "Repite la contraseña",
+    "passwordShort": "Al menos 8 caracteres",
+    "passwordMismatch": "Las contraseñas no coinciden",
+    "submit": "Crear cuenta",
+    "unavailableTitle": "Esta invitación no se puede usar",
+    "unavailableDescription": "Ha caducado, se revocó o ya se aceptó. Pide una nueva a un administrador."
+  },
+  "table": {
+    "clearFilter": "Quitar filtro",
+    "clearFilters": "Quitar filtros",
+    "range": "{from}–{to} de {total}",
+    "perPage": "Filas por página",
+    "pages": "Páginas",
+    "previous": "Página anterior",
+    "next": "Página siguiente",
+    "noResults": "Sin resultados",
+    "noResultsHint": "Nada coincide con estos filtros. Prueba otros o quítalos."
+  },
+  "people": {
+    "meta": {
+      "title": "Personas · llmtrack"
+    },
+    "title": "Personas",
+    "subtitle": "Quién gasta con las claves de tus equipos sin entrar al panel. Cada persona pertenece a un equipo, que es quien paga.",
+    "search": "Buscar por nombre, email o equipo",
+    "table": {
+      "name": "Nombre",
+      "team": "Equipo",
+      "keys": "Claves",
+      "spend": "Gasto",
+      "created": "Añadida"
+    },
+    "empty": {
+      "title": "Aún no hay personas",
+      "description": "Añade a quienes usan las claves de tus equipos para ver el gasto de cada equipo por persona."
+    },
+    "create": {
+      "button": "Añadir persona",
+      "title": "Añadir una persona",
+      "description": "Alguien que usa las claves de un equipo pero nunca entra aquí. Sin equipo, cualquier equipo puede añadirla después.",
+      "teamHint": "El equipo paga lo que gaste.",
+      "email": "Email (opcional)",
+      "submit": "Añadir",
+      "added": "{name} añadida"
+    },
+    "noTeam": "Sin equipo",
+    "delete": {
+      "label": "Borrar a {name}",
+      "title": "¿Borrar a {name}?",
+      "description": "Sus claves siguen en su equipo, sin asignar. Su gasto pasado se queda en los informes.",
+      "confirm": "Borrar"
+    }
+  },
+  "playground": {
+    "meta": {
+      "title": "Playground · llmtrack"
+    },
+    "title": "Playground",
+    "subtitle": "Chatea con un modelo para comprobar que responde. Va por una de tus claves, que lo paga como cualquier otra petición.",
+    "key": "Clave",
+    "keyHint": "Se aplican sus límites y su gasto cuenta, con la etiqueta «playground».",
+    "personal": "Personal",
+    "model": "Modelo",
+    "noModels": "Esta clave no tiene modelos",
+    "system": "Prompt de sistema",
+    "systemPlaceholder": "Instrucciones opcionales para el modelo",
+    "temperature": "Temperatura",
+    "maxTokens": "Máx. tokens",
+    "default": "Por defecto",
+    "clear": "Limpiar chat",
+    "empty": "Envía un mensaje para empezar.",
+    "message": "Mensaje",
+    "messagePlaceholder": "Escribe un mensaje… (Enter envía, Mayús+Enter añade una línea)",
+    "send": "Enviar",
+    "stop": "Parar",
+    "ms": "{value} ms",
+    "ttft": "primer token {value}",
+    "total": "total {value}",
+    "tokens": "{input} entrada / {output} salida",
+    "noKeys": "Necesitas una clave para usar el Playground. Crea una en Claves virtuales."
+  }
+}

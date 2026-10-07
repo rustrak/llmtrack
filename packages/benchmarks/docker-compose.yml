@@ -1,0 +1,46 @@
+# Everything under test runs in containers with the same limits, and the load
+# generator reaches each through a published port: the mock directly (the
+# baseline), llmtrack, and LiteLLM. Both gateways use a virtual key and log
+# spend, so they do the same work per request.
+x-limits: &limits
+  cpus: "${GATEWAY_CPUS:-2}"
+  mem_limit: "${GATEWAY_MEMORY:-2g}"
+
+services:
+  mock:
+    build: .
+    container_name: bench-mock
+    command: ["--latency-ms", "${MOCK_LATENCY_MS:-0}", "--chunks", "20"]
+    ports: ["9000:9000"]
+
+  llmtrack:
+    build: ../../apps/server
+    container_name: bench-llmtrack
+    <<: *limits
+    environment:
+      SECRET_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+      CREATE_SUPERUSER: "bench@example.com:benchmark-password"
+      RUST_LOG: warn
+    ports: ["4100:4000"]
+    depends_on: [mock]
+
+  litellm-db:
+    image: postgres:16-alpine
+    container_name: bench-litellm-db
+    environment:
+      POSTGRES_USER: litellm
+      POSTGRES_PASSWORD: litellm
+      POSTGRES_DB: litellm
+
+  litellm:
+    image: docker.litellm.ai/berriai/litellm:main-stable
+    container_name: bench-litellm
+    <<: *limits
+    command: ["--config", "/app/config.yaml", "--port", "4000", "--num_workers", "${LITELLM_WORKERS:-2}"]
+    environment:
+      DATABASE_URL: postgresql://litellm:litellm@litellm-db:5432/litellm
+      LITELLM_LOG: ERROR
+    volumes:
+      - ./litellm.yaml:/app/config.yaml:ro
+    ports: ["4200:4000"]
+    depends_on: [mock, litellm-db]

@@ -1,0 +1,14 @@
+DROP TABLE settings;
+DROP TABLE usage_daily_tags;
+DROP TABLE usage_daily_end_users;
+DROP TABLE usage_daily;
+DROP TABLE request_logs;
+DROP TABLE key_models;
+DROP TABLE api_keys;
+DROP TABLE people;
+DROP TABLE team_models;
+DROP TABLE models;
+DROP TABLE team_members;
+DROP TABLE teams;
+DROP TABLE invitations;
+DROP TABLE users;

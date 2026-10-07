@@ -1,0 +1,83 @@
+[package]
+name = "llmtrack"
+version = "0.0.0"
+edition = "2021"
+authors = ["Rustrak Team"]
+description = "Lightweight LLM gateway: one OpenAI-compatible endpoint, per-team keys and spend tracking"
+license = "GPL-3.0-only"
+
+[dependencies]
+# Web framework. HTTP/2 stays off for the same reason as in Rustrak (h2 0.3).
+actix-web = { version = "4.15.0", default-features = false, features = [
+    "macros",
+    "compress-gzip",
+    "cookies",
+] }
+actix-files = "0.7.0"
+# Audio uploads (`/v1/audio/transcriptions`) are multipart.
+actix-multipart = "0.8"
+actix-session = { version = "0.11", features = ["cookie-session"] }
+
+argon2 = "0.6.0"
+tokio = { version = "1.53.2", features = ["full"] }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.151"
+env_logger = "0.11.11"
+log = "0.4.34"
+dotenvy = "0.15.7"
+chrono = { version = "0.4.45", features = ["serde"] }
+# time 0.3.48 broke cookie 0.16.2 (E0119); same pin as Rustrak.
+time = "=0.3.53"
+sqlx = { version = "0.9.0", features = [
+    "runtime-tokio",
+    "tls-rustls",
+    "chrono",
+    "migrate",
+] }
+uuid = { version = "1.27.0", features = ["v4", "serde"] }
+thiserror = "2.0.21"
+rand = "0.10.3"
+hex = "0.4.3"
+sha2 = "0.11.0"
+bytes = "1.12.1"
+# Decompresses the bundled price snapshot.
+flate2 = "1.1.10"
+futures-util = "0.3.34"
+
+# Upstream LLM providers. `stream` lets the gateway pipe SSE through without
+# buffering a response.
+reqwest = { version = "0.13.5", default-features = false, features = [
+    "json",
+    "rustls",
+    "stream",
+    "multipart",
+] }
+
+# Provider API keys are encrypted at rest.
+aes-gcm = "0.11.1"
+
+# glibc malloc keeps per-thread arenas forever; same reason as Rustrak.
+mimalloc = "0.1.52"
+
+[dev-dependencies]
+actix-http = "3.18.12"
+tempfile = "3.27.0"
+testcontainers = "0.27.3"
+testcontainers-modules = { version = "0.15.0", features = ["postgres"] }
+
+[[bin]]
+name = "llmtrack"
+path = "src/main.rs"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
+# panic = "abort" stays off: actix isolates a panicking handler with
+# catch_unwind, abort would take the whole gateway down.
+
+[features]
+default = ["sqlite"]
+postgres = ["sqlx/postgres"]
+sqlite = ["sqlx/sqlite"]

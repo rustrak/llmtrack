@@ -1,0 +1,45 @@
+name: "Rust Security"
+
+# One tool. cargo-deny checks the RustSec advisory database and the licence
+# allow-list in deny.toml, from a prebuilt binary, in about ten seconds.
+#
+# Two more jobs used to run here. `cargo audit` read the same RustSec database
+# cargo-deny does, and spent three minutes compiling itself from source on
+# every PR first. A clippy job linted the postgres and sqlite feature sets with
+# its own target directory, a third copy of the one CI already builds; those
+# lints now run in ci.yml's `rust-lint` job.
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "apps/server/**"
+      - "deny.toml"
+  # No `branches` filter: it matches the PR's base, and a PR onto a feature
+  # branch carries the same dependencies as one onto main.
+  pull_request:
+    paths:
+      - "apps/server/**"
+      - "deny.toml"
+  schedule:
+    - cron: "0 4 * * 1" # Weekly Monday 04:00 UTC. Catches new advisories.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cargo-deny:
+    name: "cargo-deny (advisories + licenses)"
+    # Skip the automated "chore: version packages" PR - see ci.yml.
+    if: ${{ !(startsWith(github.head_ref, 'changeset-release/') && github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # v2.1.1
+        with:
+          command: check advisories licenses
+          arguments: --all-features
+          manifest-path: apps/server/Cargo.toml

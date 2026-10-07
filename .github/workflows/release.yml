@@ -1,0 +1,230 @@
+name: Release
+
+# Two release lines, one workflow.
+#
+# `main` is the stable line: every merge of the version PR cuts `vX.Y.Z` and
+# moves the `latest` tags. `next` is the prerelease line for a change too
+# large to land stable first: the same flow, except that `.changeset/pre.json`
+# exists there (`changeset pre enter rc`), so versions come out as
+# `vX.Y.Z-rc.N`, the GitHub release is marked prerelease, and
+# docker-publish.yml moves the `next` tags instead of `latest`. Fixes keep
+# landing on `main` as before and reach `next` by merging `main` into it.
+#
+# Promoting `next`: `changeset pre exit` there, merge the version PR that
+# drops the suffix, then merge `next` into `main`. `pre.json` must never reach
+# `main` while it is in pre mode, or `main` starts cutting prereleases too.
+on:
+  push:
+    branches: [main, next]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  # `pnpm version-packages` ends in `cargo update --workspace`. Same settings
+  # as ci.yml: no incremental state to keep, no debugger to serve.
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
+  CARGO_PROFILE_DEV_DEBUG: "line-tables-only"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.PAT_TOKEN }}
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+      # Rust from rust-toolchain.toml. No cache: this job runs once per
+      # release and its compile is not worth a cache entry.
+      - uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
+        with:
+          cache: false
+
+      - run: pnpm install --frozen-lockfile
+
+      # Check if this is a version commit (no pending changesets = versions were
+      # just bumped).
+      #
+      # Top level only, on purpose. In prerelease mode `changeset version`
+      # (@changesets/cli 3) moves each consumed changeset into
+      # `.changeset/pre/` rather than deleting it, so it can be replayed into
+      # the final changelog on `pre exit`. A recursive count would see those
+      # forever and never cut a release; the files still at the top level are
+      # exactly the ones no version has consumed yet.
+      - name: Check for changesets
+        id: check
+        run: |
+          CHANGESETS=$(find .changeset -maxdepth 1 -name '*.md' ! -name README.md | wc -l | tr -d ' ')
+          echo "changesets_count=$CHANGESETS"
+
+          if [ "$CHANGESETS" -eq "0" ]; then
+            echo "has_changesets=false" >> $GITHUB_OUTPUT
+            echo "📦 No changesets found - this might be a version commit"
+          else
+            echo "has_changesets=true" >> $GITHUB_OUTPUT
+            echo "📝 Found $CHANGESETS changeset(s)"
+          fi
+
+      # If there ARE changesets, create/update the Version Packages PR.
+      #
+      # Nothing reviews this PR. It carries only version bumps and generated
+      # changelogs, written by changesets from commits that were already
+      # reviewed on their own PRs. Three separate mechanisms enforce that:
+      #   - CI, CodeQL and rust-security skip on a head branch under
+      #     `changeset-release/` (changesets/action names it after the base).
+      #   - The `skip-review` label below silences CodeRabbit and Greptile.
+      #     Neither bot can filter by head branch, and the PR is authored by a
+      #     real account through PAT_TOKEN, so author filtering is out too.
+      #   - The title keyword "version packages" is a second, race-free guard
+      #     for the same two bots: the label can only be applied after the PR
+      #     exists, and a bot may already have picked it up by then.
+      # Changing the title or the label name re-enables the bots here.
+      # The action opens the PR against the branch that triggered it, so on
+      # `next` the head is `changeset-release/next` and the base is `next`.
+      # v2 is the line built for @changesets/cli 3. v1 still reads a
+      # `.changeset/` subdirectory as a v1-format changeset, so the `pre/`
+      # folder cli 3 fills in prerelease mode made it fail on `pre/changes.md`.
+      - name: Create Release Pull Request
+        id: changesets
+        if: steps.check.outputs.has_changesets == 'true'
+        uses: changesets/action@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
+        with:
+          version-script: pnpm version-packages
+          pr-title: "chore: version packages"
+          commit-message: "chore: version packages"
+          push-with-git-cli: true
+          github-token: ${{ secrets.PAT_TOKEN }}
+
+      # `skip-review` is a general opt-out, not a release-only one: put it on
+      # any PR by hand and the AI reviewers stay quiet. Created here with
+      # --force so the label never has to exist as manual repo state.
+      - name: Label the version PR as skip-review
+        if: steps.changesets.outputs.pr-number
+        run: |
+          gh label create skip-review \
+            --color ededed \
+            --description "Skip the AI code reviewers (CodeRabbit, Greptile)" \
+            --force
+          gh pr edit "${{ steps.changesets.outputs.pr-number }}" \
+            --add-label skip-review
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
+
+      # If there are NO changesets, we just merged a version PR - cut the release.
+      # The shipped artifacts (server, dashboard) are a `fixed` group in
+      # .changeset/config.json, so they share one version and ship together: one
+      # tag, one GitHub release.
+      - name: Create release
+        if: steps.check.outputs.has_changesets == 'false'
+        run: |
+          set -euo pipefail
+
+          VERSION=$(node -p "require('./apps/server/package.json').version")
+          TAG="v$VERSION"
+
+          if git tag -l | grep -qx "$TAG"; then
+            echo "Tag $TAG already exists, nothing to release"
+            exit 0
+          fi
+
+          # A hyphen is semver's prerelease marker: `0.15.0-rc.1`. Everything
+          # below that reads the version keys off it, and docker-publish.yml
+          # makes the same call from the tag alone.
+          PRERELEASE=false
+          if [[ "$VERSION" == *-* ]]; then
+            PRERELEASE=true
+          fi
+          echo "Releasing $TAG (prerelease: $PRERELEASE)"
+
+          # Sanity check: the fixed group must be aligned. If it drifted, the
+          # single tag would be a lie about what the image contains.
+          for pkg in apps/dashboard; do
+            PKG_VERSION=$(node -p "require('./$pkg/package.json').version")
+            if [[ "$PKG_VERSION" != "$VERSION" ]]; then
+              echo "::error::$pkg is at $PKG_VERSION but the release is $VERSION."
+              echo "::error::The fixed group in .changeset/config.json is out of sync."
+              exit 1
+            fi
+          done
+
+          # Release body: the changesets-generated server CHANGELOG section.
+          NOTES_FILE=$(mktemp)
+          awk -v v="$VERSION" '$0=="## "v{f=1;next} f&&/^## /{exit} f' \
+            apps/server/CHANGELOG.md > "$NOTES_FILE"
+
+          RELEASE_TITLE="llmtrack v$VERSION"
+
+          {
+            echo
+            echo "## Artifacts"
+            echo
+            echo '```'
+            echo "rustrak/llmtrack:v$VERSION"
+            echo "rustrak/llmtrack:v$VERSION-postgres"
+            echo '```'
+            echo
+          } >> "$NOTES_FILE"
+
+          # Which moving tags this build took. Named here because the notes are
+          # what an operator reads to decide whether `latest` changed.
+          if [[ "$PRERELEASE" == "true" ]]; then
+            echo "Prerelease: also tagged \`next\` and \`next-postgres\` on Docker Hub. \`latest\` does not move." >> "$NOTES_FILE"
+          else
+            echo "Also tagged \`latest\` and \`postgres\` on Docker Hub." >> "$NOTES_FILE"
+          fi
+
+          # Pin where the generated "Full Changelog" range starts.
+          #
+          # A stable release compares against the previous stable one: sorted
+          # by version, `v0.15.0-rc.3` would otherwise outrank `v0.14.14` and a
+          # `v0.14.15` cut from main would list the whole prerelease line as
+          # its own. A prerelease compares against whatever came last.
+          if [[ "$PRERELEASE" == "true" ]]; then
+            PREV_TAG=$(git tag -l 'v[0-9]*' --sort=-v:refname | head -1)
+          else
+            # `awk` rather than `grep -v | head`: with no stable tag at all grep
+            # exits 1, and under `pipefail` that would abort the step.
+            PREV_TAG=$(git tag -l 'v[0-9]*' --sort=-v:refname | awk '!/-/ && !seen++')
+          fi
+
+          # --target makes the API create the tag together with the release, so a
+          # failed call leaves no orphaned ref and the next run retries cleanly.
+          # Tagging separately beforehand would strand the tag on failure, and the
+          # guard above would then read it as "already released" and skip forever.
+          #
+          # --generate-notes appends GitHub's own PR and contributor list after
+          # the body above, per the Releases API.
+          #
+          # `--prerelease` keeps a `next` build out of `/releases/latest`, which
+          # is what anyone polling for updates reads.
+          GH_ARGS=(
+            "$TAG"
+            --target "${{ github.sha }}"
+            --title "$RELEASE_TITLE"
+            --notes-file "$NOTES_FILE"
+            --generate-notes
+          )
+          if [[ "$PRERELEASE" == "true" ]]; then
+            GH_ARGS+=(--prerelease)
+          else
+            GH_ARGS+=(--latest)
+          fi
+          if [[ -n "$PREV_TAG" ]]; then
+            echo "Generating notes since $PREV_TAG"
+            GH_ARGS+=(--notes-start-tag "$PREV_TAG")
+          fi
+
+          gh release create "${GH_ARGS[@]}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}

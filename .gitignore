@@ -1,0 +1,26 @@
+# Dependencies
+node_modules
+
+# Local env files
+.env
+.env.local
+
+# Build outputs
+dist
+target
+*.tsbuildinfo
+apps/server/static
+.turbo
+coverage
+
+# Local databases
+*.db
+*.db-shm
+*.db-wal
+
+# Misc
+.DS_Store
+.idea
+
+# Benchmark runs (results/REPORT.md is the one worth keeping)
+packages/benchmarks/results/*/

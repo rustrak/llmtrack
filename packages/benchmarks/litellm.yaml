@@ -1,0 +1,8 @@
+model_list:
+  - model_name: bench-model
+    litellm_params:
+      model: openai/bench-model
+      api_base: http://mock:9000/v1
+      api_key: none
+general_settings:
+  master_key: sk-bench-master

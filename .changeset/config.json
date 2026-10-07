@@ -1,0 +1,12 @@
+{
+  "$schema": "https://unpkg.com/@changesets/config@4.0.0/schema.json",
+  "changelog": ["@changesets/changelog-github", { "repo": "rustrak/llmtrack" }],
+  "commit": false,
+  "fixed": [["@llmtrack/server", "@llmtrack/dashboard"]],
+  "linked": [],
+  "access": "public",
+  "baseBranch": "main",
+  "privatePackages": { "version": true, "tag": false },
+  "updateInternalDependencies": "patch",
+  "ignore": ["@llmtrack/benchmarks"]
+}

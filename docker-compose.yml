@@ -1,0 +1,15 @@
+# Development PostgreSQL for the `postgres` feature.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: llmtrack
+      POSTGRES_PASSWORD: llmtrack
+      POSTGRES_DB: llmtrack
+    ports:
+      - "5432:5432"
+    volumes:
+      - llmtrack-postgres:/var/lib/postgresql/data
+
+volumes:
+  llmtrack-postgres:

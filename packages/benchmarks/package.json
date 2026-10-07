@@ -1,0 +1,13 @@
+{
+  "name": "@llmtrack/benchmarks",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "cargo build --release",
+    "test": "cargo test --locked",
+    "lint": "cargo clippy --all-targets --locked -- -D warnings",
+    "format": "cargo fmt",
+    "format:check": "cargo fmt -- --check",
+    "bench": "bash scripts/compare.sh"
+  }
+}
