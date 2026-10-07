@@ -1,6 +1,6 @@
 [package]
 name = "llmtrack"
-version = "0.0.0"
+version = "0.1.0"
 edition = "2021"
 authors = ["Rustrak Team"]
 description = "Lightweight LLM gateway: one OpenAI-compatible endpoint, per-team keys and spend tracking"
