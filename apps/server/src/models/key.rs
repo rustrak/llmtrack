@@ -1,6 +1,7 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
+use super::label::LabelRef;
 use super::patch;
 use super::team::ModelRef;
 
@@ -20,6 +21,7 @@ pub struct KeyResponse {
     pub key_hint: String,
     /// Empty means every model the team (or, for a personal key, the proxy) has.
     pub models: Vec<ModelRef>,
+    pub labels: Vec<LabelRef>,
     pub max_budget_usd: Option<f64>,
     /// Spend in the current budget period.
     pub spend_usd: f64,
@@ -54,6 +56,9 @@ pub struct CreateKeyRequest {
     pub name: String,
     #[serde(default)]
     pub models: Vec<i64>,
+    /// Label ids.
+    #[serde(default)]
+    pub labels: Vec<i64>,
     pub max_budget_usd: Option<f64>,
     pub budget_duration: Option<String>,
     pub rpm_limit: Option<i64>,
@@ -66,6 +71,8 @@ pub struct CreateKeyRequest {
 pub struct UpdateKeyRequest {
     pub name: Option<String>,
     pub models: Option<Vec<i64>>,
+    /// Label ids; replaces the key's.
+    pub labels: Option<Vec<i64>>,
     #[serde(default, deserialize_with = "patch")]
     pub person_id: Option<Option<i64>>,
     #[serde(default, deserialize_with = "patch")]

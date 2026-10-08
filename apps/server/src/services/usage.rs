@@ -31,6 +31,8 @@ pub struct UsageQuery {
     /// Only the keys' spend while assigned to this person. Like the model,
     /// customers and tags do not carry it.
     pub person_id: Option<i64>,
+    /// Only the keys that carry this label now, all their spend included.
+    pub label_id: Option<i64>,
 }
 
 #[derive(Debug, Default, Serialize, Clone, Copy)]
@@ -228,13 +230,18 @@ const SUMS: &str = "
     CAST(COALESCE(SUM(u.reasoning_tokens), 0) AS BIGINT) AS reasoning_tokens,
     CAST(COALESCE(SUM(u.latency_ms), 0) AS BIGINT) AS latency_ms";
 
+/// Rows of the keys carrying label `$9`, when one is asked for.
+const LABELLED: &str = "(CAST($9 AS BIGINT) IS NULL
+    OR u.key_id IN (SELECT key_id FROM key_labels WHERE label_id = $9))";
+
 /// Rows `user` may see: everything for an admin; their teams' and their
 /// personal keys' otherwise.
 const VISIBLE: &str = "($3 OR u.user_id = $4
     OR u.team_id IN (SELECT team_id FROM team_members WHERE user_id = $4))";
 
 /// The rollup rows of `table` a report covers. Binds: `$1`..`$2` the days,
-/// `$3` admin, `$4` the user, `$5` team, `$6` key, `$7` model, `$8` person.
+/// `$3` admin, `$4` the user, `$5` team, `$6` key, `$7` model, `$8` person,
+/// `$9` label.
 ///
 /// Customers and tags are rolled up without the model: a model filter
 /// matches none of their rows rather than all of them.
@@ -250,7 +257,7 @@ fn filters(table: &str) -> String {
     format!(
         "u.day >= $1 AND u.day <= $2 AND {VISIBLE}
          AND ($5 IS NULL OR u.team_id = $5) AND ($6 IS NULL OR u.key_id = $6)
-         AND {model} AND {person}"
+         AND {model} AND {person} AND {LABELLED}"
     )
 }
 
@@ -307,6 +314,7 @@ pub async fn report(pool: &DbPool, user: &User, query: &UsageQuery) -> AppResult
             .bind(query.key_id)
             .bind(model)
             .bind(query.person_id)
+            .bind(query.label_id)
             .fetch_all(pool)
     };
 
@@ -324,6 +332,7 @@ pub async fn report(pool: &DbPool, user: &User, query: &UsageQuery) -> AppResult
     .bind(query.key_id)
     .bind(model)
     .bind(query.person_id)
+    .bind(query.label_id)
     .fetch_one(pool)
     .await?
     .totals();
@@ -388,6 +397,7 @@ pub async fn report(pool: &DbPool, user: &User, query: &UsageQuery) -> AppResult
     .bind(query.key_id)
     .bind(model)
     .bind(query.person_id)
+    .bind(query.label_id)
     .fetch_all(pool)
     .await?
     .into_iter()
@@ -604,6 +614,7 @@ pub async fn lines(
     .bind(query.key_id)
     .bind(query.model.as_deref().filter(|m| !m.is_empty()))
     .bind(query.person_id)
+    .bind(query.label_id)
     .fetch_all(pool)
     .await?)
 }
@@ -638,8 +649,10 @@ pub async fn requests(
            AND ($5 IS NULL OR l.team_id = $5) AND ($6 IS NULL OR l.key_id = $6)
            AND (CAST($7 AS TEXT) IS NULL OR l.model_name = $7)
            AND CAST($8 AS BIGINT) IS NULL
+           AND (CAST($9 AS BIGINT) IS NULL
+                OR l.key_id IN (SELECT key_id FROM key_labels WHERE label_id = $9))
          ORDER BY l.created_at, l.id
-         LIMIT $9",
+         LIMIT $10",
     )
     .bind(start)
     .bind(end)
@@ -649,6 +662,7 @@ pub async fn requests(
     .bind(query.key_id)
     .bind(query.model.as_deref().filter(|m| !m.is_empty()))
     .bind(query.person_id)
+    .bind(query.label_id)
     .bind(limit)
     .fetch_all(pool)
     .await?)

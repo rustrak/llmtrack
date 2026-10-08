@@ -11,6 +11,7 @@ import {
   CreateKeyButton,
   KeyManager,
 } from '@/features/key/ui/components/key-manager';
+import { listLabels } from '@/features/label/api/queries';
 import { listModels } from '@/features/model/api/queries';
 import { getSettings } from '@/features/settings/api/queries';
 import { deleteTeam } from '@/features/team/api/mutations';
@@ -59,12 +60,13 @@ export const Route = createFileRoute('/_authenticated/teams/$teamId')({
     const id = Number(params.teamId);
     const isAdmin =
       context.state === 'authenticated' && context.user.role === 'admin';
-    const [team, keys, models, settings, unassigned, users, usage] =
+    const [team, keys, models, labels, settings, unassigned, users, usage] =
       await Promise.all([
         getTeam(id),
         // ponytail: a team's first 200 keys; page it like /keys if teams get bigger.
         listKeys({ team_id: id, per_page: MAX_PAGE_SIZE }),
         listModels({ per_page: MAX_PAGE_SIZE }),
+        listLabels({ per_page: MAX_PAGE_SIZE }),
         getSettings(),
         // People without a team and the user list are for global admins only.
         isAdmin
@@ -79,6 +81,7 @@ export const Route = createFileRoute('/_authenticated/teams/$teamId')({
       team: unwrap(team),
       keys: unwrap(keys).data,
       models: unwrap(models).data,
+      labels: unwrap(labels).data,
       publicUrl: unwrap(settings).public_url,
       usage: unwrap(usage),
     };
@@ -99,7 +102,7 @@ function TeamPage() {
   const t = useTranslations('teams');
   const tKeys = useTranslations('keys');
   const tUsage = useTranslations('usage');
-  const { team, keys, models, publicUrl, unassigned, users, usage } =
+  const { team, keys, models, labels, publicUrl, unassigned, users, usage } =
     Route.useLoaderData();
   const user = useCurrentUser();
   const router = useRouter();
@@ -199,6 +202,7 @@ function TeamPage() {
             keys={keys}
             teams={[team]}
             allModels={modelRefs}
+            labels={labels}
             teamId={team.id}
             publicUrl={publicUrl}
             toolbar={
@@ -206,6 +210,7 @@ function TeamPage() {
                 <CreateKeyButton
                   teams={[team]}
                   allModels={modelRefs}
+                  labels={labels}
                   teamId={team.id}
                   publicUrl={publicUrl}
                 />

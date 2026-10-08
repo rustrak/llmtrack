@@ -43,6 +43,7 @@ export interface ReportScope {
   key_id?: number;
   model?: string;
   person_id?: number;
+  label_id?: number;
 }
 
 export const MAX_MARKUP = 1000;
@@ -69,6 +70,7 @@ export function reportUrl(scope: ReportScope, options: ReportOptions): string {
     key_id: scope.key_id,
     model: scope.model,
     person_id: scope.person_id,
+    label_id: scope.label_id,
     // The server's default is every section but the requests.
     sections:
       sections.join(',') === DEFAULT_SECTIONS.join(',')

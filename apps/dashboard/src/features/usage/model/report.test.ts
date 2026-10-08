@@ -93,6 +93,13 @@ describe('narrowedBy', () => {
     ).toEqual(['teams', 'people', 'models']);
   });
 
+  it('splits every breakdown by a label, so none is dropped', () => {
+    expect(narrowedBy({ ...scope, label_id: 3 })).toEqual([]);
+    expect(reportUrl({ ...scope, label_id: 3 }, options)).toContain(
+      '&label_id=3',
+    );
+  });
+
   it('groups every section exactly once', () => {
     const grouped = SECTION_GROUPS.flatMap((g) => g.sections);
     expect([...grouped].sort()).toEqual([...REPORT_SECTIONS].sort());

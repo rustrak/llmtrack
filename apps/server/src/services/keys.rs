@@ -7,6 +7,7 @@ use crate::error::{AppError, AppResult, FieldErrorCode};
 use crate::models::key::{
     CreateKeyRequest, CreatedKey, KeyListQuery, KeyResponse, UpdateKeyRequest,
 };
+use crate::models::label::LabelRef;
 use crate::models::limits::{budget_period, next_reset, positive_limit};
 use crate::models::list::{ListQuery, Paged};
 use crate::models::money::{nanos_to_usd, opt_usd, usd_to_nanos};
@@ -14,8 +15,8 @@ use crate::models::required_name;
 use crate::models::team::ModelRef;
 use crate::models::user::User;
 use crate::services::access::{team_access, TeamAccess};
-use crate::services::people;
 use crate::services::teams::{dedup, ensure_model_exists, period_spend};
+use crate::services::{labels, people};
 
 #[derive(sqlx::FromRow)]
 struct KeyRow {
@@ -126,11 +127,13 @@ pub async fn list_for(
     .fetch_all(pool)
     .await?;
     let mut models = key_models(pool).await?;
+    let mut key_labels = labels::by_key(pool).await?;
     let keys = rows
         .into_iter()
         .map(|row| {
             let key_models = models.remove(&row.id).unwrap_or_default();
-            to_response(row, key_models)
+            let labels = key_labels.remove(&row.id).unwrap_or_default();
+            to_response(row, key_models, labels)
         })
         .collect();
     Ok(list.paged(keys, total))
@@ -158,7 +161,8 @@ pub async fn get(pool: &DbPool, id: i64) -> AppResult<KeyResponse> {
             .await?
             .ok_or_else(|| AppError::NotFound(format!("key {id}")))?;
     let models = key_models(pool).await?.remove(&id).unwrap_or_default();
-    Ok(to_response(row, models))
+    let labels = labels::by_key(pool).await?.remove(&id).unwrap_or_default();
+    Ok(to_response(row, models, labels))
 }
 
 pub async fn create(pool: &DbPool, user: &User, req: &CreateKeyRequest) -> AppResult<CreatedKey> {
@@ -206,6 +210,7 @@ pub async fn create(pool: &DbPool, user: &User, req: &CreateKeyRequest) -> AppRe
     .fetch_one(&mut *tx)
     .await?;
     replace_models(&mut tx, id, req.team_id, &req.models).await?;
+    labels::replace_for_key(&mut tx, id, &req.labels).await?;
     tx.commit().await?;
     Ok(CreatedKey {
         info: get(pool, id).await?,
@@ -283,6 +288,9 @@ pub async fn update(
     }
     if let Some(models) = &req.models {
         replace_models(&mut tx, id, key.team_id, models).await?;
+    }
+    if let Some(label_ids) = &req.labels {
+        labels::replace_for_key(&mut tx, id, label_ids).await?;
     }
     tx.commit().await?;
     get(pool, id).await
@@ -437,7 +445,7 @@ async fn key_models(pool: &DbPool) -> AppResult<HashMap<i64, Vec<ModelRef>>> {
     Ok(by_key)
 }
 
-fn to_response(row: KeyRow, models: Vec<ModelRef>) -> KeyResponse {
+fn to_response(row: KeyRow, models: Vec<ModelRef>, labels: Vec<LabelRef>) -> KeyResponse {
     KeyResponse {
         id: row.id,
         name: row.name,
@@ -449,6 +457,7 @@ fn to_response(row: KeyRow, models: Vec<ModelRef>) -> KeyResponse {
         person_name: row.person_name,
         key_hint: format!("sk-...{}", row.last4),
         models,
+        labels,
         max_budget_usd: opt_usd(row.max_budget_nanos),
         spend_usd: nanos_to_usd(period_spend(row.spend_nanos, row.budget_reset_at)),
         budget_duration: row.budget_duration,

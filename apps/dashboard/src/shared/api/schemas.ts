@@ -191,6 +191,36 @@ export const teamDetailSchema = teamSchema.extend({
 });
 export type TeamDetail = z.infer<typeof teamDetailSchema>;
 
+/** The palette a label is drawn in: `models/label.rs` on the server. */
+export const LABEL_COLORS = [
+  'gray',
+  'red',
+  'orange',
+  'amber',
+  'green',
+  'teal',
+  'blue',
+  'violet',
+  'pink',
+] as const;
+export type LabelColor = (typeof LABEL_COLORS)[number];
+
+/** A label as a key shows it. */
+export const labelRefSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  color: z.enum(LABEL_COLORS),
+});
+export type LabelRef = z.infer<typeof labelRefSchema>;
+
+export const labelSchema = labelRefSchema.extend({
+  description: z.string().nullable(),
+  created_at: z.string(),
+  /** Active keys that carry it. */
+  key_count: z.number(),
+});
+export type Label = z.infer<typeof labelSchema>;
+
 export const keySchema = z.object({
   id: z.number(),
   name: z.string(),
@@ -204,6 +234,7 @@ export const keySchema = z.object({
   person_name: z.string().nullable(),
   key_hint: z.string(),
   models: z.array(modelRefSchema),
+  labels: z.array(labelRefSchema),
   max_budget_usd: z.number().nullable(),
   spend_usd: z.number(),
   budget_duration: z.string().nullable(),

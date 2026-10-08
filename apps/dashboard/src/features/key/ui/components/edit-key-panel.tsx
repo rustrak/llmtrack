@@ -3,7 +3,7 @@ import { KeyRound } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useTranslations } from 'use-intl';
-import type { ApiKey, ModelRef } from '@/shared/api/schemas';
+import type { ApiKey, LabelRef, ModelRef } from '@/shared/api/schemas';
 import { LimitSections } from '@/shared/ui/components/limit-sections';
 import { ModelPicker } from '@/shared/ui/components/model-picker';
 import { Button } from '@/shared/ui/components/shadcn/button';
@@ -34,12 +34,13 @@ import {
   type UpdateKeyValues,
   updateKeySchema,
 } from '../../model/key-form';
-import { PersonField } from './create-key-panel';
+import { LabelsField, PersonField } from './create-key-panel';
 
 interface EditKeyProps {
   apiKey: ApiKey;
   choices: ModelRef[];
   people?: { id: number; name: string }[];
+  labels: LabelRef[];
   onClose: () => void;
   onSaved: () => void;
 }
@@ -74,6 +75,7 @@ function EditKeyForm({
   apiKey,
   choices,
   people,
+  labels,
   onClose,
   onSaved,
 }: EditKeyProps) {
@@ -144,6 +146,7 @@ function EditKeyForm({
               </FormItem>
             )}
           />
+          <LabelsField labels={labels} />
           <div className="space-y-2">
             <LimitSections />
             <PanelSection

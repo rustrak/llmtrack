@@ -11,6 +11,7 @@ import {
   DataTableEmpty,
   SortHead,
 } from '@/shared/ui/components/data-table';
+import { LabelBadges } from '@/shared/ui/components/label-badge';
 import { Badge } from '@/shared/ui/components/shadcn/badge';
 import { SpendBar } from '@/shared/ui/components/spend-bar';
 import { useMoney } from '@/shared/ui/hooks/use-money';
@@ -136,6 +137,7 @@ export function KeysTable({
                   <span className="font-sans"> · {key.person_name}</span>
                 )}
               </span>
+              <LabelBadges labels={key.labels} />
             </div>
           </Cell>
           {showTeam && (

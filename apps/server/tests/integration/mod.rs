@@ -4,6 +4,7 @@ mod endpoints_test;
 mod invitations_test;
 mod key_lifecycle_test;
 mod keys_test;
+mod labels_test;
 mod management_api_test;
 mod models_test;
 mod parallel_test;

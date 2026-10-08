@@ -72,6 +72,7 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
     .configure(routes::people::configure)
     .configure(routes::playground::configure)
     .configure(routes::keys::configure)
+    .configure(routes::labels::configure)
     .configure(routes::usage::configure)
     .configure(routes::settings::configure)
     .configure(routes::proxy::configure);

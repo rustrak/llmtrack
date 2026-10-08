@@ -37,7 +37,9 @@
     "hidePassword": "Ocultar contraseña",
     "sidebar": "Barra lateral",
     "sidebarMobileDescription": "Muestra la barra lateral en móvil.",
-    "toggleSidebar": "Mostrar u ocultar la barra lateral"
+    "toggleSidebar": "Mostrar u ocultar la barra lateral",
+    "noLabelsYet": "Aún no hay etiquetas.",
+    "createLabels": "Créalas en Etiquetas"
   },
   "formErrors": {
     "required": "Este campo es obligatorio",
@@ -92,7 +94,8 @@
     "builtBy": "Hecho por",
     "breadcrumb": "Ruta de navegación",
     "people": "Personas",
-    "playground": "Playground"
+    "playground": "Playground",
+    "labels": "Etiquetas"
   },
   "keys": {
     "meta": {
@@ -160,7 +163,9 @@
       "personNone": "Nadie",
       "personHint": "De quién es el gasto de esta clave. Lo sigue pagando el equipo.",
       "personEmpty": "Este equipo aún no tiene personas.",
-      "personAdd": "Añádelas en Personas"
+      "personAdd": "Añádelas en Personas",
+      "labels": "Etiquetas",
+      "labelsHint": "El uso se puede filtrar por ellas."
     },
     "expiry": {
       "never": "Nunca",
@@ -583,11 +588,11 @@
     "avgCost": "Coste medio",
     "perRequest": "Por petición",
     "byEndUser": "Por cliente",
-    "byTag": "Por etiqueta",
+    "byTag": "Por tag",
     "endUser": "Cliente",
-    "tag": "Etiqueta",
+    "tag": "Tag",
     "endUserHint": "El cliente es el campo `user` de la petición, o la cabecera x-litellm-customer-id.",
-    "tagHint": "Las etiquetas vienen de metadata.tags o de la cabecera x-litellm-tags; una petición con varias cuenta en cada una.",
+    "tagHint": "Los tags vienen de metadata.tags o de la cabecera x-litellm-tags; una petición con varios cuenta en cada uno.",
     "avgLatency": "Latencia media",
     "costPer1k": "Coste por 1K peticiones",
     "ranking": "Por {group}",
@@ -608,7 +613,7 @@
       "team": "equipo",
       "key": "clave",
       "end_user": "cliente",
-      "tag": "etiqueta",
+      "tag": "tag",
       "person": "Persona"
     },
     "latency": {
@@ -627,7 +632,7 @@
       "output": "Salida",
       "reasoning": "Razonamiento",
       "latency": "Latencia media",
-      "noModelSplit": "Clientes y etiquetas no se desglosan por modelo: quita el filtro de modelo para verlos."
+      "noModelSplit": "Clientes y tags no se desglosan por modelo: quita el filtro de modelo para verlos."
     },
     "chartTitle": "{metric} por {group}",
     "splitBy": "Desglosar por",
@@ -699,7 +704,7 @@
           "label": "Por cliente final"
         },
         "tags": {
-          "label": "Por etiqueta"
+          "label": "Por tag"
         },
         "daily": {
           "label": "Día a día"
@@ -730,7 +735,8 @@
       "costShown": "coste visible",
       "atCost": "A coste",
       "noNotes": "Sin notas"
-    }
+    },
+    "label": "Etiqueta"
   },
   "logs": {
     "meta": {
@@ -757,7 +763,7 @@
       "key": "Clave",
       "allKeys": "Todas las claves",
       "endUser": "Cliente",
-      "tag": "Etiqueta"
+      "tag": "Tag"
     },
     "table": {
       "time": "Hora",
@@ -795,7 +801,7 @@
       "noContent": "Los prompts y las respuestas nunca se guardan.",
       "deployment": "despliegue #{id}",
       "endUser": "Cliente",
-      "tags": "Etiquetas"
+      "tags": "Tags"
     },
     "forEndUser": "para {user}",
     "search": "Buscar modelo, cliente o petición"
@@ -1043,7 +1049,7 @@
     "title": "Playground",
     "subtitle": "Chatea con un modelo para comprobar que responde. Va por una de tus claves, que lo paga como cualquier otra petición.",
     "key": "Clave",
-    "keyHint": "Se aplican sus límites y su gasto cuenta, con la etiqueta «playground».",
+    "keyHint": "Se aplican sus límites y su gasto cuenta, con el tag «playground».",
     "personal": "Personal",
     "model": "Modelo",
     "noModels": "Esta clave no tiene modelos",
@@ -1063,5 +1069,66 @@
     "total": "total {value}",
     "tokens": "{input} entrada / {output} salida",
     "noKeys": "Necesitas una clave para usar el Playground. Crea una en Claves virtuales."
+  },
+  "labels": {
+    "meta": {
+      "title": "Etiquetas"
+    },
+    "title": "Etiquetas",
+    "subtitle": "Agrupa claves por cliente, producto o entorno y filtra el uso por ellas.",
+    "search": "Buscar etiquetas…",
+    "create": {
+      "button": "Nueva etiqueta",
+      "title": "Nueva etiqueta",
+      "description": "Asígnala a claves desde sus ajustes; luego podrás filtrar el uso por ella.",
+      "submit": "Crear etiqueta",
+      "created": "Etiqueta {name} creada"
+    },
+    "edit": {
+      "title": "Editar {name}",
+      "label": "Editar {name}",
+      "submit": "Guardar cambios",
+      "saved": "Etiqueta {name} guardada"
+    },
+    "delete": {
+      "label": "Eliminar {name}",
+      "title": "¿Eliminar {name}?",
+      "description": "{count, plural, =0 {Ninguna clave la lleva.} one {Se quita de la # clave que la lleva.} other {Se quita de las # claves que la llevan.}} Su gasto se conserva.",
+      "confirm": "Eliminar etiqueta"
+    },
+    "empty": {
+      "title": "Aún no hay etiquetas",
+      "description": "Crea una, asígnala a claves y filtra el uso por ella.",
+      "member": "Ningún administrador ha creado ninguna todavía."
+    },
+    "table": {
+      "name": "Etiqueta",
+      "description": "Descripción",
+      "keys": "Claves",
+      "created": "Creada",
+      "usage": "Ver su uso"
+    },
+    "form": {
+      "name": "Nombre",
+      "namePlaceholder": "Producción, Acme Corp, CRM…",
+      "nameRequired": "Ponle un nombre a la etiqueta",
+      "nameTooLong": "Como mucho 50 caracteres",
+      "color": "Color",
+      "preview": "Se verá así",
+      "description": "Descripción",
+      "descriptionHint": "Opcional: qué agrupa.",
+      "descriptionTooLong": "Como mucho 200 caracteres"
+    },
+    "colors": {
+      "gray": "Gris",
+      "red": "Rojo",
+      "orange": "Naranja",
+      "amber": "Ámbar",
+      "green": "Verde",
+      "teal": "Verde azulado",
+      "blue": "Azul",
+      "violet": "Violeta",
+      "pink": "Rosa"
+    }
   }
 }

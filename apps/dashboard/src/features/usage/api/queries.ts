@@ -10,6 +10,8 @@ export interface UsageFilter {
   key_id?: number;
   model?: string;
   person_id?: number;
+  /** Only the keys carrying this label now. */
+  label_id?: number;
   group_by?: GroupBy;
 }
 

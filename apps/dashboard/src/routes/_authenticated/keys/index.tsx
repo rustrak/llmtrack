@@ -9,6 +9,7 @@ import {
   CreateKeyButton,
   KeyManager,
 } from '@/features/key/ui/components/key-manager';
+import { listLabels } from '@/features/label/api/queries';
 import { listModels } from '@/features/model/api/queries';
 import { getSettings } from '@/features/settings/api/queries';
 import { listPeople, listTeams } from '@/features/team/api/queries';
@@ -37,12 +38,13 @@ export const Route = createFileRoute('/_authenticated/keys/')({
   },
   loaderDeps: ({ search }) => search,
   loader: async ({ deps }) => {
-    const [keys, teams, people, models, settings] = await Promise.all([
+    const [keys, teams, people, models, labels, settings] = await Promise.all([
       listKeys(deps),
       listTeams({ per_page: MAX_PAGE_SIZE }),
       // ponytail: the first 200 people; page or search them if teams get bigger.
       listPeople({ per_page: MAX_PAGE_SIZE }),
       listModels({ per_page: MAX_PAGE_SIZE }),
+      listLabels({ per_page: MAX_PAGE_SIZE }),
       getSettings(),
     ]);
     const everyone = unwrap(people).data;
@@ -54,6 +56,7 @@ export const Route = createFileRoute('/_authenticated/keys/')({
         people: everyone.filter((p) => p.team_id === team.id),
       })),
       models: unwrap(models).data,
+      labels: unwrap(labels).data,
       publicUrl: unwrap(settings).public_url,
     };
   },
@@ -64,7 +67,7 @@ export const Route = createFileRoute('/_authenticated/keys/')({
 function KeysPage() {
   const t = useTranslations('keys');
   const tTable = useTranslations('table');
-  const { keys, teams, models, publicUrl } = Route.useLoaderData();
+  const { keys, teams, models, labels, publicUrl } = Route.useLoaderData();
   const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
   const allModels = models.map(({ id, name }) => ({ id, name }));
@@ -82,6 +85,7 @@ function KeysPage() {
         <CreateKeyButton
           teams={teams}
           allModels={allModels}
+          labels={labels}
           teamId={search.team_id}
           publicUrl={publicUrl}
         />
@@ -91,6 +95,7 @@ function KeysPage() {
         keys={keys.data}
         teams={teams}
         allModels={allModels}
+        labels={labels}
         teamId={search.team_id}
         publicUrl={publicUrl}
         sort={search.sort}

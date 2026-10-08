@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root';
 import { Route as IndexRouteImport } from './routes/index';
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated';
 import { Route as LoginRouteImport } from './routes/login';
+import { Route as AuthenticatedLabelsRouteImport } from './routes/_authenticated/labels';
 import { Route as AuthenticatedLogsRouteImport } from './routes/_authenticated/logs';
 import { Route as AuthenticatedModelsRouteImport } from './routes/_authenticated/models';
 import { Route as AuthenticatedPeopleRouteImport } from './routes/_authenticated/people';
@@ -43,6 +44,11 @@ const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
   getParentRoute: () => rootRouteImport,
+} as any);
+const AuthenticatedLabelsRoute = AuthenticatedLabelsRouteImport.update({
+  id: '/labels',
+  path: '/labels',
+  getParentRoute: () => AuthenticatedRoute,
 } as any);
 const AuthenticatedLogsRoute = AuthenticatedLogsRouteImport.update({
   id: '/logs',
@@ -139,6 +145,7 @@ const AuthenticatedTeamsTeamIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute;
   '/login': typeof LoginRoute;
+  '/labels': typeof AuthenticatedLabelsRoute;
   '/logs': typeof AuthenticatedLogsRoute;
   '/models': typeof AuthenticatedModelsRoute;
   '/people': typeof AuthenticatedPeopleRoute;
@@ -160,6 +167,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute;
   '/login': typeof LoginRoute;
+  '/labels': typeof AuthenticatedLabelsRoute;
   '/logs': typeof AuthenticatedLogsRoute;
   '/models': typeof AuthenticatedModelsRoute;
   '/people': typeof AuthenticatedPeopleRoute;
@@ -182,6 +190,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute;
   '/_authenticated': typeof AuthenticatedRouteWithChildren;
   '/login': typeof LoginRoute;
+  '/_authenticated/labels': typeof AuthenticatedLabelsRoute;
   '/_authenticated/logs': typeof AuthenticatedLogsRoute;
   '/_authenticated/models': typeof AuthenticatedModelsRoute;
   '/_authenticated/people': typeof AuthenticatedPeopleRoute;
@@ -205,6 +214,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/labels'
     | '/logs'
     | '/models'
     | '/people'
@@ -226,6 +236,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
+    | '/labels'
     | '/logs'
     | '/models'
     | '/people'
@@ -247,6 +258,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/login'
+    | '/_authenticated/labels'
     | '/_authenticated/logs'
     | '/_authenticated/models'
     | '/_authenticated/people'
@@ -295,6 +307,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/login';
       preLoaderRoute: typeof LoginRouteImport;
       parentRoute: typeof rootRouteImport;
+    };
+    '/_authenticated/labels': {
+      id: '/_authenticated/labels';
+      path: '/labels';
+      fullPath: '/labels';
+      preLoaderRoute: typeof AuthenticatedLabelsRouteImport;
+      parentRoute: typeof AuthenticatedRoute;
     };
     '/_authenticated/logs': {
       id: '/_authenticated/logs';
@@ -440,6 +459,7 @@ const AuthenticatedSettingsRouteWithChildren =
   );
 
 interface AuthenticatedRouteChildren {
+  AuthenticatedLabelsRoute: typeof AuthenticatedLabelsRoute;
   AuthenticatedLogsRoute: typeof AuthenticatedLogsRoute;
   AuthenticatedModelsRoute: typeof AuthenticatedModelsRoute;
   AuthenticatedPeopleRoute: typeof AuthenticatedPeopleRoute;
@@ -454,6 +474,7 @@ interface AuthenticatedRouteChildren {
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedLabelsRoute: AuthenticatedLabelsRoute,
   AuthenticatedLogsRoute: AuthenticatedLogsRoute,
   AuthenticatedModelsRoute: AuthenticatedModelsRoute,
   AuthenticatedPeopleRoute: AuthenticatedPeopleRoute,

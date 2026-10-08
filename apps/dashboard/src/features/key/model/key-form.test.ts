@@ -14,6 +14,7 @@ const base: CreateKeyValues = {
   person_id: '',
   name: '  backend ',
   models: [2, 1],
+  labels: [],
   max_budget_usd: '25.5',
   budget_duration: 'none',
   rpm_limit: '',
@@ -82,12 +83,14 @@ describe('editing', () => {
     max_parallel_requests: 4,
     expires_at: '2027-01-15T22:59:59.000Z',
     person_id: 9,
+    labels: [{ id: 4, name: 'CRM', color: 'blue' as const }],
   };
 
   it('starts from the key as it is', () => {
     expect(editDefaults(key)).toEqual({
       name: 'k',
       models: [1],
+      labels: [4],
       person_id: '9',
       max_budget_usd: '',
       budget_duration: '7d',
@@ -114,6 +117,7 @@ describe('editing', () => {
     ).toEqual({
       name: 'k',
       models: [1],
+      labels: [4],
       person_id: null,
       max_budget_usd: null,
       budget_duration: null,
@@ -170,5 +174,32 @@ describe('createKeySchema', () => {
     expect(schema.safeParse({ ...base, rpm_limit: '0' }).success).toBe(false);
     expect(schema.safeParse({ ...base, tpm_limit: '1.5' }).success).toBe(false);
     expect(schema.safeParse({ ...base, rpm_limit: '60' }).success).toBe(true);
+  });
+});
+
+describe('labels', () => {
+  it('go on a new key only when some are ticked', () => {
+    expect(toCreateKeyPayload({ ...base, labels: [3, 1] }, now).labels).toEqual(
+      [3, 1],
+    );
+    expect(toCreateKeyPayload(base, now)).not.toHaveProperty('labels');
+  });
+
+  it('are always sent when editing, so unticking all clears them', () => {
+    const values = editDefaults({
+      name: 'k',
+      models: [],
+      max_budget_usd: null,
+      budget_duration: null,
+      rpm_limit: null,
+      tpm_limit: null,
+      max_parallel_requests: null,
+      expires_at: null,
+      person_id: null,
+      labels: [{ id: 4 }],
+    });
+    expect(
+      toUpdateKeyPayload({ ...values, labels: [] }, values.expires_on).labels,
+    ).toEqual([]);
   });
 });

@@ -3,7 +3,12 @@ import { KeyRound, MoreHorizontal } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useTranslations } from 'use-intl';
-import type { ApiKey, CreatedKey, ModelRef } from '@/shared/api/schemas';
+import type {
+  ApiKey,
+  CreatedKey,
+  LabelRef,
+  ModelRef,
+} from '@/shared/api/schemas';
 import { readableMessage } from '@/shared/lib/form-errors';
 import { ConfirmDialog } from '@/shared/ui/components/confirm-dialog';
 import { Button } from '@/shared/ui/components/shadcn/button';
@@ -30,6 +35,7 @@ export function KeyActions({
   apiKey,
   choices,
   people,
+  labels,
   publicUrl,
   onChanged,
   onRevoked = onChanged,
@@ -37,6 +43,7 @@ export function KeyActions({
   apiKey: ApiKey;
   choices: ModelRef[];
   people?: { id: number; name: string }[];
+  labels: LabelRef[];
   publicUrl: string | null;
   onChanged: () => void;
   onRevoked?: () => void;
@@ -105,6 +112,7 @@ export function KeyActions({
         apiKey={apiKey}
         choices={choices}
         people={people}
+        labels={labels}
         onClose={() => setPending(null)}
         onSaved={onChanged}
       />

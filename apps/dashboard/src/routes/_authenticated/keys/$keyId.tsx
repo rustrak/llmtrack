@@ -5,6 +5,7 @@ import { getKey } from '@/features/key/api/queries';
 import { modelChoices } from '@/features/key/ui/components/create-key-panel';
 import { KeyActions } from '@/features/key/ui/components/key-actions';
 import { KeyStatus } from '@/features/key/ui/components/keys-table';
+import { listLabels } from '@/features/label/api/queries';
 import { listModels } from '@/features/model/api/queries';
 import { getSettings } from '@/features/settings/api/queries';
 import { listTeams } from '@/features/team/api/queries';
@@ -21,6 +22,7 @@ import type { ApiKey } from '@/shared/api/schemas';
 import { translator } from '@/shared/i18n/intl';
 import { budgetShare } from '@/shared/lib/format';
 import { MAX_PAGE_SIZE } from '@/shared/lib/list-params';
+import { LabelBadge } from '@/shared/ui/components/label-badge';
 import { Page } from '@/shared/ui/components/page';
 import {
   DetailsList,
@@ -38,11 +40,12 @@ import { useMoney } from '@/shared/ui/hooks/use-money';
 export const Route = createFileRoute('/_authenticated/keys/$keyId')({
   loader: async ({ params }) => {
     const id = Number(params.keyId);
-    const [key, usage, teams, models, settings] = await Promise.all([
+    const [key, usage, teams, models, labels, settings] = await Promise.all([
       getKey(id),
       getUsage({ ...rangeFor('30d'), key_id: id }),
       listTeams({ per_page: MAX_PAGE_SIZE }),
       listModels({ per_page: MAX_PAGE_SIZE }),
+      listLabels({ per_page: MAX_PAGE_SIZE }),
       getSettings(),
     ]);
     return {
@@ -50,6 +53,7 @@ export const Route = createFileRoute('/_authenticated/keys/$keyId')({
       usage: unwrap(usage),
       teams: unwrap(teams).data,
       models: unwrap(models).data,
+      labels: unwrap(labels).data,
       publicUrl: unwrap(settings).public_url,
     };
   },
@@ -68,7 +72,8 @@ export const Route = createFileRoute('/_authenticated/keys/$keyId')({
 function KeyPage() {
   const t = useTranslations('keys');
   const tUsage = useTranslations('usage');
-  const { apiKey, usage, teams, models, publicUrl } = Route.useLoaderData();
+  const { apiKey, usage, teams, models, labels, publicUrl } =
+    Route.useLoaderData();
   const router = useRouter();
   const money = useMoney();
   const bucketLabel = useBucketLabel('day');
@@ -92,6 +97,7 @@ function KeyPage() {
             teams.find((x) => x.id === apiKey.team_id),
             allModels,
           )}
+          labels={labels}
           publicUrl={publicUrl}
           onChanged={() => router.invalidate()}
           onRevoked={() => router.navigate({ to: '/keys' })}
@@ -194,6 +200,9 @@ function KeyFacts({ apiKey }: { apiKey: ApiKey }) {
           {t('detail.personalOf', { email: apiKey.owner_email ?? '—' })}
         </Badge>
       )}
+      {apiKey.labels.map((label) => (
+        <LabelBadge key={label.id} label={label} />
+      ))}
       {apiKey.person_name && (
         <Badge variant="outline">{apiKey.person_name}</Badge>
       )}
