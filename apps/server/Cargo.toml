@@ -56,12 +56,19 @@ reqwest = { version = "0.13.5", default-features = false, features = [
 # Provider API keys are encrypted at rest.
 aes-gcm = "0.11.1"
 
+# Usage reports as PDF and XLSX. Not on crates.io: pinned to a release tag.
+imprenta-core = { git = "https://github.com/imprenta-project/imprenta", tag = "v0.1.0-alpha.12" }
+imprenta-pdf = { git = "https://github.com/imprenta-project/imprenta", tag = "v0.1.0-alpha.12" }
+imprenta-xlsx = { git = "https://github.com/imprenta-project/imprenta", tag = "v0.1.0-alpha.12" }
+
 # glibc malloc keeps per-thread arenas forever; same reason as Rustrak.
 mimalloc = "0.1.52"
 
 [dev-dependencies]
 actix-http = "3.18.12"
 tempfile = "3.27.0"
+# Reads the exported workbooks back.
+calamine = "0.35.0"
 testcontainers = "0.27.3"
 testcontainers-modules = { version = "0.15.0", features = ["postgres"] }
 

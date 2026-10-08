@@ -17,6 +17,7 @@ src/
 ├── auth.rs            dashboard session extractors: CurrentUser, AdminUser
 ├── models/            domain types, request/response shapes, money conversions
 ├── services/          queries and rules: users, invitations, teams, models, keys, usage, access
+│   └── report/        usage reports as PDF and XLSX (imprenta), in the reader's language and currency
 ├── routes/            HTTP handlers, one module per resource; proxy.rs is /v1
 ├── assets/            the price list (gzip), compiled into the binary
 └── gateway/           the hot path
@@ -80,6 +81,26 @@ like `/v1` (`Gateway::admit_hash`), so limits, spend and logs apply, tagged
 `playground`. The browser never holds a raw key. `models` lists what the key
 may call; `cost` prices a reply's `usage` by the deployment in its
 `x-litellm-model-id`, since a stream's cost is only known once it ends.
+
+## Reports
+
+`GET /api/usage/export?format=pdf|xlsx` takes the usage filters plus
+`sections` (`services/report::SECTIONS`; all but `requests` by default),
+`markup` (percent over provider cost), `show_cost`, `client`, `reference`,
+`notes`. Language is the account's, then `Accept-Language`, then English;
+currency and rate are the account's (the dashboard's rule). Without
+`show_cost` a marked-up report shows only the amount, never the margin.
+Filtered to a team, the team is the client unless one is given, and a
+breakdown a filter already answers (teams, keys, people, models) is left
+out. The PDF is one document: the cover and the contents are unnumbered
+`section`s (no bands), chapters carry `anchor`s (also the PDF outline), and
+the contents prints `{{pageof:id}}` and links to `#id`. Blocks that must
+not split (charts, KPI rows, callouts) are one box. Geist is the default
+family and Geist Mono is registered as `mono` (wordmark, numbers of
+chapters).
+Rendering is imprenta (git dependency, pinned by release tag; fonts in
+`assets/fonts`), off the async threads. Previews: `REPORT_PREVIEW_DIR=dir
+cargo test --lib report` writes a sample PDF and XLSX in both languages.
 
 ## Attribution
 

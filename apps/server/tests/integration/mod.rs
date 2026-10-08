@@ -10,6 +10,7 @@ mod parallel_test;
 mod people_test;
 mod playground_test;
 mod proxy_test;
+mod report_test;
 mod router_test;
 mod serving_test;
 mod settings_test;

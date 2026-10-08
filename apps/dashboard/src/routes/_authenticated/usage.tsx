@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { Download } from 'lucide-react';
+import { ChevronDown, Download, FileSpreadsheet, FileText } from 'lucide-react';
+import { useState } from 'react';
 import { useFormatter, useTranslations } from 'use-intl';
 import { listKeys } from '@/features/key/api/queries';
 import { listModels } from '@/features/model/api/queries';
@@ -32,6 +33,7 @@ import {
   stack,
   tokenParts,
 } from '@/features/usage/model/series';
+import { ReportPanel } from '@/features/usage/ui/components/report-panel';
 import {
   ChartCard,
   KpiTile,
@@ -50,6 +52,12 @@ import { Choice } from '@/shared/ui/components/choice';
 import { FilterPill } from '@/shared/ui/components/data-table';
 import { Page } from '@/shared/ui/components/page';
 import { Button } from '@/shared/ui/components/shadcn/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/shared/ui/components/shadcn/dropdown-menu';
 import { Input } from '@/shared/ui/components/shadcn/input';
 import {
   Tabs,
@@ -141,7 +149,7 @@ type Set = (patch: Partial<UsageSearch>) => void;
 
 function UsagePage() {
   const t = useTranslations('usage');
-  const { usage } = Route.useLoaderData();
+  const { usage, teams, keys, people } = Route.useLoaderData();
   const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
   // Undefined once the filters leave nothing to split by.
@@ -169,6 +177,25 @@ function UsagePage() {
     if ('filter' in next) set(next.filter);
     else navigate({ to: '/logs', search: { window: 'all', ...next.logs } });
   };
+  const [reporting, setReporting] = useState(false);
+  const { date } = useMoney();
+  const teamName = teams.find((x) => x.id === search.team)?.name;
+  const scopeLabels = [
+    `${date(usage.from)} – ${date(usage.to)}`,
+    ...(teamName ? [`${t('team')}: ${teamName}`] : []),
+    ...(search.key
+      ? [
+          `${t('key')}: ${keys.find((k) => k.id === search.key)?.name ?? `#${search.key}`}`,
+        ]
+      : []),
+    ...(search.model ? [`${t('model')}: ${search.model}`] : []),
+    ...(search.person
+      ? [
+          `${t('group.person')}: ${people.find((p) => p.id === search.person)?.name ?? `#${search.person}`}`,
+        ]
+      : []),
+  ];
+  if (scopeLabels.length === 1) scopeLabels.push(t('report.allUsage'));
   const download = () => {
     const blob = new Blob([usageCsv(usage, t('personal'))], {
       type: 'text/csv',
@@ -185,12 +212,41 @@ function UsagePage() {
       title={t('title')}
       description={t('subtitle')}
       actions={
-        <Button variant="outline" onClick={download}>
-          <Download />
-          {t('export')}
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger render={<Button variant="outline" />}>
+            <Download />
+            {t('export')}
+            <ChevronDown />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => setReporting(true)}>
+              <FileText />
+              {t('exportReport')}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={download}>
+              <FileSpreadsheet />
+              {t('exportCsv')}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       }
     >
+      <ReportPanel
+        // Fresh choices whenever the filters change under it.
+        key={`${usage.from}:${usage.to}:${search.team}:${search.key}:${search.model}:${search.person}`}
+        open={reporting}
+        onOpenChange={setReporting}
+        teamName={teamName}
+        scopeLabel={scopeLabels.join(' · ')}
+        scope={{
+          from: usage.from,
+          to: usage.to,
+          team_id: search.team,
+          key_id: search.key,
+          model: search.model,
+          person_id: search.person,
+        }}
+      />
       <UsageToolbar bucketLabel={bucketLabel} set={set} />
       <KpiRow usage={usage} />
       <MainChart
