@@ -1,5 +1,11 @@
 # @llmtrack/server
 
+## 0.2.0
+
+### Minor Changes
+
+- [`55b820d`](https://github.com/rustrak/llmtrack/commit/55b820d8e7585ee80fbea47cbb986dcb9a251d24) Thanks [@AbianS](https://github.com/AbianS)! - Add customizable PDF and Excel usage reports. Add labels for virtual keys and filter usage and exported reports by label.
+
 ## 0.1.0
 
 ### Minor Changes
