@@ -3,6 +3,7 @@ import { ChevronDown, Download, FileSpreadsheet, FileText } from 'lucide-react';
 import { useState } from 'react';
 import { useFormatter, useTranslations } from 'use-intl';
 import { listKeys } from '@/features/key/api/queries';
+import { listLabels } from '@/features/label/api/queries';
 import { listModels } from '@/features/model/api/queries';
 import { listPeople, listTeams } from '@/features/team/api/queries';
 import { getUsage } from '@/features/usage/api/queries';
@@ -76,6 +77,8 @@ interface UsageSearch {
   model?: string;
   /** Someone of `team`: only kept with a team. */
   person?: number;
+  /** Only the keys carrying this label now. */
+  label?: number;
   group?: GroupBy;
   metric?: Metric;
 }
@@ -99,6 +102,7 @@ export const Route = createFileRoute('/_authenticated/usage')({
       key: id(search.key),
       model: text(search.model),
       person: id(search.team) ? id(search.person) : undefined,
+      label: id(search.label),
       group: GROUPS.find((g) => g === search.group),
       metric: METRICS.find((m) => m === search.metric),
     };
@@ -111,22 +115,25 @@ export const Route = createFileRoute('/_authenticated/usage')({
     key: search.key,
     model: search.model,
     person: search.person,
+    label: search.label,
     group: effectiveGroup(search.group, search),
   }),
   loader: async ({ deps }) => {
-    const [usage, teams, keys, models, people] = await Promise.all([
+    const [usage, teams, keys, models, labels, people] = await Promise.all([
       getUsage({
         ...resolveRange(deps),
         team_id: deps.team,
         key_id: deps.key,
         model: deps.model,
         person_id: deps.person,
+        label_id: deps.label,
         group_by: deps.group,
       }),
       listTeams({ per_page: MAX_PAGE_SIZE }),
       // ponytail: the first 200 keys and models as filter options.
       listKeys({ per_page: MAX_PAGE_SIZE }),
       listModels({ per_page: MAX_PAGE_SIZE }),
+      listLabels({ per_page: MAX_PAGE_SIZE }),
       // People only mean something inside one team.
       deps.team
         ? listPeople({ team_id: deps.team, per_page: MAX_PAGE_SIZE })
@@ -137,6 +144,7 @@ export const Route = createFileRoute('/_authenticated/usage')({
       teams: unwrap(teams).data,
       keys: unwrap(keys).data,
       models: [...new Set(unwrap(models).data.map((m) => m.name))],
+      labels: unwrap(labels).data,
       people: people ? unwrap(people).data : [],
     };
   },
@@ -149,7 +157,7 @@ type Set = (patch: Partial<UsageSearch>) => void;
 
 function UsagePage() {
   const t = useTranslations('usage');
-  const { usage, teams, keys, people } = Route.useLoaderData();
+  const { usage, teams, keys, people, labels } = Route.useLoaderData();
   const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
   // Undefined once the filters leave nothing to split by.
@@ -194,6 +202,11 @@ function UsagePage() {
           `${t('group.person')}: ${people.find((p) => p.id === search.person)?.name ?? `#${search.person}`}`,
         ]
       : []),
+    ...(search.label
+      ? [
+          `${t('label')}: ${labels.find((l) => l.id === search.label)?.name ?? `#${search.label}`}`,
+        ]
+      : []),
   ];
   if (scopeLabels.length === 1) scopeLabels.push(t('report.allUsage'));
   const download = () => {
@@ -233,7 +246,7 @@ function UsagePage() {
     >
       <ReportPanel
         // Fresh choices whenever the filters change under it.
-        key={`${usage.from}:${usage.to}:${search.team}:${search.key}:${search.model}:${search.person}`}
+        key={`${usage.from}:${usage.to}:${search.team}:${search.key}:${search.model}:${search.person}:${search.label}`}
         open={reporting}
         onOpenChange={setReporting}
         teamName={teamName}
@@ -245,6 +258,7 @@ function UsagePage() {
           key_id: search.key,
           model: search.model,
           person_id: search.person,
+          label_id: search.label,
         }}
       />
       <UsageToolbar bucketLabel={bucketLabel} set={set} />
@@ -304,11 +318,11 @@ function UsageToolbar({
 }) {
   const t = useTranslations('usage');
   const tTable = useTranslations('table');
-  const { usage, teams, keys, models } = Route.useLoaderData();
+  const { usage, teams, keys, models, labels } = Route.useLoaderData();
   const search = Route.useSearch();
   const { people } = Route.useLoaderData();
   const filtered = Boolean(
-    search.team || search.key || search.model || search.person,
+    search.team || search.key || search.model || search.person || search.label,
   );
   const custom = search.from !== undefined;
   const rangeLabels: Record<RangePreset, string> = {
@@ -397,6 +411,12 @@ function UsageToolbar({
         onChange={(model) => set({ model })}
         options={models.map((name) => ({ value: name, label: name }))}
       />
+      <FilterPill
+        label={t('label')}
+        value={search.label ? String(search.label) : undefined}
+        onChange={(v) => set({ label: v ? Number(v) : undefined })}
+        options={labels.map((l) => ({ value: String(l.id), label: l.name }))}
+      />
       {filtered && (
         <Button
           variant="ghost"
@@ -407,6 +427,7 @@ function UsageToolbar({
               key: undefined,
               model: undefined,
               person: undefined,
+              label: undefined,
             })
           }
         >

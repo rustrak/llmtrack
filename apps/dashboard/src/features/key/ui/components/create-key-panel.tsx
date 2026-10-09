@@ -4,9 +4,10 @@ import { KeyRound, TriangleAlert } from 'lucide-react';
 import { useState } from 'react';
 import { useForm, useFormContext } from 'react-hook-form';
 import { useTranslations } from 'use-intl';
-import type { CreatedKey, ModelRef } from '@/shared/api/schemas';
+import type { CreatedKey, LabelRef, ModelRef } from '@/shared/api/schemas';
 import { Choice } from '@/shared/ui/components/choice';
 import { CodeBlock, CopyButton } from '@/shared/ui/components/copy-button';
+import { LabelPicker } from '@/shared/ui/components/label-picker';
 import { LimitSections } from '@/shared/ui/components/limit-sections';
 import { ModelPicker } from '@/shared/ui/components/model-picker';
 import { Button } from '@/shared/ui/components/shadcn/button';
@@ -73,6 +74,7 @@ export function CreateKeyPanel({
   onOpenChange,
   teams,
   allModels,
+  labels,
   defaultTeamId,
   publicUrl,
   onCreated,
@@ -81,6 +83,7 @@ export function CreateKeyPanel({
   onOpenChange: (open: boolean) => void;
   teams: KeyTeam[];
   allModels: ModelRef[];
+  labels: LabelRef[];
   defaultTeamId?: number;
   publicUrl: string | null;
   onCreated: () => void;
@@ -97,6 +100,7 @@ export function CreateKeyPanel({
       person_id: '',
       name: '',
       models: [],
+      labels: [],
       max_budget_usd: '',
       budget_duration: 'none',
       rpm_limit: '',
@@ -240,6 +244,7 @@ export function CreateKeyPanel({
                   </FormItem>
                 )}
               />
+              <LabelsField labels={labels} />
               <div className="space-y-2">
                 <LimitSections />
                 <PanelSection
@@ -394,6 +399,31 @@ export function PersonField({
               t('form.personHint')
             )}
           </FormDescription>
+        </FormItem>
+      )}
+    />
+  );
+}
+
+/** The labels a key carries, picked from those admins defined. */
+export function LabelsField({ labels }: { labels: LabelRef[] }) {
+  const t = useTranslations('keys');
+  const { control } = useFormContext<{ labels: number[] }>();
+  return (
+    <FormField
+      control={control}
+      name="labels"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>{t('form.labels')}</FormLabel>
+          <LabelPicker
+            labels={labels}
+            value={field.value}
+            onChange={field.onChange}
+          />
+          {labels.length > 0 && (
+            <FormDescription>{t('form.labelsHint')}</FormDescription>
+          )}
         </FormItem>
       )}
     />

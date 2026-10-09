@@ -60,6 +60,7 @@ pub struct ExportQuery {
     pub key_id: Option<i64>,
     pub model: Option<String>,
     pub person_id: Option<i64>,
+    pub label_id: Option<i64>,
     /// Comma-separated [`SECTIONS`]; every one but the requests when absent.
     pub sections: Option<String>,
     /// Percent added to the provider's cost.
@@ -340,6 +341,7 @@ async fn gather(
         model: query.model.clone(),
         group_by: None,
         person_id: query.person_id,
+        label_id: query.label_id,
     };
     // Checks the range and the team before anything else is read.
     let usage = usage::report(&state.pool, user, &usage_query).await?;
@@ -399,7 +401,16 @@ async fn gather(
         }
         None => None,
     };
-    let scope = describe_scope(lang, &usage, team_name.clone(), &usage_query);
+    let label_name: Option<String> = match query.label_id {
+        Some(id) => {
+            sqlx::query_scalar("SELECT name FROM labels WHERE id = $1")
+                .bind(id)
+                .fetch_optional(&state.pool)
+                .await?
+        }
+        None => None,
+    };
+    let scope = describe_scope(lang, &usage, team_name.clone(), label_name, &usage_query);
     // Filtered to one team, the team is who the report is for.
     let client = client.or(team_name);
     let narrowed = [
@@ -457,6 +468,7 @@ fn describe_scope(
     lang: Lang,
     usage: &UsageReport,
     team: Option<String>,
+    label: Option<String>,
     query: &UsageQuery,
 ) -> Vec<(T, String)> {
     let named = |name: Option<String>, id: Option<i64>| {
@@ -488,6 +500,9 @@ fn describe_scope(
     }
     if let Some(model) = query.model.as_deref().filter(|m| !m.is_empty()) {
         out.push((T::Model, model.to_string()));
+    }
+    if let Some(label) = named(label, query.label_id) {
+        out.push((T::Label, label));
     }
     if out.is_empty() {
         out.push((T::Scope, lang.t(T::Everything).to_string()));

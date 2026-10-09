@@ -36,6 +36,8 @@ export function createKeySchema(t: Translate) {
     person_id: z.string(),
     name: z.string().trim().min(1, t('form.nameRequired')).max(100),
     models: z.array(z.number()),
+    /** Label ids. */
+    labels: z.array(z.number()),
     ...limitsShape(t),
     expires: z.enum(EXPIRY_OPTIONS),
   });
@@ -46,6 +48,8 @@ export function updateKeySchema(t: Translate) {
   return z.object({
     name: z.string().trim().min(1, t('form.nameRequired')).max(100),
     models: z.array(z.number()),
+    /** Label ids. */
+    labels: z.array(z.number()),
     person_id: z.string(),
     ...limitsShape(t),
     /** `yyyy-mm-dd`, or empty for never. */
@@ -59,6 +63,7 @@ export interface CreateKeyPayload {
   person_id?: number;
   name: string;
   models: number[];
+  labels?: number[];
   max_budget_usd?: number;
   budget_duration?: string;
   rpm_limit?: number;
@@ -81,6 +86,7 @@ export function toCreateKeyPayload(
     rpm_limit: numberOrNull(values.rpm_limit),
     tpm_limit: numberOrNull(values.tpm_limit),
     max_parallel_requests: numberOrNull(values.max_parallel_requests),
+    labels: values.labels.length ? values.labels : null,
     expires_at:
       values.expires === 'never'
         ? null
@@ -117,6 +123,7 @@ export function editDefaults(
     max_parallel_requests: number | null;
     expires_at: string | null;
     person_id: number | null;
+    labels: { id: number }[];
   },
   perUsd = 1,
 ): UpdateKeyValues {
@@ -124,6 +131,7 @@ export function editDefaults(
   return {
     name: key.name,
     models: key.models.map((m) => m.id),
+    labels: key.labels.map((l) => l.id),
     person_id: text(key.person_id),
     max_budget_usd: budgetText(key.max_budget_usd, perUsd),
     budget_duration: key.budget_duration ?? 'none',
@@ -147,6 +155,7 @@ export function toUpdateKeyPayload(
   const payload: {
     name: string;
     models: number[];
+    labels: number[];
     person_id: number | null;
     max_budget_usd: number | null;
     budget_duration: string | null;
@@ -157,6 +166,7 @@ export function toUpdateKeyPayload(
   } = {
     name: values.name.trim(),
     models: values.models,
+    labels: values.labels,
     person_id: numberOrNull(values.person_id),
     max_budget_usd: budgetOrNull(values.max_budget_usd, perUsd),
     budget_duration: periodOrNull(values.budget_duration),

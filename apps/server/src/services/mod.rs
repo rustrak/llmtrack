@@ -2,6 +2,7 @@ pub mod access;
 pub mod catalog;
 pub mod invitations;
 pub mod keys;
+pub mod labels;
 pub mod models;
 pub mod people;
 pub mod report;

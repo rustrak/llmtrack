@@ -1,5 +1,6 @@
 pub mod invitation;
 pub mod key;
+pub mod label;
 pub mod limits;
 pub mod list;
 pub mod llm_model;

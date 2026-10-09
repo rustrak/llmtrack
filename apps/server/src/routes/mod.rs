@@ -3,6 +3,7 @@ pub mod dashboard;
 pub mod health;
 pub mod invitations;
 pub mod keys;
+pub mod labels;
 pub mod models;
 pub mod people;
 pub mod playground;

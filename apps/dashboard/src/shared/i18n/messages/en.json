@@ -37,7 +37,9 @@
     "hidePassword": "Hide password",
     "sidebar": "Sidebar",
     "sidebarMobileDescription": "Displays the mobile sidebar.",
-    "toggleSidebar": "Toggle sidebar"
+    "toggleSidebar": "Toggle sidebar",
+    "noLabelsYet": "No labels yet.",
+    "createLabels": "Create them in Labels"
   },
   "formErrors": {
     "required": "This field is required",
@@ -92,7 +94,8 @@
     "builtBy": "Built by",
     "breadcrumb": "Breadcrumb",
     "people": "People",
-    "playground": "Playground"
+    "playground": "Playground",
+    "labels": "Labels"
   },
   "keys": {
     "meta": {
@@ -160,7 +163,9 @@
       "personNone": "No one",
       "personHint": "Whose spend this key is. The team still pays for it.",
       "personEmpty": "This team has no people yet.",
-      "personAdd": "Add them in People"
+      "personAdd": "Add them in People",
+      "labels": "Labels",
+      "labelsHint": "Usage can be filtered by them."
     },
     "expiry": {
       "never": "Never",
@@ -730,7 +735,8 @@
       "costShown": "cost shown",
       "atCost": "At cost",
       "noNotes": "None"
-    }
+    },
+    "label": "Label"
   },
   "logs": {
     "meta": {
@@ -1063,5 +1069,66 @@
     "total": "total {value}",
     "tokens": "{input} in / {output} out",
     "noKeys": "You need a key to use the Playground. Create one in Virtual keys."
+  },
+  "labels": {
+    "meta": {
+      "title": "Labels"
+    },
+    "title": "Labels",
+    "subtitle": "Group keys by client, product or environment, then filter usage by them.",
+    "search": "Search labels…",
+    "create": {
+      "button": "New label",
+      "title": "New label",
+      "description": "Assign it to keys from their settings; usage can then be filtered by it.",
+      "submit": "Create label",
+      "created": "Label {name} created"
+    },
+    "edit": {
+      "title": "Edit {name}",
+      "label": "Edit {name}",
+      "submit": "Save changes",
+      "saved": "Label {name} saved"
+    },
+    "delete": {
+      "label": "Delete {name}",
+      "title": "Delete {name}?",
+      "description": "{count, plural, =0 {No key carries it.} one {It is removed from the # key that carries it.} other {It is removed from the # keys that carry it.}} Their spend stays.",
+      "confirm": "Delete label"
+    },
+    "empty": {
+      "title": "No labels yet",
+      "description": "Create one, assign it to keys, and filter usage by it.",
+      "member": "An admin has not created any yet."
+    },
+    "table": {
+      "name": "Label",
+      "description": "Description",
+      "keys": "Keys",
+      "created": "Created",
+      "usage": "See their usage"
+    },
+    "form": {
+      "name": "Name",
+      "namePlaceholder": "Production, Acme Corp, CRM…",
+      "nameRequired": "Give the label a name",
+      "nameTooLong": "At most 50 characters",
+      "color": "Colour",
+      "preview": "Looks like",
+      "description": "Description",
+      "descriptionHint": "Optional: what it groups.",
+      "descriptionTooLong": "At most 200 characters"
+    },
+    "colors": {
+      "gray": "Gray",
+      "red": "Red",
+      "orange": "Orange",
+      "amber": "Amber",
+      "green": "Green",
+      "teal": "Teal",
+      "blue": "Blue",
+      "violet": "Violet",
+      "pink": "Pink"
+    }
   }
 }

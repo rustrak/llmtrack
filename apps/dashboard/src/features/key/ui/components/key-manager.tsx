@@ -3,7 +3,7 @@ import { Plus } from 'lucide-react';
 import type React from 'react';
 import { useState } from 'react';
 import { useTranslations } from 'use-intl';
-import type { ApiKey, ModelRef } from '@/shared/api/schemas';
+import type { ApiKey, LabelRef, ModelRef } from '@/shared/api/schemas';
 import { Button } from '@/shared/ui/components/shadcn/button';
 import { CreateKeyPanel, type KeyTeam, modelChoices } from './create-key-panel';
 import { KeyActions } from './key-actions';
@@ -17,6 +17,7 @@ export function KeyManager({
   keys,
   teams,
   allModels,
+  labels,
   teamId,
   publicUrl,
   ...table
@@ -24,6 +25,8 @@ export function KeyManager({
   keys: ApiKey[];
   teams: KeyTeam[];
   allModels: ModelRef[];
+  /** What a key may be labelled with. */
+  labels: LabelRef[];
   teamId?: number;
   /** Where applications reach the gateway, for the code samples. */
   publicUrl: string | null;
@@ -45,6 +48,7 @@ export function KeyManager({
             allModels,
           )}
           people={teams.find((x) => x.id === key.team_id)?.people}
+          labels={labels}
           publicUrl={publicUrl}
           onChanged={() => router.invalidate()}
         />
@@ -56,11 +60,13 @@ export function KeyManager({
 export function CreateKeyButton({
   teams,
   allModels,
+  labels,
   teamId,
   publicUrl,
 }: {
   teams: KeyTeam[];
   allModels: ModelRef[];
+  labels: LabelRef[];
   teamId?: number;
   publicUrl: string | null;
 }) {
@@ -78,6 +84,7 @@ export function CreateKeyButton({
         onOpenChange={setCreating}
         teams={teams}
         allModels={allModels}
+        labels={labels}
         defaultTeamId={teamId}
         publicUrl={publicUrl}
         onCreated={() => router.invalidate()}

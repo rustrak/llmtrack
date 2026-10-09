@@ -124,6 +124,11 @@ taken out of the body before it reaches the provider. Rolled up in
   person's (`api_keys.person_id`); the usage writer stamps it on
   `usage_daily.person_id`, so reassigning a key does not move its history.
   Reports break down `by_person` and group the series by `person`.
+- Labels (`labels`: name, colour from `models/label::COLORS`, description)
+  are defined by admins (`/api/labels`; anyone signed in lists them) and
+  assigned to keys, several each (`key_labels`). They have nothing to do
+  with request tags: `?label_id=` on usage and reports counts every key
+  that carries the label now, its earlier spend included.
 - A team's model access is explicit: `all_models`, or the
   ticked `team_models` (none ticked: no model). A key's own list narrows it.
 - Keys can be blocked (reversible), regenerated (new secret, same row, spend
@@ -192,8 +197,8 @@ mid-stream is still billed for what was generated (status 499).
 SQL is written once in the dialect both accept (`$n` placeholders, `ON
 CONFLICT`, `RETURNING`, `CAST(… AS BIGINT)`). Migrations exist twice, in
 `migrations/sqlite` and `migrations/postgres`, and must change together.
-The schema starts as one migration (squashed before the first release);
-from 0.1.0 on, changes are new migrations, never edits to published ones.
+The schema has been released: every change is a new migration pair (same
+name in both directories), never an edit to an existing one.
 Timestamps are always bound from Rust, never defaulted by the database:
 SQLite compares them as strings.
 

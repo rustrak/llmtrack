@@ -205,7 +205,8 @@ phrases! {
     Person => "Person", "Persona";
     Model => "Model", "Modelo";
     Customer => "Customer", "Cliente final";
-    Tag => "Tag", "Etiqueta";
+    Tag => "Tag", "Tag";
+    Label => "Label", "Etiqueta";
     Date => "Date", "Fecha";
     Time => "Time (UTC)", "Hora (UTC)";
     Provider => "Provider", "Proveedor";
@@ -266,7 +267,7 @@ phrases! {
     ByPerson => "By person", "Por persona";
     ByModel => "By model", "Por modelo";
     ByCustomer => "By customer", "Por cliente final";
-    ByTag => "By tag", "Por etiqueta";
+    ByTag => "By tag", "Por tag";
     DayByDay => "Day by day", "Día a día";
     DayByDayNote => "Days with traffic. Days are UTC.", "Días con tráfico. Días en UTC.";
     Lines => "Detail lines", "Líneas de detalle";
@@ -306,7 +307,7 @@ phrases! {
     SheetPeople => "People", "Personas";
     SheetModels => "Models", "Modelos";
     SheetCustomers => "Customers", "Clientes finales";
-    SheetTags => "Tags", "Etiquetas";
+    SheetTags => "Tags", "Tags";
     SheetDaily => "Daily", "Diario";
     SheetLines => "Detail", "Detalle";
     SheetRequests => "Requests", "Peticiones";
@@ -441,7 +442,7 @@ impl Lang {
                 );
                 if filtered_by_model {
                     out.push(
-                        "Los desgloses por cliente final y etiqueta se guardan sin modelo ni \
+                        "Los desgloses por cliente final y tag se guardan sin modelo ni \
                          persona, así que un filtro por cualquiera de ellos los deja vacíos."
                             .into(),
                     );

@@ -6,6 +6,7 @@ import {
   MessagesSquare,
   ScrollText,
   Settings,
+  Tag,
   UserCog,
   Users,
 } from 'lucide-react';
@@ -27,6 +28,7 @@ export function useNav(user: User): NavGroup[] {
         { to: '/playground', label: t('playground'), icon: MessagesSquare },
         { to: '/teams', label: t('teams'), icon: Users },
         { to: '/people', label: t('people'), icon: Contact },
+        { to: '/labels', label: t('labels'), icon: Tag },
       ],
     },
     {
