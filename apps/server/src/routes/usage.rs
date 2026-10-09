@@ -5,13 +5,50 @@ use crate::app::AppState;
 use crate::auth::CurrentUser;
 use crate::error::AppResult;
 use crate::models::list::ListQuery;
+use crate::services::bodies;
 use crate::services::report::{self, ExportQuery};
 use crate::services::usage::{self, LogQuery, UsageQuery};
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.route("/api/usage", web::get().to(report))
         .route("/api/usage/export", web::get().to(export))
-        .route("/api/logs", web::get().to(logs));
+        .route("/api/logs", web::get().to(logs))
+        .route("/api/logs/export", web::get().to(export_bodies))
+        .route("/api/logs/{request_id}/body", web::get().to(body));
+}
+
+/// What a key that keeps bodies kept of one request.
+async fn body(
+    state: web::Data<AppState>,
+    CurrentUser(user): CurrentUser,
+    request_id: web::Path<String>,
+) -> AppResult<HttpResponse> {
+    Ok(HttpResponse::Ok().json(bodies::get(&state.pool, &user, &request_id).await?))
+}
+
+/// The stored bodies behind the filtered logs, as JSON Lines.
+async fn export_bodies(
+    state: web::Data<AppState>,
+    CurrentUser(user): CurrentUser,
+    list: web::Query<ListQuery>,
+    query: web::Query<LogQuery>,
+    export: web::Query<bodies::ExportQuery>,
+) -> AppResult<HttpResponse> {
+    let lines = bodies::export(&state.pool, &user, &list, &query, export.format).await?;
+    let name = match export.format {
+        bodies::Format::Json => "logs",
+        bodies::Format::Chat => "chat",
+    };
+    Ok(HttpResponse::Ok()
+        .content_type("application/x-ndjson")
+        .insert_header((
+            CONTENT_DISPOSITION,
+            format!(
+                "attachment; filename=\"llmtrack-{name}-{}.jsonl\"",
+                chrono::Utc::now().format("%Y-%m-%d")
+            ),
+        ))
+        .streaming(lines))
 }
 
 async fn report(

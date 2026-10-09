@@ -1,5 +1,6 @@
 mod attribution_test;
 mod auth_test;
+mod bodies_test;
 mod endpoints_test;
 mod invitations_test;
 mod key_lifecycle_test;

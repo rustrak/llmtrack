@@ -791,6 +791,7 @@ pub(crate) mod tests {
                 latency_ms: 812,
                 stream: false,
                 error: None,
+                has_body: false,
             })
             .collect();
         let usage = UsageReport {

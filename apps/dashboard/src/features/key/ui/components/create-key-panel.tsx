@@ -46,6 +46,7 @@ import {
   snippets,
   toCreateKeyPayload,
 } from '../../model/key-form';
+import { BodySection } from './body-section';
 
 /** A team as the key form needs it: where the key goes, what it may call. */
 export interface KeyTeam {
@@ -106,6 +107,8 @@ export function CreateKeyPanel({
       rpm_limit: '',
       tpm_limit: '',
       max_parallel_requests: '',
+      log_bodies: false,
+      body_retention_days: '',
       expires: 'never',
     },
   });
@@ -247,6 +250,7 @@ export function CreateKeyPanel({
               <LabelsField labels={labels} />
               <div className="space-y-2">
                 <LimitSections />
+                <BodySection />
                 <PanelSection
                   title={t('form.sections.expiry')}
                   summary={expiryLabels[values.expires]}

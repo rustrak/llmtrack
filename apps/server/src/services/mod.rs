@@ -1,4 +1,5 @@
 pub mod access;
+pub mod bodies;
 pub mod catalog;
 pub mod invitations;
 pub mod keys;

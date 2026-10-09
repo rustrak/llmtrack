@@ -26,6 +26,10 @@ function limitsShape(t: Translate) {
     rpm_limit: limitField(t),
     tpm_limit: limitField(t),
     max_parallel_requests: limitField(t),
+    /** Keep each request's body and reply. */
+    log_bodies: z.boolean(),
+    /** Days they are kept; empty keeps them until deleted. */
+    body_retention_days: limitField(t),
   };
 }
 
@@ -69,6 +73,8 @@ export interface CreateKeyPayload {
   rpm_limit?: number;
   tpm_limit?: number;
   max_parallel_requests?: number;
+  log_bodies?: boolean;
+  body_retention_days?: number;
   expires_at?: string;
 }
 
@@ -86,6 +92,10 @@ export function toCreateKeyPayload(
     rpm_limit: numberOrNull(values.rpm_limit),
     tpm_limit: numberOrNull(values.tpm_limit),
     max_parallel_requests: numberOrNull(values.max_parallel_requests),
+    log_bodies: values.log_bodies || null,
+    body_retention_days: values.log_bodies
+      ? numberOrNull(values.body_retention_days)
+      : null,
     labels: values.labels.length ? values.labels : null,
     expires_at:
       values.expires === 'never'
@@ -124,6 +134,8 @@ export function editDefaults(
     expires_at: string | null;
     person_id: number | null;
     labels: { id: number }[];
+    log_bodies: boolean;
+    body_retention_days: number | null;
   },
   perUsd = 1,
 ): UpdateKeyValues {
@@ -138,6 +150,8 @@ export function editDefaults(
     rpm_limit: text(key.rpm_limit),
     tpm_limit: text(key.tpm_limit),
     max_parallel_requests: text(key.max_parallel_requests),
+    log_bodies: key.log_bodies,
+    body_retention_days: text(key.body_retention_days),
     expires_on: key.expires_at ? localDay(key.expires_at) : '',
   };
 }
@@ -162,6 +176,8 @@ export function toUpdateKeyPayload(
     rpm_limit: number | null;
     tpm_limit: number | null;
     max_parallel_requests: number | null;
+    log_bodies: boolean;
+    body_retention_days: number | null;
     expires_at?: string | null;
   } = {
     name: values.name.trim(),
@@ -173,6 +189,8 @@ export function toUpdateKeyPayload(
     rpm_limit: numberOrNull(values.rpm_limit),
     tpm_limit: numberOrNull(values.tpm_limit),
     max_parallel_requests: numberOrNull(values.max_parallel_requests),
+    log_bodies: values.log_bodies,
+    body_retention_days: numberOrNull(values.body_retention_days),
   };
   if (values.expires_on !== expiresOn) {
     payload.expires_at = values.expires_on

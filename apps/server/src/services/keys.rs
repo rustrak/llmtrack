@@ -37,6 +37,8 @@ struct KeyRow {
     tpm_limit: Option<i64>,
     max_parallel_requests: Option<i64>,
     blocked: bool,
+    log_bodies: bool,
+    body_retention_days: Option<i64>,
     expires_at: Option<DateTime<Utc>>,
     last_used_at: Option<DateTime<Utc>>,
     created_at: DateTime<Utc>,
@@ -47,7 +49,7 @@ struct KeyRow {
 const KEY_SELECT: &str = "
     SELECT k.id, k.name, k.team_id, t.name AS team_name, k.user_id, o.email AS owner_email,
            k.person_id, p.name AS person_name, k.last4, k.max_budget_nanos, k.spend_nanos, k.budget_duration, k.budget_reset_at,
-           k.rpm_limit, k.tpm_limit, k.max_parallel_requests, k.blocked, k.expires_at, k.last_used_at, k.created_at,
+           k.rpm_limit, k.tpm_limit, k.max_parallel_requests, k.blocked, k.log_bodies, k.body_retention_days, k.expires_at, k.last_used_at, k.created_at,
            k.created_by, u.email AS created_by_email
     FROM api_keys k
     LEFT JOIN teams t ON t.id = k.team_id
@@ -185,8 +187,9 @@ pub async fn create(pool: &DbPool, user: &User, req: &CreateKeyRequest) -> AppRe
         "INSERT INTO api_keys (team_id, user_id, name, key_hash, last4, created_by,
                                max_budget_nanos, spend_nanos, budget_duration, budget_reset_at,
                                rpm_limit, tpm_limit, blocked, expires_at, created_at,
-                               max_parallel_requests, person_id)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, 0, $8, $9, $10, $11, FALSE, $12, $13, $14, $15)
+                               max_parallel_requests, person_id, log_bodies, body_retention_days)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, 0, $8, $9, $10, $11, FALSE, $12, $13, $14, $15,
+                 $16, $17)
          RETURNING id",
     )
     .bind(req.team_id)
@@ -207,6 +210,11 @@ pub async fn create(pool: &DbPool, user: &User, req: &CreateKeyRequest) -> AppRe
         "max_parallel_requests",
     )?)
     .bind(req.person_id)
+    .bind(req.log_bodies)
+    .bind(positive_limit(
+        req.body_retention_days,
+        "body_retention_days",
+    )?)
     .fetch_one(&mut *tx)
     .await?;
     replace_models(&mut tx, id, req.team_id, &req.models).await?;
@@ -266,9 +274,10 @@ pub async fn update(
         ("rpm_limit", req.rpm_limit),
         ("tpm_limit", req.tpm_limit),
         ("max_parallel_requests", req.max_parallel_requests),
+        ("body_retention_days", req.body_retention_days),
     ] {
         if let Some(limit) = limit {
-            // `column` is one of the two literals above.
+            // `column` is one of the literals above.
             sqlx::query(sqlx::AssertSqlSafe(format!(
                 "UPDATE api_keys SET {column} = $1 WHERE id = $2"
             )))
@@ -277,6 +286,13 @@ pub async fn update(
             .execute(&mut *tx)
             .await?;
         }
+    }
+    if let Some(log_bodies) = req.log_bodies {
+        sqlx::query("UPDATE api_keys SET log_bodies = $1 WHERE id = $2")
+            .bind(log_bodies)
+            .bind(id)
+            .execute(&mut *tx)
+            .await?;
     }
     if let Some(expires_at) = req.expires_at {
         validate_expiry(expires_at)?;
@@ -466,6 +482,8 @@ fn to_response(row: KeyRow, models: Vec<ModelRef>, labels: Vec<LabelRef>) -> Key
         tpm_limit: row.tpm_limit,
         max_parallel_requests: row.max_parallel_requests,
         blocked: row.blocked,
+        log_bodies: row.log_bodies,
+        body_retention_days: row.body_retention_days,
         expires_at: row.expires_at,
         last_used_at: row.last_used_at,
         created_at: row.created_at,

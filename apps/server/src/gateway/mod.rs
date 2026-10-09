@@ -6,6 +6,7 @@
 //! database in batches off the request path ([`usage`]).
 
 pub mod anthropic;
+pub mod capture;
 pub mod catalog;
 pub mod forward;
 pub mod messages;
@@ -248,6 +249,8 @@ pub struct KeyContext {
     /// A team key bills to its team, a personal key to its user.
     pub team_id: Option<i64>,
     pub user_id: Option<i64>,
+    /// Keep each request's body and reply.
+    pub log_bodies: bool,
     blocked: bool,
     expires_at: Option<DateTime<Utc>>,
     /// Model names this key may call; `None` means every model.
@@ -344,6 +347,7 @@ struct KeyRow {
     id: i64,
     team_id: Option<i64>,
     user_id: Option<i64>,
+    log_bodies: bool,
     blocked: bool,
     expires_at: Option<DateTime<Utc>>,
     max_budget_nanos: Option<i64>,
@@ -480,7 +484,7 @@ impl Gateway {
         }
         let generation = self.generation.load(Ordering::SeqCst);
         let row = sqlx::query_as::<_, KeyRow>(
-            "SELECT k.id, k.team_id, k.user_id, k.blocked, k.expires_at, k.max_budget_nanos,
+            "SELECT k.id, k.team_id, k.user_id, k.log_bodies, k.blocked, k.expires_at, k.max_budget_nanos,
                     k.spend_nanos, k.budget_duration, k.budget_reset_at, k.rpm_limit, k.tpm_limit,
                     k.max_parallel_requests, t.max_parallel_requests AS team_parallel,
                     t.max_budget_nanos AS team_budget, t.spend_nanos AS team_spend,
@@ -527,6 +531,7 @@ impl Gateway {
             key_id: row.id,
             team_id: row.team_id,
             user_id: row.user_id,
+            log_bodies: row.log_bodies,
             blocked: row.blocked,
             expires_at: row.expires_at,
             allowed,
@@ -698,6 +703,7 @@ mod tests {
             key_id: 1,
             team_id: None,
             user_id: Some(1),
+            log_bodies: false,
             blocked: false,
             expires_at: None,
             allowed: allowed.map(|names| names.iter().map(|n| n.to_string()).collect()),

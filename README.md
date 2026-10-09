@@ -153,7 +153,9 @@ takes it.
 
 Every request, with who sent it, which deployment answered, its tokens, cost
 and latency. Failures keep the provider's error. **Prompts and completions are
-never stored.**
+not stored** unless a key opts in: then each request and its reply (a stream
+folded into one) can be read in the log, kept for as many days as the key says,
+and exported as JSON Lines, all fields or as an OpenAI chat dataset.
 
 <img width="2000" height="800" alt="wp-logs" src="https://github.com/user-attachments/assets/7926336a-8031-4527-8e06-8691acf89927" />
 

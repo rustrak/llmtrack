@@ -34,6 +34,7 @@ import {
   type UpdateKeyValues,
   updateKeySchema,
 } from '../../model/key-form';
+import { BodySection } from './body-section';
 import { LabelsField, PersonField } from './create-key-panel';
 
 interface EditKeyProps {
@@ -149,6 +150,7 @@ function EditKeyForm({
           <LabelsField labels={labels} />
           <div className="space-y-2">
             <LimitSections />
+            <BodySection />
             <PanelSection
               title={t('form.sections.expiry')}
               summary={
