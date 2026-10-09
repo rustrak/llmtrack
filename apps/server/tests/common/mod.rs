@@ -216,6 +216,27 @@ where
         )
     }
 
+    /// A GET with the session cookie, returning status, headers and raw bytes
+    /// (for file downloads).
+    pub async fn call_bytes(
+        &mut self,
+        uri: &str,
+        headers: &[(&str, &str)],
+    ) -> (u16, actix_web::http::header::HeaderMap, Vec<u8>) {
+        let mut req = test::TestRequest::get().uri(uri);
+        if let Some(cookie) = &self.cookie {
+            req = req.insert_header(("Cookie", cookie.clone()));
+        }
+        for (name, value) in headers {
+            req = req.insert_header((*name, *value));
+        }
+        let response = test::call_service(&self.service, req.to_request()).await;
+        let status = response.status().as_u16();
+        let response_headers = response.headers().clone();
+        let bytes = test::read_body(response).await;
+        (status, response_headers, bytes.to_vec())
+    }
+
     /// Sends a raw request (for streaming bodies) and returns status and text.
     pub async fn call_text(
         &mut self,

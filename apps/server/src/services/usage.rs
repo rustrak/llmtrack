@@ -16,7 +16,7 @@ const DEFAULT_DAYS: i64 = 30;
 const SERIES_GROUPS: [&str; 6] = ["model", "team", "key", "person", "end_user", "tag"];
 const MAX_DAYS: i64 = 366;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct UsageQuery {
     pub from: Option<NaiveDate>,
     pub to: Option<NaiveDate>,
@@ -36,6 +36,9 @@ pub struct UsageQuery {
 #[derive(Debug, Default, Serialize, Clone, Copy)]
 pub struct Totals {
     pub cost_usd: f64,
+    /// The same, exact: what reports add and convert.
+    #[serde(skip)]
+    pub cost_nanos: i64,
     pub requests: i64,
     pub failed_requests: i64,
     pub prompt_tokens: i64,
@@ -184,6 +187,7 @@ impl Sums {
     fn totals(&self) -> Totals {
         Totals {
             cost_usd: nanos_to_usd(self.cost_nanos),
+            cost_nanos: self.cost_nanos,
             requests: self.requests,
             failed_requests: self.failed_requests,
             prompt_tokens: self.prompt_tokens,
@@ -200,6 +204,7 @@ impl Row {
     fn totals(&self) -> Totals {
         Totals {
             cost_usd: nanos_to_usd(self.cost_nanos),
+            cost_nanos: self.cost_nanos,
             requests: self.requests,
             failed_requests: self.failed_requests,
             prompt_tokens: self.prompt_tokens,
@@ -227,6 +232,27 @@ const SUMS: &str = "
 /// personal keys' otherwise.
 const VISIBLE: &str = "($3 OR u.user_id = $4
     OR u.team_id IN (SELECT team_id FROM team_members WHERE user_id = $4))";
+
+/// The rollup rows of `table` a report covers. Binds: `$1`..`$2` the days,
+/// `$3` admin, `$4` the user, `$5` team, `$6` key, `$7` model, `$8` person.
+///
+/// Customers and tags are rolled up without the model: a model filter
+/// matches none of their rows rather than all of them.
+fn filters(table: &str) -> String {
+    let (model, person) = if table == "usage_daily" {
+        (
+            "(CAST($7 AS TEXT) IS NULL OR u.model_name = $7)",
+            "(CAST($8 AS BIGINT) IS NULL OR u.person_id = $8)",
+        )
+    } else {
+        ("CAST($7 AS TEXT) IS NULL", "CAST($8 AS BIGINT) IS NULL")
+    };
+    format!(
+        "u.day >= $1 AND u.day <= $2 AND {VISIBLE}
+         AND ($5 IS NULL OR u.team_id = $5) AND ($6 IS NULL OR u.key_id = $6)
+         AND {model} AND {person}"
+    )
+}
 
 pub async fn report(pool: &DbPool, user: &User, query: &UsageQuery) -> AppResult<UsageReport> {
     if let Some(team_id) = query.team_id {
@@ -256,23 +282,6 @@ pub async fn report(pool: &DbPool, user: &User, query: &UsageQuery) -> AppResult
     }
     let model = query.model.as_deref().filter(|m| !m.is_empty());
 
-    // Customers and tags are rolled up without the model: a model filter
-    // matches none of their rows rather than all of them.
-    let filters = |table: &str| {
-        let (model, person) = if table == "usage_daily" {
-            (
-                "(CAST($7 AS TEXT) IS NULL OR u.model_name = $7)",
-                "(CAST($8 AS BIGINT) IS NULL OR u.person_id = $8)",
-            )
-        } else {
-            ("CAST($7 AS TEXT) IS NULL", "CAST($8 AS BIGINT) IS NULL")
-        };
-        format!(
-            "u.day >= $1 AND u.day <= $2 AND {VISIBLE}
-             AND ($5 IS NULL OR u.team_id = $5) AND ($6 IS NULL OR u.key_id = $6)
-             AND {model} AND {person}"
-        )
-    };
     let group_in = |table: &str, select: &str, joins: &str, group_by: &str| {
         format!(
             "SELECT {select}, {SUMS}
@@ -452,7 +461,8 @@ pub async fn report(pool: &DbPool, user: &User, query: &UsageQuery) -> AppResult
         by_day.insert(row.label.clone(), day);
     }
     // Recomputed from nanos so the sum of floats never drifts from the parts.
-    totals.cost_usd = nanos_to_usd(daily_rows.iter().map(|r| r.cost_nanos).sum());
+    totals.cost_nanos = daily_rows.iter().map(|r| r.cost_nanos).sum();
+    totals.cost_usd = nanos_to_usd(totals.cost_nanos);
 
     let daily = from
         .iter_days()
@@ -537,6 +547,111 @@ pub async fn report(pool: &DbPool, user: &User, query: &UsageQuery) -> AppResult
             })
             .collect(),
     })
+}
+
+/// One rollup row as it is stored: a day of one key on one model.
+#[derive(Debug, sqlx::FromRow)]
+pub struct Line {
+    pub day: String,
+    pub key_id: i64,
+    pub key_name: Option<String>,
+    pub last4: Option<String>,
+    pub team_name: Option<String>,
+    /// For a personal key, whose it is.
+    pub owner: Option<String>,
+    pub person_name: Option<String>,
+    pub model_name: String,
+    pub requests: i64,
+    pub failed_requests: i64,
+    pub prompt_tokens: i64,
+    pub completion_tokens: i64,
+    pub cached_tokens: i64,
+    pub cache_write_tokens: i64,
+    pub reasoning_tokens: i64,
+    pub cost_nanos: i64,
+    pub latency_ms: i64,
+}
+
+/// The rollup rows behind a report over `from..=to`, oldest first. The
+/// caller has already checked the range and the team.
+pub async fn lines(
+    pool: &DbPool,
+    user: &User,
+    query: &UsageQuery,
+    from: NaiveDate,
+    to: NaiveDate,
+) -> AppResult<Vec<Line>> {
+    Ok(sqlx::query_as::<_, Line>(sqlx::AssertSqlSafe(format!(
+        "SELECT u.day, u.key_id, k.name AS key_name, k.last4, t.name AS team_name,
+                COALESCE(us.name, us.email) AS owner, p.name AS person_name, u.model_name,
+                u.requests, u.failed_requests, u.prompt_tokens, u.completion_tokens,
+                u.cached_tokens, u.cache_write_tokens, u.reasoning_tokens, u.cost_nanos,
+                u.latency_ms
+         FROM usage_daily u
+         LEFT JOIN api_keys k ON k.id = u.key_id
+         LEFT JOIN teams t ON t.id = u.team_id
+         LEFT JOIN users us ON us.id = u.user_id AND u.team_id IS NULL
+         LEFT JOIN people p ON p.id = u.person_id
+         WHERE {}
+         ORDER BY u.day, t.name, k.name, u.key_id, u.model_name",
+        filters("usage_daily")
+    )))
+    .bind(from.to_string())
+    .bind(to.to_string())
+    .bind(user.is_admin())
+    .bind(user.id)
+    .bind(query.team_id)
+    .bind(query.key_id)
+    .bind(query.model.as_deref().filter(|m| !m.is_empty()))
+    .bind(query.person_id)
+    .fetch_all(pool)
+    .await?)
+}
+
+/// Up to `limit` requests of `from..=to` (UTC days), oldest first, under the
+/// report's filters. Requests do not carry the person, so a person filter
+/// matches none.
+pub async fn requests(
+    pool: &DbPool,
+    user: &User,
+    query: &UsageQuery,
+    from: NaiveDate,
+    to: NaiveDate,
+    limit: i64,
+) -> AppResult<Vec<LogEntry>> {
+    let start = from.and_time(chrono::NaiveTime::MIN).and_utc();
+    let end = (to + chrono::Duration::days(1))
+        .and_time(chrono::NaiveTime::MIN)
+        .and_utc();
+    Ok(sqlx::query_as::<_, LogEntry>(
+        "SELECT l.id, l.request_id, l.created_at, l.team_id, t.name AS team_name, l.user_id, l.key_id,
+                l.model_id, l.end_user, l.tags AS tags_json,
+                k.name AS key_name, k.last4, l.model_name, l.provider, l.status_code,
+                l.prompt_tokens, l.completion_tokens, l.cached_tokens, l.cache_write_tokens,
+                l.reasoning_tokens, l.endpoint, l.cost_nanos, l.latency_ms, l.stream, l.error
+         FROM request_logs l
+         LEFT JOIN teams t ON t.id = l.team_id
+         LEFT JOIN api_keys k ON k.id = l.key_id
+         WHERE l.created_at >= $1 AND l.created_at < $2
+           AND ($3 OR l.user_id = $4
+                OR l.team_id IN (SELECT team_id FROM team_members WHERE user_id = $4))
+           AND ($5 IS NULL OR l.team_id = $5) AND ($6 IS NULL OR l.key_id = $6)
+           AND (CAST($7 AS TEXT) IS NULL OR l.model_name = $7)
+           AND CAST($8 AS BIGINT) IS NULL
+         ORDER BY l.created_at, l.id
+         LIMIT $9",
+    )
+    .bind(start)
+    .bind(end)
+    .bind(user.is_admin())
+    .bind(user.id)
+    .bind(query.team_id)
+    .bind(query.key_id)
+    .bind(query.model.as_deref().filter(|m| !m.is_empty()))
+    .bind(query.person_id)
+    .bind(limit)
+    .fetch_all(pool)
+    .await?)
 }
 
 #[derive(Debug, Deserialize)]

@@ -579,7 +579,7 @@
       "latency": "Latencia media"
     },
     "personal": "Claves personales",
-    "export": "Exportar CSV",
+    "export": "Exportar",
     "avgCost": "Coste medio",
     "perRequest": "Por petición",
     "byEndUser": "Por cliente",
@@ -634,7 +634,103 @@
     "deletedPerson": "Persona eliminada #{id}",
     "noPerson": "Nadie",
     "person": "Persona",
-    "personalOf": "{name} · personal"
+    "personalOf": "{name} · personal",
+    "exportReport": "Informe (PDF o Excel)…",
+    "exportCsv": "Datos (CSV)",
+    "report": {
+      "title": "Informe de uso",
+      "description": "Un PDF para enviar a tu cliente o un Excel con el que trabajar. Se aplican los filtros de esta página.",
+      "format": "Formato",
+      "formats": {
+        "pdf": {
+          "label": "PDF",
+          "hint": "Para enviar, imprimir o adjuntar a una factura"
+        },
+        "xlsx": {
+          "label": "Excel",
+          "hint": "Para filtrar, hacer tablas dinámicas y cuadrar"
+        }
+      },
+      "client": "Cliente",
+      "clientPlaceholder": "Para quién es el informe",
+      "reference": "Referencia",
+      "referencePlaceholder": "Número de pedido o contrato",
+      "markup": "Recargo (%)",
+      "markupHint": "Se suma al coste del proveedor en cada importe. En blanco, a coste.",
+      "markupInvalid": "Un porcentaje entre 0 y 1000.",
+      "showCost": "Mostrar coste del proveedor y margen",
+      "showCostHint": "Para uso interno: quien lo lea verá tu margen.",
+      "sections": "Secciones",
+      "all": "Todas",
+      "none": "Ninguna",
+      "notes": "Notas",
+      "notesPlaceholder": "Se imprimen al final del informe",
+      "profile": "{language} · {currency}, según tu perfil",
+      "language": {
+        "en": "inglés",
+        "es": "español"
+      },
+      "download": "Descargar",
+      "working": "Generando…",
+      "ready": "Informe descargado",
+      "section": {
+        "summary": {
+          "label": "Resumen"
+        },
+        "trend": {
+          "label": "Evolución del gasto"
+        },
+        "tokens": {
+          "label": "Composición de tokens"
+        },
+        "teams": {
+          "label": "Por equipo"
+        },
+        "keys": {
+          "label": "Por clave de API"
+        },
+        "people": {
+          "label": "Por persona"
+        },
+        "models": {
+          "label": "Por modelo"
+        },
+        "customers": {
+          "label": "Por cliente final"
+        },
+        "tags": {
+          "label": "Por etiqueta"
+        },
+        "daily": {
+          "label": "Día a día"
+        },
+        "lines": {
+          "label": "Líneas de detalle"
+        },
+        "requests": {
+          "label": "Cada petición"
+        },
+        "rates": {
+          "label": "Tarifas"
+        }
+      },
+      "amounts": "Importes",
+      "clientFromTeam": "Tomado del filtro de equipo.",
+      "selected": "{count} de {total}",
+      "narrowed": "Se omiten los desgloses que ya resuelven los filtros: con un solo equipo, una tabla por equipo tendría una fila.",
+      "cancel": "Cancelar",
+      "allUsage": "Todo el uso",
+      "groups": {
+        "overview": "Visión general",
+        "breakdowns": "Desgloses",
+        "detail": "Detalle",
+        "annex": "Anexo"
+      },
+      "markupSummary": "+{value} %",
+      "costShown": "coste visible",
+      "atCost": "A coste",
+      "noNotes": "Sin notas"
+    }
   },
   "logs": {
     "meta": {

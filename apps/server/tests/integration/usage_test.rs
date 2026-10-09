@@ -7,7 +7,7 @@ use serde_json::json;
 
 /// Writes one request straight into the log and the rollup, `days_ago` days
 /// back, the way the usage writer would.
-async fn spend<S>(
+pub(crate) async fn spend<S>(
     app: &TestApp<S>,
     team_id: i64,
     key_id: i64,
@@ -55,7 +55,7 @@ async fn spend<S>(
     .unwrap();
 }
 
-async fn key<S>(app: &mut TestApp<S>, team_id: i64, name: &str) -> i64
+pub(crate) async fn key<S>(app: &mut TestApp<S>, team_id: i64, name: &str) -> i64
 where
     S: Service<Request, Response = ServiceResponse, Error = actix_web::Error>,
 {

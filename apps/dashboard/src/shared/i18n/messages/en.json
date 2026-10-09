@@ -579,7 +579,7 @@
       "latency": "Avg latency"
     },
     "personal": "Personal keys",
-    "export": "Export CSV",
+    "export": "Export",
     "avgCost": "Average cost",
     "perRequest": "Per request",
     "byEndUser": "By customer",
@@ -634,7 +634,103 @@
     "deletedPerson": "Deleted person #{id}",
     "noPerson": "No one",
     "person": "Person",
-    "personalOf": "{name} · personal"
+    "personalOf": "{name} · personal",
+    "exportReport": "Report (PDF or Excel)…",
+    "exportCsv": "Data (CSV)",
+    "report": {
+      "title": "Usage report",
+      "description": "A PDF to send your client, or an Excel workbook to work with. The filters on this page apply.",
+      "format": "Format",
+      "formats": {
+        "pdf": {
+          "label": "PDF",
+          "hint": "To send, print or attach to an invoice"
+        },
+        "xlsx": {
+          "label": "Excel",
+          "hint": "To filter, pivot and reconcile"
+        }
+      },
+      "client": "Client",
+      "clientPlaceholder": "Who the report is for",
+      "reference": "Reference",
+      "referencePlaceholder": "Order or contract number",
+      "markup": "Markup (%)",
+      "markupHint": "Added to the provider cost on every amount. Blank bills at cost.",
+      "markupInvalid": "A percentage between 0 and 1000.",
+      "showCost": "Show provider cost and margin",
+      "showCostHint": "For internal use: whoever reads it sees your margin.",
+      "sections": "Sections",
+      "all": "All",
+      "none": "None",
+      "notes": "Notes",
+      "notesPlaceholder": "Printed at the end of the report",
+      "profile": "{language} · {currency}, from your profile",
+      "language": {
+        "en": "English",
+        "es": "Spanish"
+      },
+      "download": "Download",
+      "working": "Generating…",
+      "ready": "Report downloaded",
+      "section": {
+        "summary": {
+          "label": "Summary"
+        },
+        "trend": {
+          "label": "Spend over time"
+        },
+        "tokens": {
+          "label": "Token mix"
+        },
+        "teams": {
+          "label": "By team"
+        },
+        "keys": {
+          "label": "By API key"
+        },
+        "people": {
+          "label": "By person"
+        },
+        "models": {
+          "label": "By model"
+        },
+        "customers": {
+          "label": "By customer"
+        },
+        "tags": {
+          "label": "By tag"
+        },
+        "daily": {
+          "label": "Day by day"
+        },
+        "lines": {
+          "label": "Detail lines"
+        },
+        "requests": {
+          "label": "Every request"
+        },
+        "rates": {
+          "label": "Rates"
+        }
+      },
+      "amounts": "Amounts",
+      "clientFromTeam": "Taken from the team filter.",
+      "selected": "{count} of {total}",
+      "narrowed": "Breakdowns the filters already answer are left out: filtered to one team, a table by team would have one row.",
+      "cancel": "Cancel",
+      "allUsage": "All usage",
+      "groups": {
+        "overview": "Overview",
+        "breakdowns": "Breakdowns",
+        "detail": "Detail",
+        "annex": "Appendix"
+      },
+      "markupSummary": "+{value}%",
+      "costShown": "cost shown",
+      "atCost": "At cost",
+      "noNotes": "None"
+    }
   },
   "logs": {
     "meta": {
