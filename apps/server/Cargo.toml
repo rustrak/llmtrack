@@ -1,6 +1,6 @@
 [package]
 name = "llmtrack"
-version = "0.0.0"
+version = "0.1.0"
 edition = "2021"
 authors = ["Rustrak Team"]
 description = "Lightweight LLM gateway: one OpenAI-compatible endpoint, per-team keys and spend tracking"
@@ -68,7 +68,7 @@ mimalloc = "0.1.52"
 actix-http = "3.18.12"
 tempfile = "3.27.0"
 # Reads the exported workbooks back.
-calamine = "0.35.0"
+calamine = "0.36"
 testcontainers = "0.27.3"
 testcontainers-modules = { version = "0.15.0", features = ["postgres"] }
 
