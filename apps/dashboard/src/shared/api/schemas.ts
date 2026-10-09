@@ -243,6 +243,10 @@ export const keySchema = z.object({
   tpm_limit: z.number().nullable(),
   max_parallel_requests: z.number().nullable(),
   blocked: z.boolean(),
+  /** Keeps each request's body and reply. */
+  log_bodies: z.boolean(),
+  /** Days they are kept; null keeps them until deleted. */
+  body_retention_days: z.number().nullable(),
   expires_at: z.string().nullable(),
   last_used_at: z.string().nullable(),
   created_at: z.string(),
@@ -362,8 +366,17 @@ export const logLineSchema = z.object({
   latency_ms: z.number(),
   stream: z.boolean(),
   error: z.string().nullable(),
+  /** Its key kept the request and the reply. */
+  has_body: z.boolean(),
 });
 export type LogLine = z.infer<typeof logLineSchema>;
+
+/** What a key that keeps bodies kept: the request as sent, the reply as received. */
+export const bodySchema = z.object({
+  request: z.unknown(),
+  response: z.unknown().nullable(),
+});
+export type Body = z.infer<typeof bodySchema>;
 
 export const probeSchema = z.object({
   ok: z.boolean(),

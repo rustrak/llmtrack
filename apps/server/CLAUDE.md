@@ -24,6 +24,7 @@ src/
     ├── mod.rs         Gateway: cached keys, routes and catalog; live spend counters
     ├── forward.rs     one path for every endpoint: provider call, metered stream, usage
     ├── anthropic.rs   chat completions → Anthropic Messages (thinking, JSON mode, cache_control…)
+    ├── capture.rs     request bodies: a stream folded into one reply, inline files left out
     ├── messages.rs    Anthropic Messages → chat completions, for /v1/messages on other models
     ├── responses.rs   Responses API → chat completions, for providers without /responses
     ├── router.rs      the router: deployments, retries, cooldowns, fallbacks
@@ -111,6 +112,21 @@ chars). Tags: `x-litellm-tags`, `tags`, `metadata.tags`,
 `litellm_metadata.tags` (20 of 64 chars). Tags and `litellm_metadata` are
 taken out of the body before it reaches the provider. Rolled up in
 `usage_daily_end_users` and `usage_daily_tags`; logs filter by both.
+
+## Request bodies
+
+Off by default, per key (`api_keys.log_bodies`). When on, the meter keeps
+the body the client sent and the reply it got, in the client's dialect; a
+stream is folded into the one reply it adds up to (`gateway/capture.rs`).
+Inline files (base64, `data:` URLs) are stored as their size; embeddings
+keep their input only. The usage writer puts them in `request_bodies`, apart
+from `request_logs`, so usage and billing never read them.
+`body_retention_days` deletes them after that many days (null: never); an
+hourly task purges (`services/bodies.rs`), also the bodies of deleted keys.
+`GET /api/logs/{request_id}/body` answers whoever sees the log line (`has_body`
+on each line). `GET /api/logs/export?format=json|chat` takes the log filters
+and streams JSON Lines: every field plus both bodies, or OpenAI's chat format
+(successful chat completions only).
 
 ## Keys, teams, invitations
 
@@ -219,7 +235,8 @@ Write the test first.
 - `AppError` everywhere; never `unwrap` on a request path.
 - Raw virtual keys are shown once and never stored or logged.
 - Provider API keys never leave the server (responses say `has_api_key`).
-- Prompts and completions are never stored; logs keep what billing needs.
+- Prompts and completions are stored only for keys that opt in, and never
+  in `request_logs`.
 
 ## Known ceilings (v1)
 

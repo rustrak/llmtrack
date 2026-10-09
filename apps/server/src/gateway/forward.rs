@@ -19,11 +19,12 @@ use std::time::Instant;
 use tokio::sync::mpsc;
 
 use super::anthropic::{self, ModelFacts};
+use super::capture::{self, Transcript};
 use super::messages;
 use super::providers::Wire;
 use super::responses;
 use super::sse::SseParser;
-use super::usage::{Message, UsageEvent};
+use super::usage::{Bodies, Message, UsageEvent};
 use super::{Caller, Gateway, Route, Usage};
 use crate::error::{AppError, AppResult};
 
@@ -80,6 +81,8 @@ pub struct Meter {
     started: Instant,
     request_id: String,
     stream: bool,
+    /// Only for keys that keep them.
+    bodies: Option<Box<Bodies>>,
 }
 
 impl Meter {
@@ -98,11 +101,30 @@ impl Meter {
             started: Instant::now(),
             request_id: uuid::Uuid::new_v4().to_string(),
             stream,
+            bodies: None,
+        }
+    }
+
+    /// Keeps what the client sent, if its key keeps bodies.
+    pub fn with_request(mut self, request: impl FnOnce() -> Value) -> Self {
+        if self.caller.key.log_bodies {
+            self.bodies = Some(Box::new(Bodies {
+                request: request(),
+                response: None,
+            }));
+        }
+        self
+    }
+
+    /// Keeps the reply, if the request is being kept.
+    fn reply(&mut self, reply: &Value) {
+        if let Some(bodies) = self.bodies.as_mut().filter(|_| !reply.is_null()) {
+            bodies.response = Some(reply.clone());
         }
     }
 
     /// Charges the counters now and builds the event for the writer.
-    fn event(&self, status: u16, usage: Usage, error: Option<String>) -> UsageEvent {
+    fn event(&mut self, status: u16, usage: Usage, error: Option<String>) -> UsageEvent {
         let cost = self.route.pricing.cost_nanos(&usage);
         self.caller
             .key
@@ -129,10 +151,11 @@ impl Meter {
             stream: self.stream,
             error,
             at: Utc::now(),
+            bodies: self.bodies.take(),
         }
     }
 
-    pub async fn record(self, status: u16, usage: Usage, error: Option<String>) {
+    pub async fn record(mut self, status: u16, usage: Usage, error: Option<String>) {
         let event = self.event(status, usage, error);
         if self
             .usage
@@ -148,7 +171,7 @@ impl Meter {
     }
 
     /// For `Drop`, which cannot await.
-    fn record_detached(self, status: u16, usage: Usage, error: Option<String>) {
+    fn record_detached(mut self, status: u16, usage: Usage, error: Option<String>) {
         let event = self.event(status, usage, error);
         let sender = self.usage.clone();
         match tokio::runtime::Handle::try_current() {
@@ -188,18 +211,22 @@ pub async fn openai_json(
     mut body: Map<String, Value>,
 ) -> AppResult<HttpResponse> {
     let stream = endpoint.streams() && body.get("stream") == Some(&Value::Bool(true));
+    let request = || Value::Object(body.clone());
     if endpoint == Endpoint::Responses && !route.native_responses {
-        let meter = Meter::new(gateway, caller, route.clone(), endpoint, stream);
+        let meter =
+            Meter::new(gateway, caller, route.clone(), endpoint, stream).with_request(request);
         return responses_via_chat(gateway, meter, &route, body, stream).await;
     }
     if route.wire == Wire::Anthropic {
         if endpoint != Endpoint::ChatCompletions {
             return Err(no_such_endpoint(&route, endpoint));
         }
-        let meter = Meter::new(gateway, caller, route.clone(), endpoint, stream);
+        let meter =
+            Meter::new(gateway, caller, route.clone(), endpoint, stream).with_request(request);
         return anthropic_chat(gateway, meter, &route, body, stream).await;
     }
-    let meter = Meter::new(gateway, caller, route.clone(), endpoint, stream);
+    let mut meter =
+        Meter::new(gateway, caller, route.clone(), endpoint, stream).with_request(request);
 
     let prompt_estimate = estimate_tokens(&Value::Object(body.clone()));
     let characters = match endpoint {
@@ -261,6 +288,10 @@ pub async fn openai_json(
         },
         _ => Usage::from_openai(&reply["usage"]).unwrap_or_default(),
     };
+    // ponytail: embeddings keep their input only; the vectors are of no use to read.
+    if endpoint != Endpoint::Embeddings {
+        meter.reply(&reply);
+    }
     meter.record(status.as_u16(), usage, None).await;
     Ok(HttpResponse::build(status)
         .content_type(content_type)
@@ -271,7 +302,7 @@ pub async fn openai_json(
 /// Anthropic (translated once more) or to an OpenAI-dialect provider.
 async fn responses_via_chat(
     gateway: &Gateway,
-    meter: Meter,
+    mut meter: Meter,
     route: &Route,
     body: Map<String, Value>,
     stream: bool,
@@ -328,6 +359,7 @@ async fn responses_via_chat(
         reply
     };
     let (response, usage) = responses::to_response(&completion, &route.name);
+    meter.reply(&response);
     meter.record(status.as_u16(), usage, None).await;
     Ok(HttpResponse::Ok().json(response))
 }
@@ -404,7 +436,8 @@ pub async fn openai_multipart(
     if route.wire == Wire::Anthropic {
         return Err(no_such_endpoint(&route, endpoint));
     }
-    let meter = Meter::new(gateway, caller, route.clone(), endpoint, false);
+    let mut meter = Meter::new(gateway, caller, route.clone(), endpoint, false)
+        .with_request(|| capture::multipart_request(&parts));
     let mut form = reqwest::multipart::Form::new();
     for part in parts {
         if part.name == "model" {
@@ -447,6 +480,7 @@ pub async fn openai_multipart(
             ..Usage::default()
         },
     };
+    meter.reply(&reply);
     meter.record(status.as_u16(), usage, None).await;
     Ok(HttpResponse::build(status)
         .content_type(content_type)
@@ -470,7 +504,8 @@ pub async fn messages(
     headers: AnthropicHeaders,
 ) -> AppResult<HttpResponse> {
     let stream = body.get("stream") == Some(&Value::Bool(true));
-    let meter = Meter::new(gateway, caller, route.clone(), Endpoint::Messages, stream);
+    let mut meter = Meter::new(gateway, caller, route.clone(), Endpoint::Messages, stream)
+        .with_request(|| Value::Object(body.clone()));
 
     if route.wire == Wire::Anthropic {
         body.insert("model".into(), Value::String(route.upstream_model.clone()));
@@ -491,6 +526,7 @@ pub async fn messages(
             return upstream_error(meter, status, &bytes, |b| b.clone()).await;
         }
         let reply = parse(&bytes).unwrap_or(Value::Null);
+        meter.reply(&reply);
         meter
             .record(
                 status.as_u16(),
@@ -524,6 +560,7 @@ pub async fn messages(
         AppError::Upstream("the provider answered with something other than JSON".into())
     })?;
     let (reply, usage) = messages::to_anthropic_response(&completion, &route.name);
+    meter.reply(&reply);
     meter.record(status.as_u16(), usage, None).await;
     Ok(HttpResponse::Ok().json(reply))
 }
@@ -601,7 +638,7 @@ fn anthropic_request(
 
 async fn anthropic_chat(
     gateway: &Gateway,
-    meter: Meter,
+    mut meter: Meter,
     route: &Route,
     body: Map<String, Value>,
     stream: bool,
@@ -633,6 +670,7 @@ async fn anthropic_chat(
         AppError::Upstream("anthropic answered with something other than JSON".into())
     })?;
     let (completion, usage) = anthropic::to_openai_response(&message, &route.name, json_mode);
+    meter.reply(&completion);
     meter.record(status.as_u16(), usage, None).await;
     Ok(HttpResponse::Ok().json(completion))
 }
@@ -674,7 +712,7 @@ async fn fail(meter: Meter, status: StatusCode, message: String) -> AppResult<Ht
 /// speaks), except 401 and 403: those mean the gateway's provider key is
 /// wrong, and passing them through would tell the client its own key is.
 async fn upstream_error(
-    meter: Meter,
+    mut meter: Meter,
     status: StatusCode,
     bytes: &Bytes,
     reshape: impl Fn(&Value) -> Value,
@@ -686,6 +724,7 @@ async fn upstream_error(
         .as_str()
         .unwrap_or("provider error")
         .to_string();
+    meter.reply(&parsed);
     if matches!(status, StatusCode::UNAUTHORIZED | StatusCode::FORBIDDEN) {
         let message =
             format!("the provider refused the gateway's credentials ({status}): {message}");
@@ -770,12 +809,18 @@ struct Metered {
     mode: Mode,
     usage: Usage,
     meter: Option<Meter>,
+    /// What the client was sent, for a key that keeps bodies.
+    transcript: Option<Transcript>,
     done: bool,
 }
 
 impl Metered {
     fn new(response: reqwest::Response, mode: Mode, meter: Meter) -> Self {
         Self {
+            transcript: meter
+                .bodies
+                .is_some()
+                .then(|| Transcript::new(meter.endpoint)),
             inner: response.bytes_stream().boxed(),
             parser: SseParser::default(),
             mode,
@@ -896,9 +941,20 @@ impl Metered {
         }
     }
 
+    /// The bytes on their way to the client.
+    fn sent(&mut self, out: Vec<u8>) -> Poll<Option<Result<Bytes, actix_web::Error>>> {
+        if let Some(transcript) = &mut self.transcript {
+            transcript.push(&out);
+        }
+        Poll::Ready(Some(Ok(Bytes::from(out))))
+    }
+
     fn finish(&mut self, status: u16, error: Option<String>) {
         let usage = self.final_usage();
-        if let Some(meter) = self.meter.take() {
+        if let Some(mut meter) = self.meter.take() {
+            if let Some(reply) = self.transcript.take().and_then(Transcript::finish) {
+                meter.reply(&reply);
+            }
             meter.record_detached(status, usage, error);
         }
     }
@@ -917,7 +973,7 @@ impl Stream for Metered {
                 Poll::Ready(Some(Ok(bytes))) => {
                     let out = self.process(&bytes);
                     if !out.is_empty() {
-                        return Poll::Ready(Some(Ok(Bytes::from(out))));
+                        return self.sent(out);
                     }
                 }
                 Poll::Ready(Some(Err(e))) => {
@@ -941,6 +997,9 @@ impl Stream for Metered {
                             out.extend_from_slice(translator.finish().as_bytes());
                         }
                         _ => {}
+                    }
+                    if let Some(transcript) = &mut self.transcript {
+                        transcript.push(&out);
                     }
                     self.finish(200, None);
                     if !out.is_empty() {

@@ -2,7 +2,8 @@
 //!
 //! Requests hand their [`UsageEvent`] to a channel and return. One task drains
 //! it: whatever has queued up is written in a single transaction (the log
-//! rows, the daily rollup, the key and team spend), so the write rate tracks
+//! rows, the daily rollup, the key and team spend, the bodies of keys that
+//! keep them), so the write rate tracks
 //! batches, not requests. Live budget checks never wait for it; they read the
 //! in-memory counters that [`super::forward::Meter`] bumps immediately.
 
@@ -10,6 +11,7 @@ use chrono::{DateTime, Utc};
 use std::collections::HashMap;
 use tokio::sync::{mpsc, oneshot};
 
+use super::capture;
 use crate::db::{begin_write, DbPool};
 
 #[derive(Debug, Clone)]
@@ -37,6 +39,15 @@ pub struct UsageEvent {
     pub stream: bool,
     pub error: Option<String>,
     pub at: DateTime<Utc>,
+    /// For keys that keep them.
+    pub bodies: Option<Box<Bodies>>,
+}
+
+/// What was asked, and what was answered when there was an answer.
+#[derive(Debug, Clone)]
+pub struct Bodies {
+    pub request: serde_json::Value,
+    pub response: Option<serde_json::Value>,
 }
 
 pub enum Message {
@@ -67,7 +78,7 @@ async fn run(pool: DbPool, mut rx: mpsc::Receiver<Message>) {
             }
         }
         if !events.is_empty() {
-            if let Err(e) = write_batch(&pool, &events).await {
+            if let Err(e) = write_batch(&pool, &mut events).await {
                 // ponytail: a failed batch is logged and dropped; spool to disk if billing must survive a DB outage.
                 log::error!("failed to write {} usage events: {e}", events.len());
             }
@@ -78,12 +89,30 @@ async fn run(pool: DbPool, mut rx: mpsc::Receiver<Message>) {
     }
 }
 
-async fn write_batch(pool: &DbPool, events: &[UsageEvent]) -> Result<(), sqlx::Error> {
+async fn write_batch(pool: &DbPool, events: &mut [UsageEvent]) -> Result<(), sqlx::Error> {
     let mut key_totals: HashMap<i64, (i64, DateTime<Utc>)> = HashMap::new();
     let mut team_totals: HashMap<i64, i64> = HashMap::new();
     let mut tx = begin_write(pool).await?;
 
-    for e in events {
+    for e in events.iter_mut() {
+        if let Some(bodies) = e.bodies.as_mut() {
+            capture::trim(&mut bodies.request);
+            if let Some(response) = bodies.response.as_mut() {
+                capture::trim(response);
+            }
+            sqlx::query(
+                "INSERT INTO request_bodies (request_id, key_id, request, response, created_at)
+                 VALUES ($1, $2, $3, $4, $5)",
+            )
+            .bind(&e.request_id)
+            .bind(e.key_id)
+            .bind(bodies.request.to_string())
+            .bind(bodies.response.as_ref().map(serde_json::Value::to_string))
+            .bind(e.at)
+            .execute(&mut *tx)
+            .await?;
+        }
+        let e = &*e;
         sqlx::query(
             "INSERT INTO request_logs (request_id, team_id, key_id, model_name, provider,
                  status_code, prompt_tokens, completion_tokens, cost_nanos, latency_ms,

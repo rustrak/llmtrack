@@ -1,8 +1,14 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { ChevronDown, Download, FileJson, MessagesSquare } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslations } from 'use-intl';
 import { listKeys } from '@/features/key/api/queries';
-import { getLogs, type LogFilter } from '@/features/log/api/queries';
+import {
+  type ExportFormat,
+  exportUrl,
+  getLogs,
+  type LogFilter,
+} from '@/features/log/api/queries';
 import {
   LOG_WINDOWS,
   type LogWindow,
@@ -35,6 +41,12 @@ import {
 } from '@/shared/ui/components/data-table';
 import { Page } from '@/shared/ui/components/page';
 import { Button } from '@/shared/ui/components/shadcn/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/shared/ui/components/shadcn/dropdown-menu';
 import { useMoney } from '@/shared/ui/hooks/use-money';
 
 type LogSearch = Omit<LogFilter, 'from'> & { window: LogWindow };
@@ -138,6 +150,13 @@ function LogsPage() {
       search.end_user ||
       search.tag,
   );
+  /** The stored request content behind what the filters show. */
+  const download = (format: ExportFormat) => {
+    const { window, ...filter } = search;
+    const link = document.createElement('a');
+    link.href = exportUrl({ ...filter, from: since(window) }, format);
+    link.click();
+  };
   const sortable = (field: string, label: string, className?: string) => (
     <SortHead
       field={field}
@@ -151,7 +170,30 @@ function LogsPage() {
   );
 
   return (
-    <Page fill title={t('title')} description={t('subtitle')}>
+    <Page
+      fill
+      title={t('title')}
+      description={t('subtitle')}
+      actions={
+        <DropdownMenu>
+          <DropdownMenuTrigger render={<Button variant="outline" />}>
+            <Download />
+            {t('export.button')}
+            <ChevronDown />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => download('json')}>
+              <FileJson />
+              {t('export.json')}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => download('chat')}>
+              <MessagesSquare />
+              {t('export.chat')}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      }
+    >
       <DataTable
         toolbar={
           <>

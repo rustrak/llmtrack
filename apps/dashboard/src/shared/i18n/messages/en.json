@@ -165,7 +165,17 @@
       "personEmpty": "This team has no people yet.",
       "personAdd": "Add them in People",
       "labels": "Labels",
-      "labelsHint": "Usage can be filtered by them."
+      "labelsHint": "Usage can be filtered by them.",
+      "content": {
+        "title": "Request content",
+        "off": "Not kept",
+        "days": "{count, plural, one {Kept # day} other {Kept # days}}",
+        "forever": "Kept until deleted",
+        "keep": "Keep prompts and replies",
+        "keepHint": "Each request and its reply are stored, to read in Logs and export. Images and files are left out.",
+        "retention": "Delete after (days)",
+        "retentionHint": "Leave empty to keep them until deleted."
+      }
     },
     "expiry": {
       "never": "Never",
@@ -743,7 +753,7 @@
       "title": "Logs · llmtrack"
     },
     "title": "Logs",
-    "subtitle": "Every request through the gateway: who sent it, what it cost, how long it took. Prompts are never stored.",
+    "subtitle": "Every request through the gateway: who sent it, what it cost, how long it took. Content is kept only for keys that ask for it.",
     "clientLeft": "499 client left",
     "stream": "stream",
     "cached": "{count} cached",
@@ -798,13 +808,26 @@
       "reasoning": "Reasoning",
       "total": "Total tokens",
       "error": "Error",
-      "noContent": "Prompts and completions are never stored.",
+      "noContent": "This key does not keep request content. Turn it on in the key's settings.",
       "deployment": "deployment #{id}",
       "endUser": "Customer",
-      "tags": "Tags"
+      "tags": "Tags",
+      "content": "Content"
     },
     "forEndUser": "for {user}",
-    "search": "Search model, customer or request"
+    "search": "Search model, customer or request",
+    "export": {
+      "button": "Export",
+      "json": "Requests with content (JSONL)",
+      "chat": "Chat dataset for fine-tuning (JSONL)"
+    },
+    "content": {
+      "loading": "Loading…",
+      "failed": "The content could not be loaded.",
+      "request": "Request",
+      "response": "Response",
+      "noResponse": "No response was kept."
+    }
   },
   "users": {
     "meta": {

@@ -31,6 +31,10 @@ pub struct KeyResponse {
     pub tpm_limit: Option<i64>,
     pub max_parallel_requests: Option<i64>,
     pub blocked: bool,
+    /// Keeps each request's body and reply (off unless asked).
+    pub log_bodies: bool,
+    /// Days the bodies are kept; `None` keeps them until deleted.
+    pub body_retention_days: Option<i64>,
     pub expires_at: Option<DateTime<Utc>>,
     pub last_used_at: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
@@ -65,6 +69,9 @@ pub struct CreateKeyRequest {
     pub tpm_limit: Option<i64>,
     pub max_parallel_requests: Option<i64>,
     pub expires_at: Option<DateTime<Utc>>,
+    #[serde(default)]
+    pub log_bodies: bool,
+    pub body_retention_days: Option<i64>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -87,6 +94,9 @@ pub struct UpdateKeyRequest {
     pub max_parallel_requests: Option<Option<i64>>,
     #[serde(default, deserialize_with = "patch")]
     pub expires_at: Option<Option<DateTime<Utc>>>,
+    pub log_bodies: Option<bool>,
+    #[serde(default, deserialize_with = "patch")]
+    pub body_retention_days: Option<Option<i64>>,
 }
 
 #[derive(Debug, Deserialize)]

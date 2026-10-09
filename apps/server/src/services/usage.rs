@@ -668,7 +668,7 @@ pub async fn requests(
     .await?)
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct LogQuery {
     pub team_id: Option<i64>,
     pub key_id: Option<i64>,
@@ -712,6 +712,9 @@ pub struct LogEntry {
     pub latency_ms: i64,
     pub stream: bool,
     pub error: Option<String>,
+    /// Its key kept the request and the reply (reports leave it out).
+    #[sqlx(default)]
+    pub has_body: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -724,25 +727,98 @@ pub struct LogLine {
     pub cost_usd: f64,
 }
 
+/// The log lines `user` sees, as filtered: `$1`…`$11`, bound by
+/// [`bind_log_filter`].
+pub(crate) const LOG_FILTER: &str = "
+           ($1 OR l.user_id = $2
+                OR l.team_id IN (SELECT team_id FROM team_members WHERE user_id = $2))
+           AND ($3 IS NULL OR l.team_id = $3)
+           AND ($4 IS NULL OR l.key_id = $4)
+           AND ($5 IS NULL OR l.model_name = $5)
+           AND ($6 = 0 OR ($6 = 1 AND l.status_code < 400) OR ($6 = 2 AND l.status_code >= 400))
+           AND ($7 IS NULL OR l.created_at >= $7)
+           AND ($8 IS NULL OR l.created_at <= $8)
+           AND ($9 IS NULL OR l.end_user = $9)
+           AND ($10 IS NULL OR l.tags LIKE $10 ESCAPE '\\')
+           AND ($11 IS NULL OR LOWER(l.model_name) LIKE $11 ESCAPE '\\'
+                OR LOWER(l.end_user) LIKE $11 ESCAPE '\\'
+                OR LOWER(l.request_id) LIKE $11 ESCAPE '\\')";
+
+/// A log query, checked and ready to bind.
+#[derive(Debug, Clone)]
+pub(crate) struct LogFilter {
+    pub is_admin: bool,
+    pub user_id: i64,
+    pub query: LogQuery,
+    pub status: i32,
+    pub tag: Option<String>,
+    pub search: Option<String>,
+}
+
+impl LogFilter {
+    pub async fn new(
+        pool: &DbPool,
+        user: &User,
+        list: &ListQuery,
+        query: &LogQuery,
+    ) -> AppResult<Self> {
+        if let Some(team_id) = query.team_id {
+            team_access(pool, user, team_id).await?;
+        }
+        let status = match query.status.as_deref() {
+            None | Some("") => 0,
+            Some("success") => 1,
+            Some("error") => 2,
+            Some(other) => {
+                return Err(AppError::Validation(format!(
+                    "status must be 'success' or 'error', not '{other}'"
+                )))
+            }
+        };
+        let mut query = query.clone();
+        query.model = query.model.filter(|m| !m.is_empty());
+        query.end_user = query.end_user.filter(|u| !u.is_empty());
+        Ok(Self {
+            is_admin: user.is_admin(),
+            user_id: user.id,
+            tag: query
+                .tag
+                .as_deref()
+                .filter(|t| !t.is_empty())
+                .map(tag_pattern),
+            query,
+            status,
+            search: list.search(),
+        })
+    }
+}
+
+/// Binds a [`LogFilter`] to `$1`…`$11` of [`LOG_FILTER`].
+macro_rules! bind_log_filter {
+    ($query:expr, $f:expr) => {
+        $query
+            .bind($f.is_admin)
+            .bind($f.user_id)
+            .bind($f.query.team_id)
+            .bind($f.query.key_id)
+            .bind($f.query.model.as_deref())
+            .bind($f.status)
+            .bind($f.query.from)
+            .bind($f.query.to)
+            .bind($f.query.end_user.as_deref())
+            .bind($f.tag.as_deref())
+            .bind($f.search.as_deref())
+    };
+}
+pub(crate) use bind_log_filter;
+
 pub async fn logs(
     pool: &DbPool,
     user: &User,
     list: &ListQuery,
     query: &LogQuery,
 ) -> AppResult<Paged<LogLine>> {
-    if let Some(team_id) = query.team_id {
-        team_access(pool, user, team_id).await?;
-    }
-    let status = match query.status.as_deref() {
-        None | Some("") => 0,
-        Some("success") => 1,
-        Some("error") => 2,
-        Some(other) => {
-            return Err(AppError::Validation(format!(
-                "status must be 'success' or 'error', not '{other}'"
-            )))
-        }
-    };
+    let filter = LogFilter::new(pool, user, list, query).await?;
     let order = list.order_by(
         &[
             ("created_at", "l.created_at"),
@@ -756,66 +832,32 @@ pub async fn logs(
     // ponytail: COUNT(*) over the filtered logs on every page; the
     // dashboard's default 24 h window keeps it small. Keyset paging without
     // a total if logs reach the millions.
-    const FROM: &str = "
-         FROM request_logs l
+    let from = format!(
+        "FROM request_logs l
          LEFT JOIN teams t ON t.id = l.team_id
          LEFT JOIN api_keys k ON k.id = l.key_id
-         WHERE ($1 OR l.user_id = $2
-                OR l.team_id IN (SELECT team_id FROM team_members WHERE user_id = $2))
-           AND ($3 IS NULL OR l.team_id = $3)
-           AND ($4 IS NULL OR l.key_id = $4)
-           AND ($5 IS NULL OR l.model_name = $5)
-           AND ($6 = 0 OR ($6 = 1 AND l.status_code < 400) OR ($6 = 2 AND l.status_code >= 400))
-           AND ($7 IS NULL OR l.created_at >= $7)
-           AND ($8 IS NULL OR l.created_at <= $8)
-           AND ($9 IS NULL OR l.end_user = $9)
-           AND ($10 IS NULL OR l.tags LIKE $10 ESCAPE '\\')
-           AND ($11 IS NULL OR LOWER(l.model_name) LIKE $11 ESCAPE '\\'
-                OR LOWER(l.end_user) LIKE $11 ESCAPE '\\'
-                OR LOWER(l.request_id) LIKE $11 ESCAPE '\\')";
-    let model = query.model.as_deref().filter(|m| !m.is_empty());
-    let end_user = query.end_user.as_deref().filter(|u| !u.is_empty());
-    let tag = query
-        .tag
-        .as_deref()
-        .filter(|t| !t.is_empty())
-        .map(tag_pattern);
-    let search = list.search();
-    let total: i64 = sqlx::query_scalar(sqlx::AssertSqlSafe(format!("SELECT COUNT(*) {FROM}")))
-        .bind(user.is_admin())
-        .bind(user.id)
-        .bind(query.team_id)
-        .bind(query.key_id)
-        .bind(model)
-        .bind(status)
-        .bind(query.from)
-        .bind(query.to)
-        .bind(end_user)
-        .bind(&tag)
-        .bind(&search)
-        .fetch_one(pool)
-        .await?;
-    let entries = sqlx::query_as::<_, LogEntry>(sqlx::AssertSqlSafe(format!(
+         WHERE {LOG_FILTER}"
+    );
+    let total: i64 = bind_log_filter!(
+        sqlx::query_scalar(sqlx::AssertSqlSafe(format!("SELECT COUNT(*) {from}"))),
+        filter
+    )
+    .fetch_one(pool)
+    .await?;
+    let entries = bind_log_filter!(
+        sqlx::query_as::<_, LogEntry>(sqlx::AssertSqlSafe(format!(
         "SELECT l.id, l.request_id, l.created_at, l.team_id, t.name AS team_name, l.user_id, l.key_id,
                 l.model_id, l.end_user, l.tags AS tags_json,
                 k.name AS key_name, k.last4, l.model_name, l.provider, l.status_code,
                 l.prompt_tokens, l.completion_tokens, l.cached_tokens, l.cache_write_tokens,
-                l.reasoning_tokens, l.endpoint, l.cost_nanos, l.latency_ms, l.stream, l.error
-         {FROM}
+                l.reasoning_tokens, l.endpoint, l.cost_nanos, l.latency_ms, l.stream, l.error,
+                EXISTS (SELECT 1 FROM request_bodies b WHERE b.request_id = l.request_id) AS has_body
+         {from}
          ORDER BY {order}
          LIMIT $12 OFFSET $13"
-    )))
-    .bind(user.is_admin())
-    .bind(user.id)
-    .bind(query.team_id)
-    .bind(query.key_id)
-    .bind(model)
-    .bind(status)
-    .bind(query.from)
-    .bind(query.to)
-    .bind(end_user)
-    .bind(&tag)
-    .bind(&search)
+    ))),
+        filter
+    )
     .bind(list.per_page())
     .bind(list.offset())
     .fetch_all(pool)

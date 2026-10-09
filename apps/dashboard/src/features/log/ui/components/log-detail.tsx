@@ -11,6 +11,7 @@ import {
   SheetTitle,
 } from '@/shared/ui/components/shadcn/sheet';
 import { useMoney } from '@/shared/ui/hooks/use-money';
+import { RequestContent } from './request-content';
 
 export function StatusBadge({ code }: { code: number }) {
   const t = useTranslations('logs');
@@ -38,7 +39,7 @@ export function LogDetail({
   const money = useMoney();
   return (
     <Sheet open={row !== null} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent className="w-full overflow-y-auto sm:max-w-md">
+      <SheetContent className="w-full overflow-y-auto sm:max-w-xl">
         {row && (
           <>
             <SheetHeader>
@@ -125,9 +126,15 @@ export function LogDetail({
                   </pre>
                 </Field>
               )}
-              <p className="text-xs text-muted-foreground">
-                {t('detail.noContent')}
-              </p>
+              <Field label={t('detail.content')}>
+                {row.has_body ? (
+                  <RequestContent requestId={row.request_id} />
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    {t('detail.noContent')}
+                  </p>
+                )}
+              </Field>
             </dl>
           </>
         )}

@@ -20,6 +20,8 @@ const base: CreateKeyValues = {
   rpm_limit: '',
   tpm_limit: '',
   max_parallel_requests: '',
+  log_bodies: false,
+  body_retention_days: '',
   expires: '30',
 };
 
@@ -84,6 +86,8 @@ describe('editing', () => {
     expires_at: '2027-01-15T22:59:59.000Z',
     person_id: 9,
     labels: [{ id: 4, name: 'CRM', color: 'blue' as const }],
+    log_bodies: true,
+    body_retention_days: 30,
   };
 
   it('starts from the key as it is', () => {
@@ -97,6 +101,8 @@ describe('editing', () => {
       rpm_limit: '10',
       tpm_limit: '',
       max_parallel_requests: '4',
+      log_bodies: true,
+      body_retention_days: '30',
       expires_on: expect.stringMatching(/^2027-01-1[56]$/),
     });
   });
@@ -111,6 +117,8 @@ describe('editing', () => {
           budget_duration: 'none',
           rpm_limit: '',
           max_parallel_requests: '',
+          log_bodies: false,
+          body_retention_days: '',
         },
         values.expires_on,
       ),
@@ -124,6 +132,8 @@ describe('editing', () => {
       rpm_limit: null,
       tpm_limit: null,
       max_parallel_requests: null,
+      log_bodies: false,
+      body_retention_days: null,
     });
   });
 
@@ -197,9 +207,36 @@ describe('labels', () => {
       expires_at: null,
       person_id: null,
       labels: [{ id: 4 }],
+      log_bodies: false,
+      body_retention_days: null,
     });
     expect(
       toUpdateKeyPayload({ ...values, labels: [] }, values.expires_on).labels,
     ).toEqual([]);
+  });
+});
+
+describe('request content', () => {
+  it('is kept only when asked, for as many days as given', () => {
+    expect(toCreateKeyPayload(base, now)).not.toHaveProperty('log_bodies');
+    expect(
+      toCreateKeyPayload(
+        { ...base, log_bodies: true, body_retention_days: '14' },
+        now,
+      ),
+    ).toMatchObject({ log_bodies: true, body_retention_days: 14 });
+    expect(
+      toCreateKeyPayload({ ...base, log_bodies: true }, now),
+    ).not.toHaveProperty('body_retention_days');
+  });
+
+  it('takes a whole number of days of at least one', () => {
+    const schema = createKeySchema((key) => key);
+    expect(
+      schema.safeParse({ ...base, body_retention_days: '0' }).success,
+    ).toBe(false);
+    expect(
+      schema.safeParse({ ...base, body_retention_days: '7' }).success,
+    ).toBe(true);
   });
 });

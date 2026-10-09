@@ -165,7 +165,17 @@
       "personEmpty": "Este equipo aún no tiene personas.",
       "personAdd": "Añádelas en Personas",
       "labels": "Etiquetas",
-      "labelsHint": "El uso se puede filtrar por ellas."
+      "labelsHint": "El uso se puede filtrar por ellas.",
+      "content": {
+        "title": "Contenido de las peticiones",
+        "off": "No se guarda",
+        "days": "{count, plural, one {Se guarda # día} other {Se guarda # días}}",
+        "forever": "Se guarda hasta borrarlo",
+        "keep": "Guardar prompts y respuestas",
+        "keepHint": "Cada petición y su respuesta se guardan para leerlas en Registros y exportarlas. Las imágenes y los archivos no se guardan.",
+        "retention": "Borrar tras (días)",
+        "retentionHint": "Déjalo vacío para guardarlos hasta borrarlos."
+      }
     },
     "expiry": {
       "never": "Nunca",
@@ -743,7 +753,7 @@
       "title": "Registros · llmtrack"
     },
     "title": "Registros",
-    "subtitle": "Cada petición que pasa por el gateway: quién la envió, cuánto costó y cuánto tardó. Los prompts nunca se guardan.",
+    "subtitle": "Cada petición que pasa por el gateway: quién la envió, cuánto costó y cuánto tardó. El contenido solo se guarda en las claves que lo piden.",
     "clientLeft": "499 el cliente se fue",
     "stream": "stream",
     "cached": "{count} en caché",
@@ -798,13 +808,26 @@
       "reasoning": "Razonamiento",
       "total": "Tokens totales",
       "error": "Error",
-      "noContent": "Los prompts y las respuestas nunca se guardan.",
+      "noContent": "Esta clave no guarda el contenido de las peticiones. Actívalo en los ajustes de la clave.",
       "deployment": "despliegue #{id}",
       "endUser": "Cliente",
-      "tags": "Tags"
+      "tags": "Tags",
+      "content": "Contenido"
     },
     "forEndUser": "para {user}",
-    "search": "Buscar modelo, cliente o petición"
+    "search": "Buscar modelo, cliente o petición",
+    "export": {
+      "button": "Exportar",
+      "json": "Peticiones con contenido (JSONL)",
+      "chat": "Dataset de chat para fine-tuning (JSONL)"
+    },
+    "content": {
+      "loading": "Cargando…",
+      "failed": "No se ha podido cargar el contenido.",
+      "request": "Petición",
+      "response": "Respuesta",
+      "noResponse": "No se guardó ninguna respuesta."
+    }
   },
   "users": {
     "meta": {

@@ -44,6 +44,7 @@ async fn main() -> io::Result<()> {
         AppState::new(pool, key.master(), config.upstream_timeout)
             .with_master_key(config.api_master_key.clone()),
     );
+    services::bodies::spawn_purger(state.pool.clone());
     services::catalog::load_stored(&state)
         .await
         .map_err(|e| startup_error("Price catalog", e))?;
