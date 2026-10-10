@@ -296,12 +296,13 @@ mod tests {
             .find("anthropic", "claude-sonnet-4-5")
             .expect("sonnet");
         assert_eq!(sonnet.pricing.tokens.cache_write, Some(3_750_000));
-        assert_eq!(
-            sonnet.pricing.above.as_ref().unwrap().threshold_tokens,
-            200_000
-        );
         assert!(sonnet.supports_reasoning);
         assert!(sonnet.max_output_tokens.unwrap() >= 64_000);
+
+        let gemini = catalog.find("gemini", "gemini-2.5-pro").expect("gemini");
+        let above = gemini.pricing.above.as_ref().expect("long-context tier");
+        assert_eq!(above.threshold_tokens, 200_000);
+        assert_eq!(above.input, Some(2_500_000));
     }
 
     #[test]

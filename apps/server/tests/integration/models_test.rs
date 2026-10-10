@@ -177,7 +177,6 @@ async fn a_model_without_its_own_rates_is_priced_by_the_catalog() {
     assert_eq!(model["catalog_key"], "claude-sonnet-4-5");
     assert_eq!(model["pricing"]["input"], 3.0);
     assert_eq!(model["pricing"]["cache_read"], 0.3);
-    assert_eq!(model["pricing"]["above"]["threshold_tokens"], 200_000);
     assert_eq!(model["custom_pricing"], serde_json::Value::Null);
 
     // Own rates win; null goes back to the catalog.
