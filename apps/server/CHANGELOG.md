@@ -1,5 +1,11 @@
 # @llmtrack/server
 
+## 0.3.0
+
+### Minor Changes
+
+- [`15a78de`](https://github.com/rustrak/llmtrack/commit/15a78de8d3aff4a1e799e07d4befa78c30394b98) Thanks [@AbianS](https://github.com/AbianS)! - llmtrack now has an MCP server at `/mcp`, off until an admin turns it on in Settings → AI assistants. Assistants such as Claude Code or claude.ai connect by signing in to llmtrack (OAuth, with a consent page), which needs the public URL set in Settings; each user sees and disconnects their connected assistants on the same page. Through it an assistant reads and creates teams, keys, models, people, labels and invitations with its user's permissions, answers spend questions, filters the request log, reads a request's full conversation, and searches names and conversations in one call. Stored request and response bodies are now indexed for full-text search, so the Logs page and the API (`/api/logs?text=`) find requests by the words said in them. Usage, logs and the PDF and Excel reports filter by several teams, keys, models, people, labels, customers and tags at once, and any of them can be left out instead, such as a team without one of its keys. The dashboard's filters can now select several values and switch between including and excluding them. Dependencies with security advisories are updated. The bundled price list is refreshed.
+
 ## 0.2.1
 
 ### Patch Changes
