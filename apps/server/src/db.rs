@@ -28,6 +28,46 @@ pub const DAY_OF_CREATED_AT: &str = "to_char(created_at AT TIME ZONE 'UTC', 'YYY
 #[cfg(feature = "sqlite")]
 pub const DAY_OF_CREATED_AT: &str = "substr(created_at, 1, 10)";
 
+/// The rows of the JSON array `expr` (text), as a table with one column,
+/// `value`: what a list filter (`models::list::List::json`) and the request
+/// tags are read through.
+pub fn each(expr: &str) -> String {
+    if cfg!(feature = "postgres") {
+        format!("jsonb_array_elements_text(CAST({expr} AS JSONB))")
+    } else {
+        format!("json_each({expr})")
+    }
+}
+
+/// The request ids whose stored body holds every word of `$12`, a
+/// [`text_query`]: one full-text index lookup, whatever the size of the logs.
+#[cfg(feature = "postgres")]
+pub const BODIES_MATCHING_12: &str =
+    "SELECT b.request_id FROM request_bodies b WHERE b.search @@ plainto_tsquery('simple', $12)";
+#[cfg(feature = "sqlite")]
+pub const BODIES_MATCHING_12: &str = "SELECT b.request_id FROM request_bodies b WHERE b.rowid IN
+     (SELECT rowid FROM request_bodies_fts WHERE request_bodies_fts MATCH $12)";
+
+/// Free text as the full-text query of [`BODIES_MATCHING_12`]: every word
+/// must appear. `None` when there are no words. Each word is quoted for
+/// SQLite, so nothing a user types is read as FTS5 syntax.
+pub fn text_query(text: &str) -> Option<String> {
+    let words: Vec<&str> = text.split_whitespace().collect();
+    if words.is_empty() {
+        return None;
+    }
+    if cfg!(feature = "postgres") {
+        return Some(words.join(" "));
+    }
+    Some(
+        words
+            .iter()
+            .map(|w| format!("\"{}\"", w.replace('"', "\"\"")))
+            .collect::<Vec<_>>()
+            .join(" "),
+    )
+}
+
 pub async fn create_pool(url: &str, max_connections: u32) -> Result<DbPool, sqlx::Error> {
     #[cfg(feature = "postgres")]
     {
@@ -89,4 +129,16 @@ pub async fn health_check(pool: &DbPool) -> bool {
 /// into a 409 naming the field.
 pub fn is_unique_violation(error: &sqlx::Error) -> bool {
     matches!(error, sqlx::Error::Database(db) if db.is_unique_violation())
+}
+
+#[cfg(all(test, feature = "sqlite"))]
+mod tests {
+    #[test]
+    fn a_text_query_quotes_every_word() {
+        assert_eq!(super::text_query("  "), None);
+        assert_eq!(
+            super::text_query("refund  \"NEAR\" OR"),
+            Some("\"refund\" \"\"\"NEAR\"\"\" \"OR\"".into())
+        );
+    }
 }

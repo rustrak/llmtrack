@@ -1,4 +1,6 @@
+import { onlyValue } from '@/shared/lib/filters';
 import { toQuery } from '@/shared/lib/list-params';
+import type { UsageFilterParams } from './series';
 
 /** What a report can hold, in the order it holds them (the server's `SECTIONS`). */
 export const REPORT_SECTIONS = [
@@ -36,14 +38,10 @@ export interface ReportOptions {
   notes: string;
 }
 
-export interface ReportScope {
+/** The page's range and filters, as the API takes them. */
+export interface ReportScope extends UsageFilterParams {
   from: string;
   to: string;
-  team_id?: number;
-  key_id?: number;
-  model?: string;
-  person_id?: number;
-  label_id?: number;
 }
 
 export const MAX_MARKUP = 1000;
@@ -62,15 +60,12 @@ export function parseMarkup(markup: string): number | null {
 export function reportUrl(scope: ReportScope, options: ReportOptions): string {
   const markup = parseMarkup(options.markup) ?? 0;
   const sections = REPORT_SECTIONS.filter((s) => options.sections.includes(s));
+  const { from, to, ...filters } = scope;
   return `/api/usage/export${toQuery({
     format: options.format,
-    from: scope.from,
-    to: scope.to,
-    team_id: scope.team_id,
-    key_id: scope.key_id,
-    model: scope.model,
-    person_id: scope.person_id,
-    label_id: scope.label_id,
+    from,
+    to,
+    ...filters,
     // The server's default is every section but the requests.
     sections:
       sections.join(',') === DEFAULT_SECTIONS.join(',')
@@ -110,9 +105,9 @@ export const SECTION_GROUPS = [
  */
 export function narrowedBy(scope: ReportScope): ReportSection[] {
   const out: ReportSection[] = [];
-  if (scope.team_id) out.push('teams');
-  if (scope.key_id) out.push('keys');
-  if (scope.person_id) out.push('people');
-  if (scope.model) out.push('models');
+  if (onlyValue(scope.team_id)) out.push('teams');
+  if (onlyValue(scope.key_id)) out.push('keys');
+  if (onlyValue(scope.person_id)) out.push('people');
+  if (onlyValue(scope.model)) out.push('models');
   return out;
 }

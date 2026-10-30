@@ -7,7 +7,7 @@ use std::collections::HashMap;
 
 use crate::db::DbPool;
 use crate::error::{AppError, AppResult, FieldErrorCode};
-use crate::models::list::{ListQuery, Paged};
+use crate::models::list::{List, ListQuery, Paged};
 use crate::models::money::nanos_to_usd;
 use crate::models::user::User;
 use crate::services::access::team_access;
@@ -20,19 +20,103 @@ const MAX_DAYS: i64 = 366;
 pub struct UsageQuery {
     pub from: Option<NaiveDate>,
     pub to: Option<NaiveDate>,
-    pub team_id: Option<i64>,
-    pub key_id: Option<i64>,
-    /// Only this public model name. Customers and tags are rolled up without
-    /// the model, so with it set their breakdowns come back empty.
-    pub model: Option<String>,
+    #[serde(flatten)]
+    pub scope: Scope,
     /// What `series` splits by: `model` (the default), `team`, `key`,
     /// `person`, `end_user` or `tag`.
     pub group_by: Option<String>,
-    /// Only the keys' spend while assigned to this person. Like the model,
+}
+
+/// Whose spend a report counts. Each dimension keeps only the listed values
+/// (every value when none is listed) and then leaves out the `exclude_`
+/// ones: `team_id=4&exclude_key_id=17`, `key_id=3,8,12`.
+#[derive(Debug, Clone, Default, Deserialize)]
+pub struct Scope {
+    #[serde(default)]
+    pub team_id: List<i64>,
+    #[serde(default)]
+    pub exclude_team_id: List<i64>,
+    #[serde(default)]
+    pub key_id: List<i64>,
+    #[serde(default)]
+    pub exclude_key_id: List<i64>,
+    /// Public model names. Customers and tags are rolled up without the
+    /// model, so with a model filter their breakdowns come back empty.
+    #[serde(default)]
+    pub model: List<String>,
+    #[serde(default)]
+    pub exclude_model: List<String>,
+    /// The keys' spend while assigned to these people. Like the model,
     /// customers and tags do not carry it.
-    pub person_id: Option<i64>,
-    /// Only the keys that carry this label now, all their spend included.
-    pub label_id: Option<i64>,
+    #[serde(default)]
+    pub person_id: List<i64>,
+    #[serde(default)]
+    pub exclude_person_id: List<i64>,
+    /// The keys that carry one of these labels now, all their spend included.
+    #[serde(default)]
+    pub label_id: List<i64>,
+    #[serde(default)]
+    pub exclude_label_id: List<i64>,
+}
+
+impl Scope {
+    /// Whether the model or the person is filtered, which the customer and
+    /// tag rollups cannot answer.
+    pub fn by_model_or_person(&self) -> bool {
+        !(self.model.is_empty()
+            && self.exclude_model.is_empty()
+            && self.person_id.is_empty()
+            && self.exclude_person_id.is_empty())
+    }
+}
+
+/// Binds a [`Scope`] to `$5`…`$14` of [`filters`].
+macro_rules! bind_scope {
+    ($query:expr, $s:expr) => {
+        $query
+            .bind($s.team_id.json())
+            .bind($s.key_id.json())
+            .bind($s.model.json())
+            .bind($s.person_id.json())
+            .bind($s.label_id.json())
+            .bind($s.exclude_team_id.json())
+            .bind($s.exclude_key_id.json())
+            .bind($s.exclude_model.json())
+            .bind($s.exclude_person_id.json())
+            .bind($s.exclude_label_id.json())
+    };
+}
+
+/// SQL for "`column` is one of the JSON list `$n`", true when `$n` is null.
+fn among(column: &str, n: u8, ints: bool) -> String {
+    format!("(${n} IS NULL OR {column} IN ({}))", values(n, ints))
+}
+
+/// SQL for "`column` is not one of the JSON list `$n`". Rows without a
+/// value (a personal key's team, a key of no one) are never left out.
+fn not_among(column: &str, n: u8, ints: bool) -> String {
+    format!(
+        "(${n} IS NULL OR {column} IS NULL OR {column} NOT IN ({}))",
+        values(n, ints)
+    )
+}
+
+fn values(n: u8, ints: bool) -> String {
+    let each = crate::db::each(&format!("${n}"));
+    if ints {
+        format!("SELECT CAST(value AS BIGINT) FROM {each}")
+    } else {
+        format!("SELECT value FROM {each}")
+    }
+}
+
+/// Keys carrying (or not) one of the labels of list `$n`, now.
+fn labelled(key: &str, n: u8, carrying: bool) -> String {
+    let not = if carrying { "" } else { "NOT " };
+    format!(
+        "(${n} IS NULL OR {key} {not}IN (SELECT key_id FROM key_labels WHERE label_id IN ({})))",
+        values(n, true)
+    )
 }
 
 #[derive(Debug, Default, Serialize, Clone, Copy)]
@@ -230,40 +314,46 @@ const SUMS: &str = "
     CAST(COALESCE(SUM(u.reasoning_tokens), 0) AS BIGINT) AS reasoning_tokens,
     CAST(COALESCE(SUM(u.latency_ms), 0) AS BIGINT) AS latency_ms";
 
-/// Rows of the keys carrying label `$9`, when one is asked for.
-const LABELLED: &str = "(CAST($9 AS BIGINT) IS NULL
-    OR u.key_id IN (SELECT key_id FROM key_labels WHERE label_id = $9))";
-
 /// Rows `user` may see: everything for an admin; their teams' and their
 /// personal keys' otherwise.
 const VISIBLE: &str = "($3 OR u.user_id = $4
     OR u.team_id IN (SELECT team_id FROM team_members WHERE user_id = $4))";
 
 /// The rollup rows of `table` a report covers. Binds: `$1`..`$2` the days,
-/// `$3` admin, `$4` the user, `$5` team, `$6` key, `$7` model, `$8` person,
-/// `$9` label.
+/// `$3` admin, `$4` the user, then the [`Scope`] (`bind_scope`): `$5` teams,
+/// `$6` keys, `$7` models, `$8` people, `$9` labels, and `$10`…`$14` the
+/// same left out.
 ///
-/// Customers and tags are rolled up without the model: a model filter
-/// matches none of their rows rather than all of them.
+/// Customers and tags are rolled up without the model and the person: a
+/// filter on either matches none of their rows rather than all of them.
 fn filters(table: &str) -> String {
-    let (model, person) = if table == "usage_daily" {
-        (
-            "(CAST($7 AS TEXT) IS NULL OR u.model_name = $7)",
-            "(CAST($8 AS BIGINT) IS NULL OR u.person_id = $8)",
-        )
+    let model_and_person = if table == "usage_daily" {
+        [
+            among("u.model_name", 7, false),
+            among("u.person_id", 8, true),
+            not_among("u.model_name", 12, false),
+            not_among("u.person_id", 13, true),
+        ]
+        .join(" AND ")
     } else {
-        ("CAST($7 AS TEXT) IS NULL", "CAST($8 AS BIGINT) IS NULL")
+        "$7 IS NULL AND $8 IS NULL AND $12 IS NULL AND $13 IS NULL".to_string()
     };
     format!(
         "u.day >= $1 AND u.day <= $2 AND {VISIBLE}
-         AND ($5 IS NULL OR u.team_id = $5) AND ($6 IS NULL OR u.key_id = $6)
-         AND {model} AND {person} AND {LABELLED}"
+         AND {} AND {} AND {} AND {} AND {model_and_person} AND {} AND {}",
+        among("u.team_id", 5, true),
+        among("u.key_id", 6, true),
+        not_among("u.team_id", 10, true),
+        not_among("u.key_id", 11, true),
+        labelled("u.key_id", 9, true),
+        labelled("u.key_id", 14, false),
     )
 }
 
 pub async fn report(pool: &DbPool, user: &User, query: &UsageQuery) -> AppResult<UsageReport> {
-    if let Some(team_id) = query.team_id {
-        team_access(pool, user, team_id).await?;
+    let scope = &query.scope;
+    for team_id in scope.team_id.0.iter().chain(&scope.exclude_team_id.0) {
+        team_access(pool, user, *team_id).await?;
     }
     let to = query.to.unwrap_or_else(|| Utc::now().date_naive());
     let from = query
@@ -287,8 +377,6 @@ pub async fn report(pool: &DbPool, user: &User, query: &UsageQuery) -> AppResult
         ))
         .with_field("group_by", FieldErrorCode::Invalid));
     }
-    let model = query.model.as_deref().filter(|m| !m.is_empty());
-
     let group_in = |table: &str, select: &str, joins: &str, group_by: &str| {
         format!(
             "SELECT {select}, {SUMS}
@@ -305,34 +393,30 @@ pub async fn report(pool: &DbPool, user: &User, query: &UsageQuery) -> AppResult
     const PLAIN: &str = "CAST(0 AS BIGINT) AS id, CAST(NULL AS TEXT) AS name, \
                          CAST(NULL AS TEXT) AS hint, CAST(NULL AS TEXT) AS team_name";
     let fetch = |sql: String| {
-        sqlx::query_as::<_, Row>(sqlx::AssertSqlSafe(sql))
-            .bind(from.to_string())
-            .bind(to.to_string())
-            .bind(user.is_admin())
-            .bind(user.id)
-            .bind(query.team_id)
-            .bind(query.key_id)
-            .bind(model)
-            .bind(query.person_id)
-            .bind(query.label_id)
-            .fetch_all(pool)
+        bind_scope!(
+            sqlx::query_as::<_, Row>(sqlx::AssertSqlSafe(sql))
+                .bind(from.to_string())
+                .bind(to.to_string())
+                .bind(user.is_admin())
+                .bind(user.id),
+            query.scope
+        )
+        .fetch_all(pool)
     };
 
     let previous_from = from - chrono::Duration::days(days);
     let previous_to = from - chrono::Duration::days(1);
-    let previous = sqlx::query_as::<_, Sums>(sqlx::AssertSqlSafe(format!(
-        "SELECT {SUMS} FROM usage_daily u WHERE {}",
-        filters("usage_daily")
-    )))
-    .bind(previous_from.to_string())
-    .bind(previous_to.to_string())
-    .bind(user.is_admin())
-    .bind(user.id)
-    .bind(query.team_id)
-    .bind(query.key_id)
-    .bind(model)
-    .bind(query.person_id)
-    .bind(query.label_id)
+    let previous = bind_scope!(
+        sqlx::query_as::<_, Sums>(sqlx::AssertSqlSafe(format!(
+            "SELECT {SUMS} FROM usage_daily u WHERE {}",
+            filters("usage_daily")
+        )))
+        .bind(previous_from.to_string())
+        .bind(previous_to.to_string())
+        .bind(user.is_admin())
+        .bind(user.id),
+        query.scope
+    )
     .fetch_one(pool)
     .await?
     .totals();
@@ -381,23 +465,21 @@ pub async fn report(pool: &DbPool, user: &User, query: &UsageQuery) -> AppResult
             "u.model_name",
         ),
     };
-    let series = sqlx::query_as::<_, SeriesRow>(sqlx::AssertSqlSafe(format!(
-        "SELECT u.day AS day, {columns}, {SUMS}
-         FROM {table} u {joins}
-         WHERE {}
-         GROUP BY u.day, {grouping}
-         ORDER BY u.day",
-        filters(table)
-    )))
-    .bind(from.to_string())
-    .bind(to.to_string())
-    .bind(user.is_admin())
-    .bind(user.id)
-    .bind(query.team_id)
-    .bind(query.key_id)
-    .bind(model)
-    .bind(query.person_id)
-    .bind(query.label_id)
+    let series = bind_scope!(
+        sqlx::query_as::<_, SeriesRow>(sqlx::AssertSqlSafe(format!(
+            "SELECT u.day AS day, {columns}, {SUMS}
+             FROM {table} u {joins}
+             WHERE {}
+             GROUP BY u.day, {grouping}
+             ORDER BY u.day",
+            filters(table)
+        )))
+        .bind(from.to_string())
+        .bind(to.to_string())
+        .bind(user.is_admin())
+        .bind(user.id),
+        query.scope
+    )
     .fetch_all(pool)
     .await?
     .into_iter()
@@ -591,8 +673,9 @@ pub async fn lines(
     from: NaiveDate,
     to: NaiveDate,
 ) -> AppResult<Vec<Line>> {
-    Ok(sqlx::query_as::<_, Line>(sqlx::AssertSqlSafe(format!(
-        "SELECT u.day, u.key_id, k.name AS key_name, k.last4, t.name AS team_name,
+    Ok(bind_scope!(
+        sqlx::query_as::<_, Line>(sqlx::AssertSqlSafe(format!(
+            "SELECT u.day, u.key_id, k.name AS key_name, k.last4, t.name AS team_name,
                 COALESCE(us.name, us.email) AS owner, p.name AS person_name, u.model_name,
                 u.requests, u.failed_requests, u.prompt_tokens, u.completion_tokens,
                 u.cached_tokens, u.cache_write_tokens, u.reasoning_tokens, u.cost_nanos,
@@ -604,24 +687,21 @@ pub async fn lines(
          LEFT JOIN people p ON p.id = u.person_id
          WHERE {}
          ORDER BY u.day, t.name, k.name, u.key_id, u.model_name",
-        filters("usage_daily")
-    )))
-    .bind(from.to_string())
-    .bind(to.to_string())
-    .bind(user.is_admin())
-    .bind(user.id)
-    .bind(query.team_id)
-    .bind(query.key_id)
-    .bind(query.model.as_deref().filter(|m| !m.is_empty()))
-    .bind(query.person_id)
-    .bind(query.label_id)
+            filters("usage_daily")
+        )))
+        .bind(from.to_string())
+        .bind(to.to_string())
+        .bind(user.is_admin())
+        .bind(user.id),
+        query.scope
+    )
     .fetch_all(pool)
     .await?)
 }
 
 /// Up to `limit` requests of `from..=to` (UTC days), oldest first, under the
 /// report's filters. Requests do not carry the person, so a person filter
-/// matches none.
+/// (kept or left out) matches none.
 pub async fn requests(
     pool: &DbPool,
     user: &User,
@@ -634,7 +714,7 @@ pub async fn requests(
     let end = (to + chrono::Duration::days(1))
         .and_time(chrono::NaiveTime::MIN)
         .and_utc();
-    Ok(sqlx::query_as::<_, LogEntry>(
+    let sql = format!(
         "SELECT l.id, l.request_id, l.created_at, l.team_id, t.name AS team_name, l.user_id, l.key_id,
                 l.model_id, l.end_user, l.tags AS tags_json,
                 k.name AS key_name, k.last4, l.model_name, l.provider, l.status_code,
@@ -646,39 +726,69 @@ pub async fn requests(
          WHERE l.created_at >= $1 AND l.created_at < $2
            AND ($3 OR l.user_id = $4
                 OR l.team_id IN (SELECT team_id FROM team_members WHERE user_id = $4))
-           AND ($5 IS NULL OR l.team_id = $5) AND ($6 IS NULL OR l.key_id = $6)
-           AND (CAST($7 AS TEXT) IS NULL OR l.model_name = $7)
-           AND CAST($8 AS BIGINT) IS NULL
-           AND (CAST($9 AS BIGINT) IS NULL
-                OR l.key_id IN (SELECT key_id FROM key_labels WHERE label_id = $9))
+           AND {} AND {} AND {} AND {} AND {} AND {} AND {} AND {}
+           AND $8 IS NULL AND $13 IS NULL
          ORDER BY l.created_at, l.id
-         LIMIT $10",
+         LIMIT $15",
+        among("l.team_id", 5, true),
+        among("l.key_id", 6, true),
+        among("l.model_name", 7, false),
+        labelled("l.key_id", 9, true),
+        not_among("l.team_id", 10, true),
+        not_among("l.key_id", 11, true),
+        not_among("l.model_name", 12, false),
+        labelled("l.key_id", 14, false),
+    );
+    Ok(bind_scope!(
+        sqlx::query_as::<_, LogEntry>(sqlx::AssertSqlSafe(sql))
+            .bind(start)
+            .bind(end)
+            .bind(user.is_admin())
+            .bind(user.id),
+        query.scope
     )
-    .bind(start)
-    .bind(end)
-    .bind(user.is_admin())
-    .bind(user.id)
-    .bind(query.team_id)
-    .bind(query.key_id)
-    .bind(query.model.as_deref().filter(|m| !m.is_empty()))
-    .bind(query.person_id)
-    .bind(query.label_id)
     .bind(limit)
     .fetch_all(pool)
     .await?)
 }
 
 #[derive(Debug, Clone, Deserialize)]
+/// Which requests the log shows. Like a report's [`Scope`], each list keeps
+/// only its values (all when empty) and `exclude_` leaves values out; a
+/// request with several tags matches a tag filter by any of them.
 pub struct LogQuery {
-    pub team_id: Option<i64>,
-    pub key_id: Option<i64>,
-    pub model: Option<String>,
+    #[serde(default)]
+    pub team_id: List<i64>,
+    #[serde(default)]
+    pub exclude_team_id: List<i64>,
+    #[serde(default)]
+    pub key_id: List<i64>,
+    #[serde(default)]
+    pub exclude_key_id: List<i64>,
+    #[serde(default)]
+    pub model: List<String>,
+    #[serde(default)]
+    pub exclude_model: List<String>,
+    /// Keys that carry one of these labels now.
+    #[serde(default)]
+    pub label_id: List<i64>,
+    #[serde(default)]
+    pub exclude_label_id: List<i64>,
+    #[serde(default)]
+    pub end_user: List<String>,
+    #[serde(default)]
+    pub exclude_end_user: List<String>,
+    #[serde(default)]
+    pub tag: List<String>,
+    #[serde(default)]
+    pub exclude_tag: List<String>,
     /// `success` or `error`.
     pub status: Option<String>,
     pub from: Option<DateTime<Utc>>,
     pub to: Option<DateTime<Utc>>,
-    pub end_user: Option<String>,
-    pub tag: Option<String>,
+    /// Words in the stored request or reply, all of them, in any order and
+    /// case. Only requests whose key keeps bodies can match.
+    pub text: Option<String>,
 }
 
 #[derive(Debug, Serialize, sqlx::FromRow)]
@@ -727,22 +837,50 @@ pub struct LogLine {
     pub cost_usd: f64,
 }
 
-/// The log lines `user` sees, as filtered: `$1`…`$11`, bound by
-/// [`bind_log_filter`].
-pub(crate) const LOG_FILTER: &str = "
-           ($1 OR l.user_id = $2
+/// The log lines `user` sees, as filtered: `$1`…`$12`, bound by
+/// [`bind_log_filter`]. `$12`, the body search, reads the full-text index:
+/// its matches are found once, then joined to the logs by request id.
+///
+/// `$1` admin, `$2` the user, `$3` teams, `$4` keys, `$5` models, `$6`
+/// status, `$7`..`$8` the times, `$9` customers, `$10` tags, `$11` the
+/// `LIKE` search, `$12` the body search, `$13`…`$17` teams, keys, models,
+/// customers and tags left out, `$18` labels, `$19` labels left out.
+pub(crate) static LOG_FILTER: std::sync::LazyLock<String> = std::sync::LazyLock::new(|| {
+    let tagged = |n: u8, carrying: bool| {
+        let not = if carrying { "" } else { "NOT " };
+        format!(
+            "(${n} IS NULL OR {not}EXISTS (SELECT 1 FROM {} WHERE value IN ({})))",
+            crate::db::each("l.tags"),
+            values(n, false)
+        )
+    };
+    format!(
+        "($1 OR l.user_id = $2
                 OR l.team_id IN (SELECT team_id FROM team_members WHERE user_id = $2))
-           AND ($3 IS NULL OR l.team_id = $3)
-           AND ($4 IS NULL OR l.key_id = $4)
-           AND ($5 IS NULL OR l.model_name = $5)
+           AND {} AND {} AND {} AND {} AND {}
            AND ($6 = 0 OR ($6 = 1 AND l.status_code < 400) OR ($6 = 2 AND l.status_code >= 400))
            AND ($7 IS NULL OR l.created_at >= $7)
            AND ($8 IS NULL OR l.created_at <= $8)
-           AND ($9 IS NULL OR l.end_user = $9)
-           AND ($10 IS NULL OR l.tags LIKE $10 ESCAPE '\\')
            AND ($11 IS NULL OR LOWER(l.model_name) LIKE $11 ESCAPE '\\'
                 OR LOWER(l.end_user) LIKE $11 ESCAPE '\\'
-                OR LOWER(l.request_id) LIKE $11 ESCAPE '\\')";
+                OR LOWER(l.request_id) LIKE $11 ESCAPE '\\')
+           AND ($12 IS NULL OR l.request_id IN ({}))
+           AND {} AND {} AND {} AND {} AND {} AND {} AND {}",
+        among("l.team_id", 3, true),
+        among("l.key_id", 4, true),
+        among("l.model_name", 5, false),
+        among("l.end_user", 9, false),
+        tagged(10, true),
+        crate::db::BODIES_MATCHING_12,
+        not_among("l.team_id", 13, true),
+        not_among("l.key_id", 14, true),
+        not_among("l.model_name", 15, false),
+        not_among("l.end_user", 16, false),
+        tagged(17, false),
+        labelled("l.key_id", 18, true),
+        labelled("l.key_id", 19, false),
+    )
+});
 
 /// A log query, checked and ready to bind.
 #[derive(Debug, Clone)]
@@ -751,8 +889,9 @@ pub(crate) struct LogFilter {
     pub user_id: i64,
     pub query: LogQuery,
     pub status: i32,
-    pub tag: Option<String>,
     pub search: Option<String>,
+    /// `text` as the index's query, `None` when there is nothing to find.
+    pub text: Option<String>,
 }
 
 impl LogFilter {
@@ -762,8 +901,8 @@ impl LogFilter {
         list: &ListQuery,
         query: &LogQuery,
     ) -> AppResult<Self> {
-        if let Some(team_id) = query.team_id {
-            team_access(pool, user, team_id).await?;
+        for team_id in query.team_id.0.iter().chain(&query.exclude_team_id.0) {
+            team_access(pool, user, *team_id).await?;
         }
         let status = match query.status.as_deref() {
             None | Some("") => 0,
@@ -775,17 +914,11 @@ impl LogFilter {
                 )))
             }
         };
-        let mut query = query.clone();
-        query.model = query.model.filter(|m| !m.is_empty());
-        query.end_user = query.end_user.filter(|u| !u.is_empty());
+        let query = query.clone();
         Ok(Self {
             is_admin: user.is_admin(),
             user_id: user.id,
-            tag: query
-                .tag
-                .as_deref()
-                .filter(|t| !t.is_empty())
-                .map(tag_pattern),
+            text: query.text.as_deref().and_then(crate::db::text_query),
             query,
             status,
             search: list.search(),
@@ -793,21 +926,29 @@ impl LogFilter {
     }
 }
 
-/// Binds a [`LogFilter`] to `$1`…`$11` of [`LOG_FILTER`].
+/// Binds a [`LogFilter`] to `$1`…`$19` of [`LOG_FILTER`].
 macro_rules! bind_log_filter {
     ($query:expr, $f:expr) => {
         $query
             .bind($f.is_admin)
             .bind($f.user_id)
-            .bind($f.query.team_id)
-            .bind($f.query.key_id)
-            .bind($f.query.model.as_deref())
+            .bind($f.query.team_id.json())
+            .bind($f.query.key_id.json())
+            .bind($f.query.model.json())
             .bind($f.status)
             .bind($f.query.from)
             .bind($f.query.to)
-            .bind($f.query.end_user.as_deref())
-            .bind($f.tag.as_deref())
+            .bind($f.query.end_user.json())
+            .bind($f.query.tag.json())
             .bind($f.search.as_deref())
+            .bind($f.text.as_deref())
+            .bind($f.query.exclude_team_id.json())
+            .bind($f.query.exclude_key_id.json())
+            .bind($f.query.exclude_model.json())
+            .bind($f.query.exclude_end_user.json())
+            .bind($f.query.exclude_tag.json())
+            .bind($f.query.label_id.json())
+            .bind($f.query.exclude_label_id.json())
     };
 }
 pub(crate) use bind_log_filter;
@@ -836,7 +977,8 @@ pub async fn logs(
         "FROM request_logs l
          LEFT JOIN teams t ON t.id = l.team_id
          LEFT JOIN api_keys k ON k.id = l.key_id
-         WHERE {LOG_FILTER}"
+         WHERE {}",
+        *LOG_FILTER
     );
     let total: i64 = bind_log_filter!(
         sqlx::query_scalar(sqlx::AssertSqlSafe(format!("SELECT COUNT(*) {from}"))),
@@ -854,7 +996,7 @@ pub async fn logs(
                 EXISTS (SELECT 1 FROM request_bodies b WHERE b.request_id = l.request_id) AS has_body
          {from}
          ORDER BY {order}
-         LIMIT $12 OFFSET $13"
+         LIMIT $20 OFFSET $21"
     ))),
         filter
     )
@@ -877,23 +1019,4 @@ pub async fn logs(
         })
         .collect();
     Ok(list.paged(lines, total))
-}
-
-/// A LIKE pattern matching `tag` as one element of the stored JSON array.
-fn tag_pattern(tag: &str) -> String {
-    let quoted = serde_json::to_string(tag).unwrap_or_default();
-    let escaped = quoted
-        .replace('\\', "\\\\")
-        .replace('%', "\\%")
-        .replace('_', "\\_");
-    format!("%{escaped}%")
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn a_tag_pattern_matches_the_whole_quoted_tag_only() {
-        assert_eq!(super::tag_pattern("prod"), "%\"prod\"%");
-        assert_eq!(super::tag_pattern("50%_off"), "%\"50\\%\\_off\"%");
-    }
 }

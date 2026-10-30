@@ -50,7 +50,7 @@ async fn logout(session: Session) -> HttpResponse {
     HttpResponse::NoContent().finish()
 }
 
-async fn me(CurrentUser(user): CurrentUser) -> HttpResponse {
+pub(crate) async fn me(CurrentUser(user): CurrentUser) -> HttpResponse {
     HttpResponse::Ok().json(json!({ "user": user }))
 }
 

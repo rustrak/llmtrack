@@ -5,6 +5,7 @@ pub mod invitations;
 pub mod keys;
 pub mod labels;
 pub mod models;
+pub mod oauth;
 pub mod people;
 pub mod report;
 pub mod settings;

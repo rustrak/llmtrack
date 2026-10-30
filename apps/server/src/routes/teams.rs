@@ -25,31 +25,34 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
     );
 }
 
-async fn list(
+pub(crate) async fn list(
     state: web::Data<AppState>,
     CurrentUser(user): CurrentUser,
     list: web::Query<ListQuery>,
     filter: web::Query<TeamListQuery>,
 ) -> AppResult<HttpResponse> {
-    Ok(HttpResponse::Ok().json(teams::list_for(&state.pool, &user, &list, &filter).await?))
+    let body = teams::list_for(&state.pool, &user, &list, &filter).await?;
+    Ok(HttpResponse::Ok().json(body))
 }
 
-async fn get(
+pub(crate) async fn get(
     state: web::Data<AppState>,
     CurrentUser(user): CurrentUser,
     id: web::Path<i64>,
 ) -> AppResult<HttpResponse> {
     let id = id.into_inner();
     team_access(&state.pool, &user, id).await?;
-    Ok(HttpResponse::Ok().json(teams::detail(&state.pool, &user, id).await?))
+    let body = teams::detail(&state.pool, &user, id).await?;
+    Ok(HttpResponse::Ok().json(body))
 }
 
-async fn create(
+pub(crate) async fn create(
     state: web::Data<AppState>,
     AdminUser(user): AdminUser,
     req: web::Json<CreateTeamRequest>,
 ) -> AppResult<HttpResponse> {
-    Ok(HttpResponse::Created().json(teams::create(&state.pool, &user, &req).await?))
+    let body = teams::create(&state.pool, &user, &req).await?;
+    Ok(HttpResponse::Created().json(body))
 }
 
 async fn update(
@@ -75,7 +78,7 @@ async fn delete(
     Ok(HttpResponse::NoContent().finish())
 }
 
-async fn add_member(
+pub(crate) async fn add_member(
     state: web::Data<AppState>,
     CurrentUser(user): CurrentUser,
     id: web::Path<i64>,
@@ -95,7 +98,8 @@ async fn update_member(
 ) -> AppResult<HttpResponse> {
     let (id, user_id) = path.into_inner();
     require_team_manager(&state.pool, &user, id).await?;
-    Ok(HttpResponse::Ok().json(teams::update_member(&state.pool, id, user_id, &req.role).await?))
+    let body = teams::update_member(&state.pool, id, user_id, &req.role).await?;
+    Ok(HttpResponse::Ok().json(body))
 }
 
 async fn remove_member(

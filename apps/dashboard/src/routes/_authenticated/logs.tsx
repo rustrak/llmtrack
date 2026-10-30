@@ -3,10 +3,12 @@ import { ChevronDown, Download, FileJson, MessagesSquare } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslations } from 'use-intl';
 import { listKeys } from '@/features/key/api/queries';
+import { listLabels } from '@/features/label/api/queries';
 import {
   type ExportFormat,
   exportUrl,
   getLogs,
+  LOG_FILTERS,
   type LogFilter,
 } from '@/features/log/api/queries';
 import {
@@ -26,6 +28,11 @@ import { listTeams } from '@/features/team/api/queries';
 import { unwrap } from '@/shared/api/http';
 import type { LogLine } from '@/shared/api/schemas';
 import { translator } from '@/shared/i18n/intl';
+import {
+  filterParams,
+  type ListFilter,
+  readFilter,
+} from '@/shared/lib/filters';
 import { MAX_PAGE_SIZE, parseListParams } from '@/shared/lib/list-params';
 import { Choice } from '@/shared/ui/components/choice';
 import {
@@ -35,6 +42,7 @@ import {
   DataTable,
   DataTableEmpty,
   FilterPill,
+  ListFilterPill,
   ListFooter,
   SearchField,
   SortHead,
@@ -55,45 +63,40 @@ const DEFAULT_SORT = '-created_at';
 
 export const Route = createFileRoute('/_authenticated/logs')({
   validateSearch: (search: Record<string, unknown>): LogSearch => {
-    const id = (value: unknown) => {
-      const n = Number(value);
-      return Number.isInteger(n) && n > 0 ? n : undefined;
-    };
-    const team = id(search.team_id);
-    const key = id(search.key_id);
+    const ids = new Set<string>(['team_id', 'key_id', 'label_id']);
     return {
       ...parseListParams(search),
       window: parseWindow(search.window),
-      ...(team ? { team_id: team } : {}),
-      ...(key ? { key_id: key } : {}),
-      ...(typeof search.model === 'string' && search.model
-        ? { model: search.model }
-        : {}),
+      ...Object.assign(
+        {},
+        ...LOG_FILTERS.map((name) =>
+          filterParams(name, readFilter(search, name, ids.has(name))),
+        ),
+      ),
       ...(search.status === 'success' || search.status === 'error'
         ? { status: search.status }
         : {}),
-      ...(typeof search.end_user === 'string' && search.end_user
-        ? { end_user: search.end_user }
-        : {}),
-      ...(typeof search.tag === 'string' && search.tag
-        ? { tag: search.tag }
+      ...(typeof search.text === 'string' && search.text.trim()
+        ? { text: search.text.trim() }
         : {}),
     };
   },
   loaderDeps: ({ search }) => search,
   loader: async ({ deps: { window, ...filter } }) => {
-    const [page, teams, models, keys] = await Promise.all([
+    const [page, teams, models, keys, labels] = await Promise.all([
       getLogs({ ...filter, from: since(window) }),
       listTeams({ per_page: MAX_PAGE_SIZE }),
       listModels({ per_page: MAX_PAGE_SIZE }),
       // ponytail: the first 200 keys as filter options; a search box past that.
       listKeys({ per_page: MAX_PAGE_SIZE }),
+      listLabels({ per_page: MAX_PAGE_SIZE }),
     ]);
     return {
       page: unwrap(page),
       teams: unwrap(teams).data,
       models: [...new Set(unwrap(models).data.map((m) => m.name))],
       keys: unwrap(keys).data,
+      labels: unwrap(labels).data,
     };
   },
   head: () => ({ meta: [{ title: translator('logs')('meta.title') }] }),
@@ -127,7 +130,7 @@ function Tokens({ row }: { row: LogLine }) {
 function LogsPage() {
   const t = useTranslations('logs');
   const tTable = useTranslations('table');
-  const { page, teams, models, keys } = Route.useLoaderData();
+  const { page, teams, models, keys, labels } = Route.useLoaderData();
   const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
   const money = useMoney();
@@ -143,13 +146,19 @@ function LogsPage() {
     navigate({ search: (prev) => ({ ...prev, page: undefined, ...patch }) });
   const filtered = Boolean(
     search.q ||
-      search.team_id ||
-      search.key_id ||
-      search.model ||
+      search.text ||
       search.status ||
-      search.end_user ||
-      search.tag,
+      LOG_FILTERS.some(
+        (name) =>
+          search[name] !== undefined || search[`exclude_${name}`] !== undefined,
+      ),
   );
+  const filter = (name: (typeof LOG_FILTERS)[number]) => ({
+    filter: readFilter(search, name),
+    onChange: (next: ListFilter) => set(filterParams(name, next)),
+  });
+  const options = (rows: readonly { id: number; name: string }[]) =>
+    rows.map((x) => ({ value: String(x.id), label: x.name }));
   /** The stored request content behind what the filters show. */
   const download = (format: ExportFormat) => {
     const { window, ...filter } = search;
@@ -202,6 +211,11 @@ function LogsPage() {
               onChange={(q) => set({ q })}
               placeholder={t('search')}
             />
+            <SearchField
+              value={search.text}
+              onChange={(text) => set({ text })}
+              placeholder={t('searchConversations')}
+            />
             <Choice
               aria-label={t('filters.window')}
               className="h-8 w-40"
@@ -212,29 +226,25 @@ function LogsPage() {
                 label: windowLabels[value],
               }))}
             />
-            <FilterPill
+            <ListFilterPill
               label={t('filters.team')}
-              value={search.team_id ? String(search.team_id) : undefined}
-              onChange={(v) => set({ team_id: v ? Number(v) : undefined })}
-              options={teams.map((x) => ({
-                value: String(x.id),
-                label: x.name,
-              }))}
+              {...filter('team_id')}
+              options={options(teams)}
             />
-            <FilterPill
+            <ListFilterPill
               label={t('filters.key')}
-              value={search.key_id ? String(search.key_id) : undefined}
-              onChange={(v) => set({ key_id: v ? Number(v) : undefined })}
-              options={keys.map((k) => ({
-                value: String(k.id),
-                label: k.name,
-              }))}
+              {...filter('key_id')}
+              options={options(keys)}
             />
-            <FilterPill
+            <ListFilterPill
               label={t('filters.model')}
-              value={search.model}
-              onChange={(model) => set({ model })}
+              {...filter('model')}
               options={models.map((name) => ({ value: name, label: name }))}
+            />
+            <ListFilterPill
+              label={t('filters.label')}
+              {...filter('label_id')}
+              options={options(labels)}
             />
             <FilterPill
               label={t('filters.status')}
@@ -249,16 +259,8 @@ function LogsPage() {
                 { value: 'error', label: t('filters.errors') },
               ]}
             />
-            <TextFilter
-              label={t('filters.endUser')}
-              value={search.end_user}
-              onChange={(end_user) => set({ end_user })}
-            />
-            <TextFilter
-              label={t('filters.tag')}
-              value={search.tag}
-              onChange={(tag) => set({ tag })}
-            />
+            <TextFilter label={t('filters.endUser')} {...filter('end_user')} />
+            <TextFilter label={t('filters.tag')} {...filter('tag')} />
             {filtered && (
               <Button
                 variant="ghost"
@@ -266,12 +268,14 @@ function LogsPage() {
                 onClick={() =>
                   set({
                     q: undefined,
-                    team_id: undefined,
-                    key_id: undefined,
-                    model: undefined,
+                    text: undefined,
                     status: undefined,
-                    end_user: undefined,
-                    tag: undefined,
+                    ...Object.assign(
+                      {},
+                      ...LOG_FILTERS.map((name) =>
+                        filterParams(name, { values: [], exclude: false }),
+                      ),
+                    ),
                   })
                 }
               >

@@ -18,7 +18,8 @@ src/
 ├── models/            domain types, request/response shapes, money conversions
 ├── services/          queries and rules: users, invitations, teams, models, keys, usage, access
 │   └── report/        usage reports as PDF and XLSX (imprenta), in the reader's language and currency
-├── routes/            HTTP handlers, one module per resource; proxy.rs is /v1
+├── routes/            HTTP handlers, one module per resource; proxy.rs is /v1, mcp.rs /mcp, oauth.rs its sign-in
+├── mcp/               the MCP tools: shells over the route handlers, plus search
 ├── assets/            the price list (gzip), compiled into the binary
 └── gateway/           the hot path
     ├── mod.rs         Gateway: cached keys, routes and catalog; live spend counters
@@ -74,6 +75,37 @@ The dashboard uses a session cookie. Scripts send `Authorization: Bearer`:
 `MASTER_KEY` (or `LITELLM_MASTER_KEY`) acts as the first active admin; a
 personal virtual key acts as its owner. Team keys are refused (403).
 
+## MCP
+
+`/mcp` is an MCP server (rmcp, stateless Streamable HTTP), off until an
+admin turns it on (`PUT /api/settings/mcp`, kept as the `mcp_enabled`
+setting). Callers sign in with OAuth 2.1, llmtrack being its own
+authorization server (`routes/oauth.rs`, `services/oauth.rs`, ported from
+Rustrak): clients identify with a metadata document URL, PKCE S256, consent
+at the dashboard's `/oauth/authorize`, access tokens (`lto_`, 1 h) and
+single-use refresh tokens (`ltr_`, 30 days; a reused one revokes the grant),
+stored as SHA-256. The issuer is the public URL from Settings; without it
+nobody can sign in. An OAuth token opens `/mcp` only, and `/mcp` takes
+nothing else (no cookie, no `sk-` key). Users list and disconnect their
+assistants at `/api/oauth/grants`.
+
+Tools (`src/mcp`) call the route handlers in-process with the caller as
+`CurrentUser`/`AdminUser::of`, so access and validation are the API's. A
+handler a tool calls must not hold `HttpResponse::Ok()` (or a `ThreadRng`)
+across an `.await`: rmcp needs `Send` futures, so bind the value first.
+`search` looks for a name across teams, keys, people, models, labels (and
+users, for admins) and for words in conversations; `list_requests` takes
+every log filter plus `text`; `get_request` returns a log line with its
+bodies. Matches carry a snippet around the first word.
+
+`text` (also `GET /api/logs?text=`) is full-text search over stored bodies:
+the JSON's string values, every word required. SQLite: a contentless FTS5
+table (`request_bodies_fts`, accents folded) kept by triggers; PostgreSQL:
+`request_bodies.search` tsvector (`simple`) with a GIN index, set by a
+trigger that leaves a body it cannot index (over 1 MB) unindexed rather than
+failing the usage batch. `db::BODIES_MATCHING_12` and `db::text_query` are
+the two spellings.
+
 ## Playground
 
 `/api/playground/*` lets a signed-in user chat through a key they may change
@@ -82,6 +114,22 @@ like `/v1` (`Gateway::admit_hash`), so limits, spend and logs apply, tagged
 `playground`. The browser never holds a raw key. `models` lists what the key
 may call; `cost` prices a reply's `usage` by the deployment in its
 `x-litellm-model-id`, since a stream's cost is only known once it ends.
+
+## Filters
+
+Usage (`/api/usage`, the export, `get_usage`) and logs (`/api/logs`, its
+export, `list_requests`) take lists: each of `team_id`, `key_id`, `model`,
+`person_id` (usage), `label_id`, `end_user` and `tag` (logs) keeps only its
+values (all when absent) and has an `exclude_` twin that leaves values out:
+`team_id=4&exclude_key_id=17`, `key_id=3,8,12`. Query strings take `3` or
+`3,8,12`; JSON also `[3, 8, 12]` (`models::list::List`). SQL reads a list as
+one JSON-array parameter through `db::each` (`json_each` /
+`jsonb_array_elements_text`), so the parameter count is fixed. Exclusions
+keep rows without a value (a personal key's team, an untagged request). A
+request matches a tag list by any of its tags. Every listed team, kept or
+left out, must be the caller's (404 otherwise). The report names one team
+as the client and drops a breakdown only when exactly one value is kept;
+what is left out is listed on the cover.
 
 ## Reports
 

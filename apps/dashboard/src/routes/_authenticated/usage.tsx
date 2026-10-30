@@ -33,6 +33,7 @@ import {
   OTHER,
   stack,
   tokenParts,
+  USAGE_FILTERS,
 } from '@/features/usage/model/series';
 import { ReportPanel } from '@/features/usage/ui/components/report-panel';
 import {
@@ -48,9 +49,16 @@ import { UsageRanking } from '@/features/usage/ui/components/usage-ranking';
 import { useLatency } from '@/features/usage/ui/components/use-latency';
 import { unwrap } from '@/shared/api/http';
 import { translator } from '@/shared/i18n/intl';
+import {
+  type FilterParams,
+  filterParams,
+  filterQuery,
+  onlyValue,
+  readFilter,
+} from '@/shared/lib/filters';
 import { MAX_PAGE_SIZE } from '@/shared/lib/list-params';
 import { Choice } from '@/shared/ui/components/choice';
-import { FilterPill } from '@/shared/ui/components/data-table';
+import { ListFilterPill } from '@/shared/ui/components/data-table';
 import { Page } from '@/shared/ui/components/page';
 import { Button } from '@/shared/ui/components/shadcn/button';
 import {
@@ -67,42 +75,49 @@ import {
 } from '@/shared/ui/components/shadcn/tabs';
 import { useMoney } from '@/shared/ui/hooks/use-money';
 
-interface UsageSearch {
+type FilterName = keyof typeof USAGE_FILTERS;
+
+/**
+ * Each filter is a list, kept (`team=3,8`) or left out (`exclude_key=17`).
+ * `person` is someone of the one kept team, and only kept with it; `label`
+ * keeps the keys carrying a label now.
+ */
+interface UsageSearch extends FilterParams<FilterName> {
   range?: RangePreset;
   /** A custom range, both `yyyy-mm-dd`; wins over `range`. */
   from?: string;
   to?: string;
-  team?: number;
-  key?: number;
-  model?: string;
-  /** Someone of `team`: only kept with a team. */
-  person?: number;
-  /** Only the keys carrying this label now. */
-  label?: number;
   group?: GroupBy;
   metric?: Metric;
 }
+
+/** The filters that pin one thing, which leaves nothing to split by it. */
+const pinned = (search: UsageSearch) => ({
+  team: onlyValue(search.team),
+  key: onlyValue(search.key),
+  model: onlyValue(search.model),
+  person: onlyValue(search.person),
+});
 
 const CUSTOM = 'custom';
 
 export const Route = createFileRoute('/_authenticated/usage')({
   validateSearch: (search: Record<string, unknown>): UsageSearch => {
-    const id = (value: unknown) => {
-      const n = Number(value);
-      return Number.isInteger(n) && n > 0 ? n : undefined;
-    };
     const text = (value: unknown) =>
       typeof value === 'string' && value ? value : undefined;
+    const list = <N extends FilterName>(name: N) =>
+      filterParams(name, readFilter(search, name, name !== 'model'));
     const from = text(search.from);
     const to = text(search.to);
+    const team = list('team');
     return {
       range: RANGE_PRESETS.find((p) => p === search.range),
       ...(from && to ? { from, to } : {}),
-      team: id(search.team),
-      key: id(search.key),
-      model: text(search.model),
-      person: id(search.team) ? id(search.person) : undefined,
-      label: id(search.label),
+      ...team,
+      ...list('key'),
+      ...list('model'),
+      ...(onlyValue(team.team) ? list('person') : {}),
+      ...list('label'),
       group: GROUPS.find((g) => g === search.group),
       metric: METRICS.find((m) => m === search.metric),
     };
@@ -111,22 +126,15 @@ export const Route = createFileRoute('/_authenticated/usage')({
     range: search.range,
     from: search.from,
     to: search.to,
-    team: search.team,
-    key: search.key,
-    model: search.model,
-    person: search.person,
-    label: search.label,
-    group: effectiveGroup(search.group, search),
+    filters: filterQuery(search, USAGE_FILTERS),
+    team: onlyValue(search.team),
+    group: effectiveGroup(search.group, pinned(search)),
   }),
   loader: async ({ deps }) => {
     const [usage, teams, keys, models, labels, people] = await Promise.all([
       getUsage({
         ...resolveRange(deps),
-        team_id: deps.team,
-        key_id: deps.key,
-        model: deps.model,
-        person_id: deps.person,
-        label_id: deps.label,
+        ...deps.filters,
         group_by: deps.group,
       }),
       listTeams({ per_page: MAX_PAGE_SIZE }),
@@ -136,7 +144,7 @@ export const Route = createFileRoute('/_authenticated/usage')({
       listLabels({ per_page: MAX_PAGE_SIZE }),
       // People only mean something inside one team.
       deps.team
-        ? listPeople({ team_id: deps.team, per_page: MAX_PAGE_SIZE })
+        ? listPeople({ team_id: Number(deps.team), per_page: MAX_PAGE_SIZE })
         : null,
     ]);
     return {
@@ -161,7 +169,9 @@ function UsagePage() {
   const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
   // Undefined once the filters leave nothing to split by.
-  const group = effectiveGroup(search.group, search) as GroupBy | undefined;
+  const group = effectiveGroup(search.group, pinned(search)) as
+    | GroupBy
+    | undefined;
   const metric = search.metric ?? 'spend';
   // Bars per day up to a month, per week up to four, per month beyond.
   const granularity = defaultGranularity(usage.from, usage.to);
@@ -182,31 +192,51 @@ function UsagePage() {
   const pick = (g: Group) => {
     const next = group && narrowTo(group, g.key);
     if (!next) return;
-    if ('filter' in next) set(next.filter);
-    else navigate({ to: '/logs', search: { window: 'all', ...next.logs } });
+    if ('filter' in next) {
+      const [name, value] = Object.entries(next.filter)[0];
+      set(
+        filterParams(name as FilterName, {
+          values: [String(value)],
+          exclude: false,
+        }),
+      );
+    } else navigate({ to: '/logs', search: { window: 'all', ...next.logs } });
   };
   const [reporting, setReporting] = useState(false);
   const { date } = useMoney();
-  const teamName = teams.find((x) => x.id === search.team)?.name;
+  const teamName = teams.find(
+    (x) => String(x.id) === onlyValue(search.team),
+  )?.name;
+  const named =
+    (rows: readonly { id: number; name: string }[]) => (value: string) =>
+      rows.find((x) => String(x.id) === value)?.name ?? `#${value}`;
+  /** `Team: Acme, Beta`, or `Key: all but Old` for what is left out. */
+  const scopeOf = (
+    name: FilterName,
+    label: string,
+    nameOf: (value: string) => string,
+  ) => {
+    const { values, exclude } = readFilter(search, name);
+    if (values.length === 0) return [];
+    const list = values.map(nameOf).join(', ');
+    return [
+      exclude
+        ? t('report.excluded', { filter: label, values: list })
+        : `${label}: ${list}`,
+    ];
+  };
+  const scope = {
+    from: usage.from,
+    to: usage.to,
+    ...filterQuery(search, USAGE_FILTERS),
+  };
   const scopeLabels = [
     `${date(usage.from)} – ${date(usage.to)}`,
-    ...(teamName ? [`${t('team')}: ${teamName}`] : []),
-    ...(search.key
-      ? [
-          `${t('key')}: ${keys.find((k) => k.id === search.key)?.name ?? `#${search.key}`}`,
-        ]
-      : []),
-    ...(search.model ? [`${t('model')}: ${search.model}`] : []),
-    ...(search.person
-      ? [
-          `${t('group.person')}: ${people.find((p) => p.id === search.person)?.name ?? `#${search.person}`}`,
-        ]
-      : []),
-    ...(search.label
-      ? [
-          `${t('label')}: ${labels.find((l) => l.id === search.label)?.name ?? `#${search.label}`}`,
-        ]
-      : []),
+    ...scopeOf('team', t('team'), named(teams)),
+    ...scopeOf('key', t('key'), named(keys)),
+    ...scopeOf('model', t('model'), (m) => m),
+    ...scopeOf('person', t('group.person'), named(people)),
+    ...scopeOf('label', t('label'), named(labels)),
   ];
   if (scopeLabels.length === 1) scopeLabels.push(t('report.allUsage'));
   const download = () => {
@@ -246,20 +276,12 @@ function UsagePage() {
     >
       <ReportPanel
         // Fresh choices whenever the filters change under it.
-        key={`${usage.from}:${usage.to}:${search.team}:${search.key}:${search.model}:${search.person}:${search.label}`}
+        key={JSON.stringify(scope)}
         open={reporting}
         onOpenChange={setReporting}
         teamName={teamName}
         scopeLabel={scopeLabels.join(' · ')}
-        scope={{
-          from: usage.from,
-          to: usage.to,
-          team_id: search.team,
-          key_id: search.key,
-          model: search.model,
-          person_id: search.person,
-          label_id: search.label,
-        }}
+        scope={scope}
       />
       <UsageToolbar bucketLabel={bucketLabel} set={set} />
       <KpiRow usage={usage} />
@@ -321,8 +343,34 @@ function UsageToolbar({
   const { usage, teams, keys, models, labels } = Route.useLoaderData();
   const search = Route.useSearch();
   const { people } = Route.useLoaderData();
-  const filtered = Boolean(
-    search.team || search.key || search.model || search.person || search.label,
+  const names = Object.keys(USAGE_FILTERS) as FilterName[];
+  const filtered = names.some(
+    (name) =>
+      search[name] !== undefined || search[`exclude_${name}`] !== undefined,
+  );
+  const pill = (
+    name: FilterName,
+    label: string,
+    options: { value: string; label: string }[],
+    // What a change also resets.
+    also: Partial<UsageSearch> = {},
+  ) => (
+    <ListFilterPill
+      label={label}
+      filter={readFilter(search, name)}
+      onChange={(next) => set({ ...filterParams(name, next), ...also })}
+      options={options}
+    />
+  );
+  const options = (rows: readonly { id: number; name: string }[]) =>
+    rows.map((x) => ({ value: String(x.id), label: x.name }));
+  const teamFilter = readFilter(search, 'team');
+  // The keys of the kept teams; a left-out team does not hide its keys.
+  const teamKeys = keys.filter(
+    (k) =>
+      teamFilter.exclude ||
+      teamFilter.values.length === 0 ||
+      teamFilter.values.includes(String(k.team_id)),
   );
   const custom = search.from !== undefined;
   const rangeLabels: Record<RangePreset, string> = {
@@ -376,59 +424,32 @@ function UsageToolbar({
         </>
       )}
       <span className="mx-1 hidden h-5 w-px bg-border sm:block" />
-      <FilterPill
-        label={t('team')}
-        value={search.team ? String(search.team) : undefined}
-        // Another team's people and keys do not carry over.
-        onChange={(v) =>
-          set({
-            team: v ? Number(v) : undefined,
-            person: undefined,
-            key: undefined,
-          })
-        }
-        options={teams.map((x) => ({ value: String(x.id), label: x.name }))}
-      />
-      {search.team && (
-        <FilterPill
-          label={t('person')}
-          value={search.person ? String(search.person) : undefined}
-          onChange={(v) => set({ person: v ? Number(v) : undefined })}
-          options={people.map((p) => ({ value: String(p.id), label: p.name }))}
-        />
+      {/* Another team's people do not carry over. */}
+      {pill('team', t('team'), options(teams), {
+        person: undefined,
+        exclude_person: undefined,
+      })}
+      {onlyValue(search.team) && pill('person', t('person'), options(people))}
+      {pill('key', t('key'), options(teamKeys))}
+      {pill(
+        'model',
+        t('model'),
+        models.map((name) => ({ value: name, label: name })),
       )}
-      <FilterPill
-        label={t('key')}
-        value={search.key ? String(search.key) : undefined}
-        onChange={(v) => set({ key: v ? Number(v) : undefined })}
-        options={keys
-          .filter((k) => !search.team || k.team_id === search.team)
-          .map((k) => ({ value: String(k.id), label: k.name }))}
-      />
-      <FilterPill
-        label={t('model')}
-        value={search.model}
-        onChange={(model) => set({ model })}
-        options={models.map((name) => ({ value: name, label: name }))}
-      />
-      <FilterPill
-        label={t('label')}
-        value={search.label ? String(search.label) : undefined}
-        onChange={(v) => set({ label: v ? Number(v) : undefined })}
-        options={labels.map((l) => ({ value: String(l.id), label: l.name }))}
-      />
+      {pill('label', t('label'), options(labels))}
       {filtered && (
         <Button
           variant="ghost"
           size="sm"
           onClick={() =>
-            set({
-              team: undefined,
-              key: undefined,
-              model: undefined,
-              person: undefined,
-              label: undefined,
-            })
+            set(
+              Object.assign(
+                {},
+                ...names.map((name) =>
+                  filterParams(name, { values: [], exclude: false }),
+                ),
+              ),
+            )
           }
         >
           {tTable('clearFilters')}
@@ -509,7 +530,7 @@ function MainChart({
   const money = useMoney();
   const groupNames = useGroupNames();
   const search = Route.useSearch();
-  const groups = availableGroups(search);
+  const groups = availableGroups(pinned(search));
   const format = (v: number) =>
     metric === 'spend' ? money.usd(v) : money.compact(v);
   const stacked = stack(usage, metric, granularity);

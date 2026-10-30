@@ -744,7 +744,8 @@
       "markupSummary": "+{value}%",
       "costShown": "cost shown",
       "atCost": "At cost",
-      "noNotes": "None"
+      "noNotes": "None",
+      "excluded": "{filter}: all but {values}"
     },
     "label": "Label"
   },
@@ -773,7 +774,8 @@
       "key": "Key",
       "allKeys": "All keys",
       "endUser": "Customer",
-      "tag": "Tag"
+      "tag": "Tag",
+      "label": "Label"
     },
     "table": {
       "time": "Time",
@@ -827,7 +829,8 @@
       "request": "Request",
       "response": "Response",
       "noResponse": "No response was kept."
-    }
+    },
+    "searchConversations": "Search in conversations"
   },
   "users": {
     "meta": {
@@ -911,7 +914,8 @@
       "profile": "Profile",
       "appearance": "Appearance",
       "general": "General",
-      "pricing": "Pricing"
+      "pricing": "Pricing",
+      "mcp": "AI assistants (MCP)"
     },
     "profile": {
       "meta": "Profile · llmtrack",
@@ -979,7 +983,49 @@
       "howCache": "Cached prompt tokens, cache writes, reasoning tokens and prompts past the long-context threshold are billed at their own rates.",
       "listTitle": "Price list"
     },
-    "subtitle": "Your account, and this instance for admins."
+    "subtitle": "Your account, and this instance for admins.",
+    "mcp": {
+      "meta": "AI assistants · llmtrack",
+      "title": "AI assistants (MCP)",
+      "subtitle": "Let Claude, ChatGPT or Cursor work with llmtrack on your behalf.",
+      "server": {
+        "title": "MCP server",
+        "description": "Answers AI assistants at /mcp. Off by default; turning it off cuts off every assistant at once.",
+        "adminOnly": "Only an admin can turn the MCP server on or off.",
+        "on": "On",
+        "off": "Off",
+        "toggleLabel": "Turn the MCP server on or off",
+        "endpoint": "Endpoint URL",
+        "updateFailed": "Could not update the MCP server"
+      },
+      "clients": {
+        "web": "claude.ai / ChatGPT",
+        "claudeCode": "Claude Code",
+        "json": "Cursor / others",
+        "vscode": "VS Code",
+        "webSteps": "In claude.ai, open Settings → Connectors → Add custom connector; in ChatGPT, add a custom connector. Paste the endpoint URL and save: you are sent here to sign in and approve."
+      },
+      "page": {
+        "connect": "Connect an assistant",
+        "connectDescription": "The assistant opens llmtrack, you sign in and approve it. No token to copy or rotate.",
+        "offAdmin": "The MCP server is off. Turn it on above to connect an assistant.",
+        "offMember": "The MCP server is off. Ask an admin to turn it on.",
+        "needsPublicUrl": "Signing in needs the Public URL: the address assistants reach this server at.",
+        "setPublicUrl": "Set it in Settings → General.",
+        "askAdmin": "Ask an admin to set it in Settings → General.",
+        "note": "It acts with your permissions. You can disconnect it at any time under Connected assistants."
+      },
+      "connected": {
+        "title": "Connected assistants",
+        "description": "Assistants you approved by signing in. Disconnecting one cuts off its access at once.",
+        "empty": "No assistant is connected to your account yet.",
+        "since": "Connected {date}",
+        "revoke": "Disconnect",
+        "revokeLabel": "Disconnect {name}",
+        "revokeFailed": "Could not disconnect the assistant",
+        "revoked": "{name} disconnected"
+      }
+    }
   },
   "limits": {
     "budget": "Max budget ({currency})",
@@ -1028,7 +1074,12 @@
     "previous": "Previous page",
     "next": "Next page",
     "noResults": "No results",
-    "noResultsHint": "Nothing matches these filters. Try other ones, or clear them."
+    "noResultsHint": "Nothing matches these filters. Try other ones, or clear them.",
+    "filterIs": "is",
+    "filterIsNot": "is not",
+    "filterNot": "not",
+    "filterMore": "+{count}",
+    "excludeValues": "Leave out these {filter} values"
   },
   "people": {
     "meta": {
@@ -1153,5 +1204,23 @@
       "violet": "Violet",
       "pink": "Pink"
     }
+  },
+  "oauth": {
+    "meta": {
+      "title": "Authorize access · llmtrack"
+    },
+    "title": "{client} wants to access your llmtrack account",
+    "signedInAs": "Signed in as {email}",
+    "canDo": "If you approve, it will be able to:",
+    "canRead": "See the keys, teams, models, spend and logs you can see",
+    "canAct": "Act on them with your permissions: change what you can change",
+    "clientId": "Client",
+    "returnsTo": "Sends you back to",
+    "warning": "Only approve if you started this from that assistant. You can disconnect it at any time in Settings → AI assistants (MCP).",
+    "approve": "Approve",
+    "deny": "Deny",
+    "decideFailed": "Could not complete the authorization",
+    "failedTitle": "This request cannot be completed",
+    "failedDescription": "The assistant sent an authorization request llmtrack could not verify, so nothing was shared. Start the connection again from the assistant."
   }
 }

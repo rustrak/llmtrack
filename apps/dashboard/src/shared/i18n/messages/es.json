@@ -744,7 +744,8 @@
       "markupSummary": "+{value} %",
       "costShown": "coste visible",
       "atCost": "A coste",
-      "noNotes": "Sin notas"
+      "noNotes": "Sin notas",
+      "excluded": "{filter}: todo salvo {values}"
     },
     "label": "Etiqueta"
   },
@@ -773,7 +774,8 @@
       "key": "Clave",
       "allKeys": "Todas las claves",
       "endUser": "Cliente",
-      "tag": "Tag"
+      "tag": "Tag",
+      "label": "Etiqueta"
     },
     "table": {
       "time": "Hora",
@@ -827,7 +829,8 @@
       "request": "Petición",
       "response": "Respuesta",
       "noResponse": "No se guardó ninguna respuesta."
-    }
+    },
+    "searchConversations": "Buscar en las conversaciones"
   },
   "users": {
     "meta": {
@@ -911,7 +914,8 @@
       "profile": "Perfil",
       "appearance": "Apariencia",
       "general": "General",
-      "pricing": "Precios"
+      "pricing": "Precios",
+      "mcp": "Asistentes de IA (MCP)"
     },
     "profile": {
       "meta": "Perfil · llmtrack",
@@ -979,7 +983,49 @@
       "howCache": "Los tokens de prompt en caché, las escrituras en caché, los tokens de razonamiento y los prompts por encima del umbral de contexto largo se facturan con sus propias tarifas.",
       "listTitle": "Lista de precios"
     },
-    "subtitle": "Tu cuenta y, para administradores, esta instancia."
+    "subtitle": "Tu cuenta y, para administradores, esta instancia.",
+    "mcp": {
+      "meta": "Asistentes de IA · llmtrack",
+      "title": "Asistentes de IA (MCP)",
+      "subtitle": "Deja que Claude, ChatGPT o Cursor trabajen con llmtrack en tu nombre.",
+      "server": {
+        "title": "Servidor MCP",
+        "description": "Atiende a los asistentes de IA en /mcp. Desactivado por defecto; al apagarlo se desconectan todos los asistentes a la vez.",
+        "adminOnly": "Solo un administrador puede activar o desactivar el servidor MCP.",
+        "on": "Activo",
+        "off": "Inactivo",
+        "toggleLabel": "Activar o desactivar el servidor MCP",
+        "endpoint": "URL del endpoint",
+        "updateFailed": "No se pudo actualizar el servidor MCP"
+      },
+      "clients": {
+        "web": "claude.ai / ChatGPT",
+        "claudeCode": "Claude Code",
+        "json": "Cursor / otros",
+        "vscode": "VS Code",
+        "webSteps": "En claude.ai, abre Settings → Connectors → Add custom connector; en ChatGPT, añade un conector personalizado. Pega la URL del endpoint y guarda: te traerá aquí para iniciar sesión y aprobar."
+      },
+      "page": {
+        "connect": "Conectar un asistente",
+        "connectDescription": "El asistente abre llmtrack, inicias sesión y lo apruebas. Sin tokens que copiar ni renovar.",
+        "offAdmin": "El servidor MCP está apagado. Actívalo arriba para conectar un asistente.",
+        "offMember": "El servidor MCP está apagado. Pide a un administrador que lo active.",
+        "needsPublicUrl": "Iniciar sesión necesita la URL pública: la dirección por la que los asistentes llegan a este servidor.",
+        "setPublicUrl": "Configúrala en Ajustes → General.",
+        "askAdmin": "Pide a un administrador que la configure en Ajustes → General.",
+        "note": "Actúa con tus permisos. Puedes desconectarlo cuando quieras en Asistentes conectados."
+      },
+      "connected": {
+        "title": "Asistentes conectados",
+        "description": "Asistentes que aprobaste iniciando sesión. Al desconectar uno, pierde el acceso al instante.",
+        "empty": "Todavía no hay ningún asistente conectado a tu cuenta.",
+        "since": "Conectado el {date}",
+        "revoke": "Desconectar",
+        "revokeLabel": "Desconectar {name}",
+        "revokeFailed": "No se pudo desconectar el asistente",
+        "revoked": "{name} desconectado"
+      }
+    }
   },
   "limits": {
     "budget": "Presupuesto máximo ({currency})",
@@ -1028,7 +1074,12 @@
     "previous": "Página anterior",
     "next": "Página siguiente",
     "noResults": "Sin resultados",
-    "noResultsHint": "Nada coincide con estos filtros. Prueba otros o quítalos."
+    "noResultsHint": "Nada coincide con estos filtros. Prueba otros o quítalos.",
+    "filterIs": "es",
+    "filterIsNot": "no es",
+    "filterNot": "no",
+    "filterMore": "+{count}",
+    "excludeValues": "Excluir estos valores de {filter}"
   },
   "people": {
     "meta": {
@@ -1153,5 +1204,23 @@
       "violet": "Violeta",
       "pink": "Rosa"
     }
+  },
+  "oauth": {
+    "meta": {
+      "title": "Autorizar acceso · llmtrack"
+    },
+    "title": "{client} quiere acceder a tu cuenta de llmtrack",
+    "signedInAs": "Has iniciado sesión como {email}",
+    "canDo": "Si lo apruebas, podrá:",
+    "canRead": "Ver las claves, equipos, modelos, gasto y logs que tú puedes ver",
+    "canAct": "Actuar sobre ellos con tus permisos: cambiar lo que tú puedes cambiar",
+    "clientId": "Cliente",
+    "returnsTo": "Te devuelve a",
+    "warning": "Apruébalo solo si has iniciado esto desde ese asistente. Puedes desconectarlo cuando quieras en Ajustes → Asistentes de IA (MCP).",
+    "approve": "Aprobar",
+    "deny": "Denegar",
+    "decideFailed": "No se pudo completar la autorización",
+    "failedTitle": "No se puede completar esta solicitud",
+    "failedDescription": "El asistente envió una solicitud de autorización que llmtrack no pudo verificar, así que no se ha compartido nada. Vuelve a iniciar la conexión desde el asistente."
   }
 }

@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { useTranslations } from 'use-intl';
 import { z } from 'zod';
 import { login } from '@/features/user/api/mutations';
+import { returnPath } from '@/shared/api/return-path';
 import { intl } from '@/shared/i18n/intl';
 import { SERVER_ERROR_PATH } from '@/shared/lib/form-errors';
 import { PasswordInput } from '@/shared/ui/components/password-input';
@@ -36,7 +37,10 @@ export function LoginForm() {
     if (result.success) {
       // The account may carry a language and zone of its own.
       await intl.reload();
-      await router.navigate({ to: '/keys' });
+      // A page that sent the reader here (the consent screen) gets them back.
+      const back = returnPath.take();
+      if (back) router.history.push(back);
+      else await router.navigate({ to: '/keys' });
       return;
     }
     // One sentence for every credential failure, on purpose: telling

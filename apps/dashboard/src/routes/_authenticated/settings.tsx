@@ -5,6 +5,7 @@ import {
   useRouterState,
 } from '@tanstack/react-router';
 import {
+  Bot,
   CircleDollarSign,
   Palette,
   SlidersHorizontal,
@@ -35,6 +36,7 @@ function SettingsLayout() {
           label: t('nav.appearance'),
           icon: Palette,
         },
+        { to: '/settings/mcp', label: t('nav.mcp'), icon: Bot },
       ],
     },
     ...(isAdmin

@@ -144,6 +144,34 @@ export const settingsSchema = z.object({
 });
 export type Settings = z.infer<typeof settingsSchema>;
 
+/** `url` is null until the admin sets the Public URL: signing in needs it. */
+export const mcpSettingsSchema = z.object({
+  enabled: z.boolean(),
+  url: z.string().nullable(),
+});
+export type McpSettings = z.infer<typeof mcpSettingsSchema>;
+
+/** Who is asking on a consent screen, as the server verified it. */
+export const authorizationInfoSchema = z.object({
+  client_id: z.string(),
+  client_name: z.string(),
+  redirect_host: z.string(),
+});
+export type AuthorizationInfo = z.infer<typeof authorizationInfoSchema>;
+
+export const authorizationDecisionSchema = z.object({
+  redirect_to: z.string(),
+});
+
+/** An assistant connected to the signed-in user by signing in. */
+export const oauthGrantSchema = z.object({
+  id: z.number(),
+  client_id: z.string(),
+  client_name: z.string(),
+  created_at: z.string(),
+});
+export type OAuthGrant = z.infer<typeof oauthGrantSchema>;
+
 export const teamSchema = z.object({
   id: z.number(),
   name: z.string(),

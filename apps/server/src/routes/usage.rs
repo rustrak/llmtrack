@@ -18,12 +18,13 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
 }
 
 /// What a key that keeps bodies kept of one request.
-async fn body(
+pub(crate) async fn body(
     state: web::Data<AppState>,
     CurrentUser(user): CurrentUser,
     request_id: web::Path<String>,
 ) -> AppResult<HttpResponse> {
-    Ok(HttpResponse::Ok().json(bodies::get(&state.pool, &user, &request_id).await?))
+    let body = bodies::get(&state.pool, &user, &request_id).await?;
+    Ok(HttpResponse::Ok().json(body))
 }
 
 /// The stored bodies behind the filtered logs, as JSON Lines.
@@ -51,21 +52,23 @@ async fn export_bodies(
         .streaming(lines))
 }
 
-async fn report(
+pub(crate) async fn report(
     state: web::Data<AppState>,
     CurrentUser(user): CurrentUser,
     query: web::Query<UsageQuery>,
 ) -> AppResult<HttpResponse> {
-    Ok(HttpResponse::Ok().json(usage::report(&state.pool, &user, &query).await?))
+    let body = usage::report(&state.pool, &user, &query).await?;
+    Ok(HttpResponse::Ok().json(body))
 }
 
-async fn logs(
+pub(crate) async fn logs(
     state: web::Data<AppState>,
     CurrentUser(user): CurrentUser,
     list: web::Query<ListQuery>,
     query: web::Query<LogQuery>,
 ) -> AppResult<HttpResponse> {
-    Ok(HttpResponse::Ok().json(usage::logs(&state.pool, &user, &list, &query).await?))
+    let body = usage::logs(&state.pool, &user, &list, &query).await?;
+    Ok(HttpResponse::Ok().json(body))
 }
 
 /// The report as a file to download: PDF or XLSX, in the reader's language

@@ -1,4 +1,5 @@
 import type { Totals, Usage } from '@/shared/api/schemas';
+import type { FilterParams } from '@/shared/lib/filters';
 
 export type Granularity = 'day' | 'week' | 'month';
 export const GRANULARITIES: readonly Granularity[] = ['day', 'week', 'month'];
@@ -173,6 +174,19 @@ export function tokenParts(totals: Totals) {
   };
 }
 
+/** The usage page’s filters: the URL’s name for each, then the API’s. */
+export const USAGE_FILTERS = {
+  team: 'team_id',
+  key: 'key_id',
+  model: 'model',
+  person: 'person_id',
+  label: 'label_id',
+} as const;
+
+export type UsageFilterParams = FilterParams<
+  (typeof USAGE_FILTERS)[keyof typeof USAGE_FILTERS]
+>;
+
 /**
  * The groupings that still split something under the page's filters. One
  * team (or key, or person, each in one team) leaves nothing to split by who
@@ -180,10 +194,10 @@ export function tokenParts(totals: Totals) {
  * are rolled up without the model or the person.
  */
 export function availableGroups(filters: {
-  team?: number;
-  key?: number;
-  model?: string;
-  person?: number;
+  team?: unknown;
+  key?: unknown;
+  model?: unknown;
+  person?: unknown;
 }): GroupBy[] {
   const { team, key, model, person } = filters;
   return GROUPS.filter((g) => {

@@ -18,21 +18,23 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
     );
 }
 
-async fn list(
+pub(crate) async fn list(
     state: web::Data<AppState>,
     CurrentUser(user): CurrentUser,
     list: web::Query<ListQuery>,
     filter: web::Query<PersonListQuery>,
 ) -> AppResult<HttpResponse> {
-    Ok(HttpResponse::Ok().json(people::list_for(&state.pool, &user, &list, &filter).await?))
+    let body = people::list_for(&state.pool, &user, &list, &filter).await?;
+    Ok(HttpResponse::Ok().json(body))
 }
 
-async fn create(
+pub(crate) async fn create(
     state: web::Data<AppState>,
     CurrentUser(user): CurrentUser,
     req: web::Json<CreatePersonRequest>,
 ) -> AppResult<HttpResponse> {
-    Ok(HttpResponse::Created().json(people::create(&state.pool, &user, &req).await?))
+    let body = people::create(&state.pool, &user, &req).await?;
+    Ok(HttpResponse::Created().json(body))
 }
 
 async fn update(
@@ -41,7 +43,8 @@ async fn update(
     id: web::Path<i64>,
     req: web::Json<UpdatePersonRequest>,
 ) -> AppResult<HttpResponse> {
-    Ok(HttpResponse::Ok().json(people::update(&state.pool, &user, id.into_inner(), &req).await?))
+    let body = people::update(&state.pool, &user, id.into_inner(), &req).await?;
+    Ok(HttpResponse::Ok().json(body))
 }
 
 async fn delete(

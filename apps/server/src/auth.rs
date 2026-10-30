@@ -73,13 +73,17 @@ impl FromRequest for AdminUser {
 
     fn from_request(req: &HttpRequest, payload: &mut Payload) -> Self::Future {
         let current = CurrentUser::from_request(req, payload);
-        Box::pin(async move {
-            let CurrentUser(user) = current.await?;
-            if !user.is_admin() {
-                return Err(AppError::Forbidden("admin only".into()));
-            }
-            Ok(AdminUser(user))
-        })
+        Box::pin(async move { AdminUser::of(current.await?.0) })
+    }
+}
+
+impl AdminUser {
+    /// `user`, if a global admin.
+    pub fn of(user: User) -> AppResult<Self> {
+        if !user.is_admin() {
+            return Err(AppError::Forbidden("admin only".into()));
+        }
+        Ok(AdminUser(user))
     }
 }
 

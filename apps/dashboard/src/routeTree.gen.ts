@@ -21,11 +21,13 @@ import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedUsageRouteImport } from './routes/_authenticated/usage';
 import { Route as AuthenticatedUsersRouteImport } from './routes/_authenticated/users';
 import { Route as InviteTokenRouteImport } from './routes/invite/$token';
+import { Route as OauthAuthorizeRouteImport } from './routes/oauth/authorize';
 import { Route as AuthenticatedKeysIndexRouteImport } from './routes/_authenticated/keys/index';
 import { Route as AuthenticatedKeysKeyIdRouteImport } from './routes/_authenticated/keys/$keyId';
 import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings/index';
 import { Route as AuthenticatedSettingsAppearanceRouteImport } from './routes/_authenticated/settings/appearance';
 import { Route as AuthenticatedSettingsGeneralRouteImport } from './routes/_authenticated/settings/general';
+import { Route as AuthenticatedSettingsMcpRouteImport } from './routes/_authenticated/settings/mcp';
 import { Route as AuthenticatedSettingsPricingRouteImport } from './routes/_authenticated/settings/pricing';
 import { Route as AuthenticatedSettingsProfileRouteImport } from './routes/_authenticated/settings/profile';
 import { Route as AuthenticatedTeamsIndexRouteImport } from './routes/_authenticated/teams/index';
@@ -90,6 +92,11 @@ const InviteTokenRoute = InviteTokenRouteImport.update({
   path: '/invite/$token',
   getParentRoute: () => rootRouteImport,
 } as any);
+const OauthAuthorizeRoute = OauthAuthorizeRouteImport.update({
+  id: '/oauth/authorize',
+  path: '/oauth/authorize',
+  getParentRoute: () => rootRouteImport,
+} as any);
 const AuthenticatedKeysIndexRoute = AuthenticatedKeysIndexRouteImport.update({
   id: '/keys/',
   path: '/keys/',
@@ -116,6 +123,12 @@ const AuthenticatedSettingsGeneralRoute =
   AuthenticatedSettingsGeneralRouteImport.update({
     id: '/general',
     path: '/general',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any);
+const AuthenticatedSettingsMcpRoute =
+  AuthenticatedSettingsMcpRouteImport.update({
+    id: '/mcp',
+    path: '/mcp',
     getParentRoute: () => AuthenticatedSettingsRoute,
   } as any);
 const AuthenticatedSettingsPricingRoute =
@@ -154,9 +167,11 @@ export interface FileRoutesByFullPath {
   '/usage': typeof AuthenticatedUsageRoute;
   '/users': typeof AuthenticatedUsersRoute;
   '/invite/$token': typeof InviteTokenRoute;
+  '/oauth/authorize': typeof OauthAuthorizeRoute;
   '/keys/$keyId': typeof AuthenticatedKeysKeyIdRoute;
   '/settings/appearance': typeof AuthenticatedSettingsAppearanceRoute;
   '/settings/general': typeof AuthenticatedSettingsGeneralRoute;
+  '/settings/mcp': typeof AuthenticatedSettingsMcpRoute;
   '/settings/pricing': typeof AuthenticatedSettingsPricingRoute;
   '/settings/profile': typeof AuthenticatedSettingsProfileRoute;
   '/teams/$teamId': typeof AuthenticatedTeamsTeamIdRoute;
@@ -175,9 +190,11 @@ export interface FileRoutesByTo {
   '/usage': typeof AuthenticatedUsageRoute;
   '/users': typeof AuthenticatedUsersRoute;
   '/invite/$token': typeof InviteTokenRoute;
+  '/oauth/authorize': typeof OauthAuthorizeRoute;
   '/keys/$keyId': typeof AuthenticatedKeysKeyIdRoute;
   '/settings/appearance': typeof AuthenticatedSettingsAppearanceRoute;
   '/settings/general': typeof AuthenticatedSettingsGeneralRoute;
+  '/settings/mcp': typeof AuthenticatedSettingsMcpRoute;
   '/settings/pricing': typeof AuthenticatedSettingsPricingRoute;
   '/settings/profile': typeof AuthenticatedSettingsProfileRoute;
   '/teams/$teamId': typeof AuthenticatedTeamsTeamIdRoute;
@@ -199,9 +216,11 @@ export interface FileRoutesById {
   '/_authenticated/usage': typeof AuthenticatedUsageRoute;
   '/_authenticated/users': typeof AuthenticatedUsersRoute;
   '/invite/$token': typeof InviteTokenRoute;
+  '/oauth/authorize': typeof OauthAuthorizeRoute;
   '/_authenticated/keys/$keyId': typeof AuthenticatedKeysKeyIdRoute;
   '/_authenticated/settings/appearance': typeof AuthenticatedSettingsAppearanceRoute;
   '/_authenticated/settings/general': typeof AuthenticatedSettingsGeneralRoute;
+  '/_authenticated/settings/mcp': typeof AuthenticatedSettingsMcpRoute;
   '/_authenticated/settings/pricing': typeof AuthenticatedSettingsPricingRoute;
   '/_authenticated/settings/profile': typeof AuthenticatedSettingsProfileRoute;
   '/_authenticated/teams/$teamId': typeof AuthenticatedTeamsTeamIdRoute;
@@ -223,9 +242,11 @@ export interface FileRouteTypes {
     | '/usage'
     | '/users'
     | '/invite/$token'
+    | '/oauth/authorize'
     | '/keys/$keyId'
     | '/settings/appearance'
     | '/settings/general'
+    | '/settings/mcp'
     | '/settings/pricing'
     | '/settings/profile'
     | '/teams/$teamId'
@@ -244,9 +265,11 @@ export interface FileRouteTypes {
     | '/usage'
     | '/users'
     | '/invite/$token'
+    | '/oauth/authorize'
     | '/keys/$keyId'
     | '/settings/appearance'
     | '/settings/general'
+    | '/settings/mcp'
     | '/settings/pricing'
     | '/settings/profile'
     | '/teams/$teamId'
@@ -267,9 +290,11 @@ export interface FileRouteTypes {
     | '/_authenticated/usage'
     | '/_authenticated/users'
     | '/invite/$token'
+    | '/oauth/authorize'
     | '/_authenticated/keys/$keyId'
     | '/_authenticated/settings/appearance'
     | '/_authenticated/settings/general'
+    | '/_authenticated/settings/mcp'
     | '/_authenticated/settings/pricing'
     | '/_authenticated/settings/profile'
     | '/_authenticated/teams/$teamId'
@@ -283,6 +308,7 @@ export interface RootRouteChildren {
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren;
   LoginRoute: typeof LoginRoute;
   InviteTokenRoute: typeof InviteTokenRoute;
+  OauthAuthorizeRoute: typeof OauthAuthorizeRoute;
 }
 
 declare module '@tanstack/react-router' {
@@ -371,6 +397,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InviteTokenRouteImport;
       parentRoute: typeof rootRouteImport;
     };
+    '/oauth/authorize': {
+      id: '/oauth/authorize';
+      path: '/oauth/authorize';
+      fullPath: '/oauth/authorize';
+      preLoaderRoute: typeof OauthAuthorizeRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/_authenticated/keys/': {
       id: '/_authenticated/keys/';
       path: '/keys';
@@ -404,6 +437,13 @@ declare module '@tanstack/react-router' {
       path: '/general';
       fullPath: '/settings/general';
       preLoaderRoute: typeof AuthenticatedSettingsGeneralRouteImport;
+      parentRoute: typeof AuthenticatedSettingsRoute;
+    };
+    '/_authenticated/settings/mcp': {
+      id: '/_authenticated/settings/mcp';
+      path: '/mcp';
+      fullPath: '/settings/mcp';
+      preLoaderRoute: typeof AuthenticatedSettingsMcpRouteImport;
       parentRoute: typeof AuthenticatedSettingsRoute;
     };
     '/_authenticated/settings/pricing': {
@@ -440,6 +480,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedSettingsRouteChildren {
   AuthenticatedSettingsAppearanceRoute: typeof AuthenticatedSettingsAppearanceRoute;
   AuthenticatedSettingsGeneralRoute: typeof AuthenticatedSettingsGeneralRoute;
+  AuthenticatedSettingsMcpRoute: typeof AuthenticatedSettingsMcpRoute;
   AuthenticatedSettingsPricingRoute: typeof AuthenticatedSettingsPricingRoute;
   AuthenticatedSettingsProfileRoute: typeof AuthenticatedSettingsProfileRoute;
   AuthenticatedSettingsIndexRoute: typeof AuthenticatedSettingsIndexRoute;
@@ -448,6 +489,7 @@ interface AuthenticatedSettingsRouteChildren {
 const AuthenticatedSettingsRouteChildren: AuthenticatedSettingsRouteChildren = {
   AuthenticatedSettingsAppearanceRoute: AuthenticatedSettingsAppearanceRoute,
   AuthenticatedSettingsGeneralRoute: AuthenticatedSettingsGeneralRoute,
+  AuthenticatedSettingsMcpRoute: AuthenticatedSettingsMcpRoute,
   AuthenticatedSettingsPricingRoute: AuthenticatedSettingsPricingRoute,
   AuthenticatedSettingsProfileRoute: AuthenticatedSettingsProfileRoute,
   AuthenticatedSettingsIndexRoute: AuthenticatedSettingsIndexRoute,
@@ -497,6 +539,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
   InviteTokenRoute: InviteTokenRoute,
+  OauthAuthorizeRoute: OauthAuthorizeRoute,
 };
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
