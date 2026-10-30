@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { type ReactNode, useEffect, useState } from 'react';
 import { useFormatter, useTranslations } from 'use-intl';
+import type { ListFilter } from '@/shared/lib/filters';
 import {
   DEFAULT_PAGE_SIZE,
   nextSort,
@@ -23,10 +24,13 @@ import { Choice } from './choice';
 import { Button } from './shadcn/button';
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from './shadcn/dropdown-menu';
@@ -342,6 +346,133 @@ export function FilterPill({
           type="button"
           aria-label={t('clearFilter')}
           onClick={() => onChange(undefined)}
+          className="mr-1 flex size-6 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          <X className="size-3.5" />
+        </button>
+      )}
+    </div>
+  );
+}
+
+/**
+ * A list filter as a pill: dashed `+ Team` while unset, `Team: Acme +2` once
+ * chosen, `Team: not Acme` when left out. The menu picks several values and
+ * whether they are kept ("is") or left out ("is not").
+ */
+export function ListFilterPill({
+  label,
+  filter,
+  options,
+  onChange,
+}: {
+  label: string;
+  filter: ListFilter;
+  options: readonly { value: string; label: string }[];
+  onChange: (filter: ListFilter) => void;
+}) {
+  const t = useTranslations('table');
+  // The mode outlives an empty selection, which the URL cannot hold.
+  const [wantsExclude, setWantsExclude] = useState(filter.exclude);
+  const exclude = filter.values.length > 0 ? filter.exclude : wantsExclude;
+  const chosen = filter.values.length > 0;
+  const nameOf = (value: string) =>
+    options.find((o) => o.value === value)?.label ?? value;
+  const clear = () => onChange({ values: [], exclude });
+  const toggle = (value: string, on: boolean) =>
+    onChange({
+      exclude,
+      values: on
+        ? [...filter.values, value]
+        : filter.values.filter((v) => v !== value),
+    });
+  // Chosen values that are not offered (deleted, or typed in the URL) stay
+  // listed so that they can be unticked.
+  const listed = [
+    ...options,
+    ...filter.values
+      .filter((v) => !options.some((o) => o.value === v))
+      .map((value) => ({ value, label: value })),
+  ];
+  return (
+    <div
+      className={cn(
+        'flex h-8 items-center rounded-md border text-sm transition-colors',
+        chosen ? 'border-solid bg-muted/50' : 'border-dashed',
+      )}
+    >
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <button
+              type="button"
+              className="flex h-full items-center gap-1.5 rounded-md px-2.5 text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
+            />
+          }
+        >
+          {!chosen && <PlusCircle className="size-3.5" />}
+          {label}
+          {chosen && (
+            <>
+              <span className="h-4 w-px bg-border" />
+              {exclude && <span>{t('filterNot')}</span>}
+              <span className="max-w-48 truncate font-medium text-foreground">
+                {nameOf(filter.values[0])}
+              </span>
+              {filter.values.length > 1 && (
+                <span className="font-medium text-foreground">
+                  {t('filterMore', { count: filter.values.length - 1 })}
+                </span>
+              )}
+            </>
+          )}
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-56">
+          <DropdownMenuGroup>
+            <DropdownMenuLabel>{label}</DropdownMenuLabel>
+            <DropdownMenuRadioGroup
+              value={exclude ? 'exclude' : 'include'}
+              onValueChange={(mode) => {
+                const next = mode === 'exclude';
+                setWantsExclude(next);
+                if (chosen) onChange({ values: filter.values, exclude: next });
+              }}
+            >
+              <DropdownMenuRadioItem value="include">
+                {t('filterIs')}
+              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="exclude">
+                {t('filterIsNot')}
+              </DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+          </DropdownMenuGroup>
+          <DropdownMenuSeparator />
+          <DropdownMenuGroup>
+            {listed.map((option) => (
+              <DropdownMenuCheckboxItem
+                key={option.value}
+                checked={filter.values.includes(option.value)}
+                onCheckedChange={(on) => toggle(option.value, on)}
+              >
+                {option.label}
+              </DropdownMenuCheckboxItem>
+            ))}
+          </DropdownMenuGroup>
+          {chosen && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={clear}>
+                {t('clearFilter')}
+              </DropdownMenuItem>
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+      {chosen && (
+        <button
+          type="button"
+          aria-label={t('clearFilter')}
+          onClick={clear}
           className="mr-1 flex size-6 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         >
           <X className="size-3.5" />

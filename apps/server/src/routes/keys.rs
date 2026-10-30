@@ -28,21 +28,23 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
     );
 }
 
-async fn list(
+pub(crate) async fn list(
     state: web::Data<AppState>,
     CurrentUser(user): CurrentUser,
     list: web::Query<ListQuery>,
     filter: web::Query<KeyListQuery>,
 ) -> AppResult<HttpResponse> {
-    Ok(HttpResponse::Ok().json(keys::list_for(&state.pool, &user, &list, &filter).await?))
+    let body = keys::list_for(&state.pool, &user, &list, &filter).await?;
+    Ok(HttpResponse::Ok().json(body))
 }
 
-async fn create(
+pub(crate) async fn create(
     state: web::Data<AppState>,
     CurrentUser(user): CurrentUser,
     req: web::Json<CreateKeyRequest>,
 ) -> AppResult<HttpResponse> {
-    Ok(HttpResponse::Created().json(keys::create(&state.pool, &user, &req).await?))
+    let body = keys::create(&state.pool, &user, &req).await?;
+    Ok(HttpResponse::Created().json(body))
 }
 
 async fn update(
@@ -66,15 +68,16 @@ async fn revoke(
     Ok(HttpResponse::NoContent().finish())
 }
 
-async fn detail(
+pub(crate) async fn detail(
     state: web::Data<AppState>,
     CurrentUser(user): CurrentUser,
     id: web::Path<i64>,
 ) -> AppResult<HttpResponse> {
-    Ok(HttpResponse::Ok().json(keys::detail(&state.pool, &user, id.into_inner()).await?))
+    let body = keys::detail(&state.pool, &user, id.into_inner()).await?;
+    Ok(HttpResponse::Ok().json(body))
 }
 
-async fn set_blocked(
+pub(crate) async fn set_blocked(
     state: web::Data<AppState>,
     CurrentUser(user): CurrentUser,
     id: web::Path<i64>,

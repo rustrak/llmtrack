@@ -10,6 +10,8 @@ use crate::gateway::router::RouterSettings;
 use crate::models::patch;
 
 pub const PUBLIC_URL: &str = "public_url";
+/// `true` when `/mcp` answers; off until an admin turns it on.
+pub const MCP_ENABLED: &str = "mcp_enabled";
 pub const PRICE_CATALOG_URL: &str = "price_catalog_url";
 /// The price list's JSON as last synced; absent until the first sync.
 pub const PRICE_CATALOG: &str = "price_catalog";

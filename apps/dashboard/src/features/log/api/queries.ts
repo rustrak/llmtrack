@@ -1,16 +1,26 @@
 import { request } from '@/shared/api/http';
 import { bodySchema, logLineSchema, pagedSchema } from '@/shared/api/schemas';
+import type { FilterParams } from '@/shared/lib/filters';
 import { type ListParams, toQuery } from '@/shared/lib/list-params';
 
-export interface LogFilter extends ListParams {
-  team_id?: number;
-  key_id?: number;
-  model?: string;
-  end_user?: string;
-  tag?: string;
+/** The list filters of `GET /api/logs`, each with its `exclude_` twin. */
+export const LOG_FILTERS = [
+  'team_id',
+  'key_id',
+  'model',
+  'label_id',
+  'end_user',
+  'tag',
+] as const;
+
+export interface LogFilter
+  extends ListParams,
+    FilterParams<(typeof LOG_FILTERS)[number]> {
   /** ISO timestamp: only requests since then. */
   from?: string;
   status?: 'success' | 'error';
+  /** Every word in the stored request or response bodies. */
+  text?: string;
 }
 
 export const getLogs = (filter: LogFilter) =>

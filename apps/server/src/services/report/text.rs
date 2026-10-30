@@ -207,6 +207,7 @@ phrases! {
     Customer => "Customer", "Cliente final";
     Tag => "Tag", "Tag";
     Label => "Label", "Etiqueta";
+    Excluded => "Left out", "Excluido";
     Date => "Date", "Fecha";
     Time => "Time (UTC)", "Hora (UTC)";
     Provider => "Provider", "Proveedor";

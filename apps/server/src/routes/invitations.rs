@@ -16,11 +16,12 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
     );
 }
 
-async fn list(state: web::Data<AppState>, _: AdminUser) -> AppResult<HttpResponse> {
-    Ok(HttpResponse::Ok().json(invitations::list(&state.pool).await?))
+pub(crate) async fn list(state: web::Data<AppState>, _: AdminUser) -> AppResult<HttpResponse> {
+    let body = invitations::list(&state.pool).await?;
+    Ok(HttpResponse::Ok().json(body))
 }
 
-async fn create(
+pub(crate) async fn create(
     state: web::Data<AppState>,
     AdminUser(user): AdminUser,
     req: web::Json<CreateInvitationRequest>,

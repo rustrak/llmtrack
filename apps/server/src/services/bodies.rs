@@ -233,9 +233,10 @@ pub async fn export(
                      JOIN request_bodies b ON b.request_id = l.request_id
                      LEFT JOIN teams t ON t.id = l.team_id
                      LEFT JOIN api_keys k ON k.id = l.key_id
-                     WHERE {LOG_FILTER} AND l.id < $12
+                     WHERE {} AND l.id < $20
                      ORDER BY l.id DESC
-                     LIMIT $13"
+                     LIMIT $21",
+                    *LOG_FILTER
                 );
                 let rows = bind_log_filter!(
                     sqlx::query_as::<_, ExportRow>(sqlx::AssertSqlSafe(sql)),

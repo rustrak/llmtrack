@@ -19,7 +19,7 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
 }
 
 /// Everyone reads the public URL (for code samples); admins read it all.
-async fn get(
+pub(crate) async fn get(
     state: web::Data<AppState>,
     CurrentUser(user): CurrentUser,
 ) -> AppResult<HttpResponse> {

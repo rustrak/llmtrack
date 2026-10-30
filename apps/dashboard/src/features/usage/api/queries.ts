@@ -1,17 +1,11 @@
 import { errorFrom, type Result, request } from '@/shared/api/http';
 import { usageSchema } from '@/shared/api/schemas';
 import { toQuery } from '@/shared/lib/list-params';
-import type { GroupBy } from '../model/series';
+import type { GroupBy, UsageFilterParams } from '../model/series';
 
-export interface UsageFilter {
+export interface UsageFilter extends UsageFilterParams {
   from: string;
   to: string;
-  team_id?: number;
-  key_id?: number;
-  model?: string;
-  person_id?: number;
-  /** Only the keys carrying this label now. */
-  label_id?: number;
   group_by?: GroupBy;
 }
 

@@ -24,11 +24,11 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
         );
 }
 
-async fn list_providers(_: CurrentUser) -> HttpResponse {
+pub(crate) async fn list_providers(_: CurrentUser) -> HttpResponse {
     HttpResponse::Ok().json(PROVIDERS)
 }
 
-async fn list(
+pub(crate) async fn list(
     state: web::Data<AppState>,
     _: CurrentUser,
     list: web::Query<ListQuery>,
@@ -47,7 +47,7 @@ async fn list(
     Ok(HttpResponse::Ok().json(list.paged(items, page.total)))
 }
 
-async fn create(
+pub(crate) async fn create(
     state: web::Data<AppState>,
     _: AdminUser,
     req: web::Json<CreateModelRequest>,

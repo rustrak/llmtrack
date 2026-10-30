@@ -19,20 +19,22 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
 }
 
 /// Anyone signed in: keys and usage filters pick from them.
-async fn list(
+pub(crate) async fn list(
     state: web::Data<AppState>,
     _: CurrentUser,
     list: web::Query<ListQuery>,
 ) -> AppResult<HttpResponse> {
-    Ok(HttpResponse::Ok().json(labels::list(&state.pool, &list).await?))
+    let body = labels::list(&state.pool, &list).await?;
+    Ok(HttpResponse::Ok().json(body))
 }
 
-async fn create(
+pub(crate) async fn create(
     state: web::Data<AppState>,
     _: AdminUser,
     req: web::Json<CreateLabelRequest>,
 ) -> AppResult<HttpResponse> {
-    Ok(HttpResponse::Created().json(labels::create(&state.pool, &req).await?))
+    let body = labels::create(&state.pool, &req).await?;
+    Ok(HttpResponse::Created().json(body))
 }
 
 async fn update(
@@ -41,7 +43,8 @@ async fn update(
     id: web::Path<i64>,
     req: web::Json<UpdateLabelRequest>,
 ) -> AppResult<HttpResponse> {
-    Ok(HttpResponse::Ok().json(labels::update(&state.pool, id.into_inner(), &req).await?))
+    let body = labels::update(&state.pool, id.into_inner(), &req).await?;
+    Ok(HttpResponse::Ok().json(body))
 }
 
 async fn delete(

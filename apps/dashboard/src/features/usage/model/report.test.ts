@@ -93,6 +93,15 @@ describe('narrowedBy', () => {
     ).toEqual(['teams', 'people', 'models']);
   });
 
+  it('keeps a breakdown for several values or for exclusions', () => {
+    expect(narrowedBy({ ...scope, team_id: '1,2', exclude_key_id: 7 })).toEqual(
+      [],
+    );
+    expect(
+      reportUrl({ ...scope, team_id: '1,2', exclude_key_id: 7 }, options),
+    ).toContain('&team_id=1%2C2&exclude_key_id=7');
+  });
+
   it('splits every breakdown by a label, so none is dropped', () => {
     expect(narrowedBy({ ...scope, label_id: 3 })).toEqual([]);
     expect(reportUrl({ ...scope, label_id: 3 }, options)).toContain(

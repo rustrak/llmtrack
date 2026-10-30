@@ -13,12 +13,14 @@ use serde::Deserialize;
 use sha2::{Digest, Sha256};
 
 use crate::app::AppState;
+use crate::db::DbPool;
 use crate::error::{AppError, AppResult, FieldErrorCode};
 use crate::gateway::pricing::Pricing;
+use crate::models::list::List;
 use crate::models::llm_model::PricingSource;
 use crate::models::user::{User, CURRENCIES};
 use crate::services::models;
-use crate::services::usage::{self, Day, Line, LogEntry, Totals, UsageQuery, UsageReport};
+use crate::services::usage::{self, Day, Line, LogEntry, Scope, Totals, UsageQuery, UsageReport};
 
 pub use text::Lang;
 use text::T;
@@ -56,11 +58,8 @@ pub struct ExportQuery {
     pub format: String,
     pub from: Option<NaiveDate>,
     pub to: Option<NaiveDate>,
-    pub team_id: Option<i64>,
-    pub key_id: Option<i64>,
-    pub model: Option<String>,
-    pub person_id: Option<i64>,
-    pub label_id: Option<i64>,
+    #[serde(flatten)]
+    pub scope: Scope,
     /// Comma-separated [`SECTIONS`]; every one but the requests when absent.
     pub sections: Option<String>,
     /// Percent added to the provider's cost.
@@ -333,15 +332,12 @@ async fn gather(
     let reference = optional_text(query.reference.as_deref(), "reference", MAX_TEXT)?;
     let notes = optional_text(query.notes.as_deref(), "notes", MAX_NOTES)?;
 
+    let scope = &query.scope;
     let usage_query = UsageQuery {
         from: query.from,
         to: query.to,
-        team_id: query.team_id,
-        key_id: query.key_id,
-        model: query.model.clone(),
+        scope: scope.clone(),
         group_by: None,
-        person_id: query.person_id,
-        label_id: query.label_id,
     };
     // Checks the range and the team before anything else is read.
     let usage = usage::report(&state.pool, user, &usage_query).await?;
@@ -390,37 +386,26 @@ async fn gather(
         _ => ("USD", 1.0),
     };
 
-    // The team was checked by the report; keys and people are named from
-    // the rows the user may see.
-    let team_name: Option<String> = match query.team_id {
-        Some(id) => {
-            sqlx::query_scalar("SELECT name FROM teams WHERE id = $1")
-                .bind(id)
-                .fetch_optional(&state.pool)
-                .await?
-        }
-        None => None,
+    // Teams were checked above and by the report, and anyone signed in
+    // reads the labels; keys and people are named from the rows the user
+    // may see.
+    let names = Names {
+        teams: names(&state.pool, "teams", &scope.team_id).await?,
+        excluded_teams: names(&state.pool, "teams", &scope.exclude_team_id).await?,
+        labels: names(&state.pool, "labels", &scope.label_id).await?,
+        excluded_labels: names(&state.pool, "labels", &scope.exclude_label_id).await?,
     };
-    let label_name: Option<String> = match query.label_id {
-        Some(id) => {
-            sqlx::query_scalar("SELECT name FROM labels WHERE id = $1")
-                .bind(id)
-                .fetch_optional(&state.pool)
-                .await?
-        }
-        None => None,
-    };
-    let scope = describe_scope(lang, &usage, team_name.clone(), label_name, &usage_query);
     // Filtered to one team, the team is who the report is for.
-    let client = client.or(team_name);
+    let client = client.or(match scope.team_id.single() {
+        Some(_) => names.teams.first().cloned(),
+        None => None,
+    });
+    let described = describe_scope(lang, &usage, &names, scope);
     let narrowed = [
-        ("teams", query.team_id.is_some()),
-        ("keys", query.key_id.is_some()),
-        ("people", query.person_id.is_some()),
-        (
-            "models",
-            query.model.as_deref().is_some_and(|m| !m.is_empty()),
-        ),
+        ("teams", scope.team_id.single().is_some()),
+        ("keys", scope.key_id.single().is_some()),
+        ("people", scope.person_id.single().is_some()),
+        ("models", scope.model.single().is_some()),
     ]
     .into_iter()
     .filter_map(|(section, filtered)| filtered.then_some(section))
@@ -446,7 +431,7 @@ async fn gather(
             reference,
             notes,
             author: user.name.clone().unwrap_or_else(|| user.email.clone()),
-            scope,
+            scope: described,
             generated,
             id,
             fingerprint,
@@ -457,52 +442,83 @@ async fn gather(
             requests_capped,
             rates,
             narrowed,
-            filtered_by_model: query.model.as_deref().is_some_and(|m| !m.is_empty())
-                || query.person_id.is_some(),
+            filtered_by_model: scope.by_model_or_person(),
         },
         format,
     ))
 }
 
+/// Names of the teams and labels a report is filtered by.
+struct Names {
+    teams: Vec<String>,
+    excluded_teams: Vec<String>,
+    labels: Vec<String>,
+    excluded_labels: Vec<String>,
+}
+
+/// The names of the rows of `table` (`teams` or `labels`) listed in `ids`.
+async fn names(pool: &DbPool, table: &str, ids: &List<i64>) -> AppResult<Vec<String>> {
+    let Some(ids) = ids.json() else {
+        return Ok(Vec::new());
+    };
+    Ok(sqlx::query_scalar(sqlx::AssertSqlSafe(format!(
+        "SELECT name FROM {table} WHERE id IN (SELECT CAST(value AS BIGINT) FROM {})
+         ORDER BY name",
+        crate::db::each("$1")
+    )))
+    .bind(ids)
+    .fetch_all(pool)
+    .await?)
+}
+
+/// What the cover says the report covers: one line per filter, kept values
+/// by their names, then what was left out.
 fn describe_scope(
     lang: Lang,
     usage: &UsageReport,
-    team: Option<String>,
-    label: Option<String>,
-    query: &UsageQuery,
+    names: &Names,
+    scope: &Scope,
 ) -> Vec<(T, String)> {
-    let named = |name: Option<String>, id: Option<i64>| {
-        id.map(|id| name.unwrap_or_else(|| format!("#{id}")))
+    let key = |id: &i64| {
+        usage.by_key.iter().find(|k| k.key_id == *id).map_or_else(
+            || format!("#{id}"),
+            |k| format!("{} ({})", k.key_name, k.key_hint),
+        )
     };
-    let key = query.key_id.and_then(|id| {
-        usage
-            .by_key
-            .iter()
-            .find(|k| k.key_id == id)
-            .map(|k| format!("{} ({})", k.key_name, k.key_hint))
-    });
-    let person = query.person_id.and_then(|id| {
+    let person = |id: &i64| {
         usage
             .by_person
             .iter()
-            .find(|p| p.person_id == id)
-            .map(|p| p.person_name.clone())
-    });
-    let mut out = Vec::new();
-    if let Some(team) = named(team, query.team_id) {
-        out.push((T::Team, team));
-    }
-    if let Some(key) = named(key, query.key_id) {
-        out.push((T::Key, key));
-    }
-    if let Some(person) = named(person, query.person_id) {
-        out.push((T::Person, person));
-    }
-    if let Some(model) = query.model.as_deref().filter(|m| !m.is_empty()) {
-        out.push((T::Model, model.to_string()));
-    }
-    if let Some(label) = named(label, query.label_id) {
-        out.push((T::Label, label));
+            .find(|p| p.person_id == *id)
+            .map_or_else(|| format!("#{id}"), |p| p.person_name.clone())
+    };
+    let ids = |ids: &List<i64>| ids.0.iter().map(|id| format!("#{id}")).collect::<Vec<_>>();
+    let kept = [
+        (T::Team, names.teams.clone()),
+        (T::Key, scope.key_id.0.iter().map(key).collect()),
+        (T::Person, scope.person_id.0.iter().map(person).collect()),
+        (T::Model, scope.model.0.clone()),
+        (T::Label, names.labels.clone()),
+    ];
+    let left_out = [
+        (T::Team, names.excluded_teams.clone()),
+        (T::Key, ids(&scope.exclude_key_id)),
+        (T::Person, ids(&scope.exclude_person_id)),
+        (T::Model, scope.exclude_model.0.clone()),
+        (T::Label, names.excluded_labels.clone()),
+    ];
+    let mut out: Vec<(T, String)> = kept
+        .into_iter()
+        .filter(|(_, values)| !values.is_empty())
+        .map(|(what, values)| (what, values.join(", ")))
+        .collect();
+    let excluded: Vec<String> = left_out
+        .into_iter()
+        .filter(|(_, values)| !values.is_empty())
+        .map(|(what, values)| format!("{}: {}", lang.t(what), values.join(", ")))
+        .collect();
+    if !excluded.is_empty() {
+        out.push((T::Excluded, excluded.join("; ")));
     }
     if out.is_empty() {
         out.push((T::Scope, lang.t(T::Everything).to_string()));

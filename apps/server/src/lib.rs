@@ -7,6 +7,7 @@ pub mod crypto;
 pub mod db;
 pub mod error;
 pub mod gateway;
+pub mod mcp;
 pub mod models;
 pub mod net;
 pub mod routes;

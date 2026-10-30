@@ -4,6 +4,7 @@
 use actix_session::{storage::CookieSessionStore, SessionMiddleware};
 use actix_web::cookie::{Key, SameSite};
 use actix_web::web;
+use std::sync::Arc;
 use std::time::Duration;
 
 use crate::crypto::SecretBox;
@@ -11,6 +12,7 @@ use crate::db::DbPool;
 use crate::error::AppError;
 use crate::gateway::Gateway;
 use crate::routes;
+use crate::services::oauth::{ClientMetadataSource, HttpClientMetadata};
 
 pub struct AppState {
     pub pool: DbPool,
@@ -18,6 +20,9 @@ pub struct AppState {
     pub gateway: Gateway,
     /// The master key: a bearer token for the management API.
     pub master_key: Option<String>,
+    /// Where OAuth clients' metadata documents come from: the internet, or a
+    /// fake in tests.
+    pub clients: Arc<dyn ClientMetadataSource>,
 }
 
 impl AppState {
@@ -30,11 +35,17 @@ impl AppState {
             secrets,
             pool,
             master_key: None,
+            clients: Arc::new(HttpClientMetadata),
         }
     }
 
     pub fn with_master_key(mut self, master_key: Option<String>) -> Self {
         self.master_key = master_key;
+        self
+    }
+
+    pub fn with_clients(mut self, clients: Arc<dyn ClientMetadataSource>) -> Self {
+        self.clients = clients;
         self
     }
 }
@@ -75,5 +86,7 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
     .configure(routes::labels::configure)
     .configure(routes::usage::configure)
     .configure(routes::settings::configure)
+    .configure(routes::oauth::configure)
+    .configure(routes::mcp::configure)
     .configure(routes::proxy::configure);
 }

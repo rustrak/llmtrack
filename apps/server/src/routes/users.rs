@@ -18,13 +18,14 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
     );
 }
 
-async fn list(
+pub(crate) async fn list(
     state: web::Data<AppState>,
     _: AdminUser,
     list: web::Query<ListQuery>,
     filter: web::Query<users::UserListQuery>,
 ) -> AppResult<HttpResponse> {
-    Ok(HttpResponse::Ok().json(users::list(&state.pool, &list, &filter).await?))
+    let body = users::list(&state.pool, &list, &filter).await?;
+    Ok(HttpResponse::Ok().json(body))
 }
 
 async fn create(

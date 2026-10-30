@@ -41,11 +41,12 @@ pub async fn create(
         return Err(taken(format!("'{email}' already has a pending invitation")));
     }
     let now = Utc::now();
+    let token = hex::encode(rand::rng().random::<[u8; 20]>());
     Ok(sqlx::query_as::<_, Invitation>(sqlx::AssertSqlSafe(format!(
         "INSERT INTO invitations ({COLUMNS})
          VALUES ($1, $2, $3, 'pending', $4, $5, $6, NULL) RETURNING {COLUMNS}"
     )))
-    .bind(hex::encode(rand::rng().random::<[u8; 20]>()))
+    .bind(token)
     .bind(&email)
     .bind(role)
     .bind(now + Duration::hours(TTL_HOURS))
