@@ -1,3 +1,4 @@
+import { Input, Switch } from '@rustrak/ui';
 import { useFormContext } from 'react-hook-form';
 import { useTranslations } from 'use-intl';
 import {
@@ -7,9 +8,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/shared/ui/components/shadcn/form';
-import { Input } from '@/shared/ui/components/shadcn/input';
-import { Switch } from '@/shared/ui/components/shadcn/switch';
+} from '@/shared/ui/components/form';
 import { PanelSection } from '@/shared/ui/components/side-panel';
 
 interface BodyValues {
@@ -42,13 +41,14 @@ export function BodySection() {
           control={control}
           name="log_bodies"
           render={({ field }) => (
-            <FormItem className="flex items-start justify-between gap-4">
+            <FormItem className="flex-row items-start justify-between gap-4">
               <div className="space-y-0.5">
-                <FormLabel>{t('keep')}</FormLabel>
+                <FormLabel className="text-fg">{t('keep')}</FormLabel>
                 <FormDescription>{t('keepHint')}</FormDescription>
               </div>
               <FormControl>
                 <Switch
+                  aria-label={t('keep')}
                   checked={field.value}
                   onCheckedChange={field.onChange}
                 />
@@ -61,7 +61,7 @@ export function BodySection() {
           name="body_retention_days"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-xs">{t('retention')}</FormLabel>
+              <FormLabel>{t('retention')}</FormLabel>
               <FormControl>
                 <Input
                   inputMode="numeric"

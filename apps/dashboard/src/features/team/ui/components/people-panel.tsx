@@ -1,5 +1,5 @@
+import { Avatar, Button, RemoveIcon, Tooltip } from '@rustrak/ui';
 import { Link, useRouter } from '@tanstack/react-router';
-import { UserMinus } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useTranslations } from 'use-intl';
@@ -7,15 +7,12 @@ import type { Person } from '@/shared/api/schemas';
 import { readableMessage } from '@/shared/lib/form-errors';
 import { Choice } from '@/shared/ui/components/choice';
 import {
-  ActionsCell,
-  Cell,
-  ColumnHead,
-  DataRow,
-  DataTable,
-  DataTableEmpty,
-} from '@/shared/ui/components/data-table';
-import { Button } from '@/shared/ui/components/shadcn/button';
+  SettingSection,
+  SettingsEmpty,
+  SettingsListItem,
+} from '@/shared/ui/components/setting-row';
 import { useMoney } from '@/shared/ui/hooks/use-money';
+import { PeopleIcon } from '@/shared/ui/icons';
 import { updatePerson } from '../../api/mutations';
 
 /**
@@ -54,83 +51,104 @@ export function PeoplePanel({
   };
 
   return (
-    <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">
-        {t('people.hint')}{' '}
-        <Link to="/people" className="underline underline-offset-4">
-          {t('people.manage')}
-        </Link>
-      </p>
-      {canManage && unassigned.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
-          <Choice
-            aria-label={t('people.pick')}
-            className="w-64"
-            placeholder={t('people.pick')}
-            value={picked}
-            onChange={setPicked}
-            options={unassigned.map((p) => ({
-              value: String(p.id),
-              label: p.email ? `${p.name} · ${p.email}` : p.name,
-            }))}
-          />
-          <Button
-            disabled={pending || picked === ''}
-            onClick={() => {
-              const person = unassigned.find((p) => String(p.id) === picked);
-              if (person)
-                move(person, teamId, t('people.added', { name: person.name }));
-            }}
-          >
-            {t('people.add')}
-          </Button>
-        </div>
-      )}
-      <DataTable
-        head={
+    <SettingSection
+      title={t('detail.peopleTab')}
+      description={
+        <>
+          {t('people.hint')}{' '}
+          <Link to="/people" className="text-fg-brand hover:underline">
+            {t('people.manage')}
+          </Link>
+        </>
+      }
+      actions={
+        canManage &&
+        unassigned.length > 0 && (
           <>
-            <ColumnHead>{t('people.name')}</ColumnHead>
-            <ColumnHead>{t('people.email')}</ColumnHead>
-            <ColumnHead className="text-right">{t('people.keys')}</ColumnHead>
-            <ColumnHead className="text-right">{t('people.spend')}</ColumnHead>
-            {canManage && <ColumnHead className="w-12" />}
+            <Choice
+              aria-label={t('people.pick')}
+              size="sm"
+              className="w-64"
+              placeholder={t('people.pick')}
+              value={picked}
+              onChange={setPicked}
+              options={unassigned.map((p) => ({
+                value: String(p.id),
+                label: p.email ? `${p.name} · ${p.email}` : p.name,
+              }))}
+            />
+            <Button
+              variant="primary"
+              size="sm"
+              loading={pending}
+              disabled={picked === ''}
+              onClick={() => {
+                const person = unassigned.find((p) => String(p.id) === picked);
+                if (person)
+                  move(
+                    person,
+                    teamId,
+                    t('people.added', { name: person.name }),
+                  );
+              }}
+            >
+              {t('people.add')}
+            </Button>
           </>
-        }
-        empty={
-          people.length === 0 && <DataTableEmpty title={t('people.empty')} />
-        }
-      >
-        {people.map((person) => (
-          <DataRow key={person.id}>
-            <Cell className="font-medium">{person.name}</Cell>
-            <Cell className="text-muted-foreground">{person.email ?? '—'}</Cell>
-            <Cell className="text-right tabular-nums">{person.key_count}</Cell>
-            <Cell className="text-right tabular-nums">
-              {money.usd(person.spend_usd)}
-            </Cell>
-            {canManage && (
-              <ActionsCell>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  disabled={pending}
-                  aria-label={t('people.remove', { name: person.name })}
-                  title={t('people.remove', { name: person.name })}
-                  onClick={() =>
-                    move(
-                      person,
-                      null,
-                      t('people.removed', { name: person.name }),
-                    )
-                  }
-                >
-                  <UserMinus />
-                </Button>
-              </ActionsCell>
-            )}
-          </DataRow>
-        ))}
-      </DataTable>
-    </div>
+        )
+      }
+    >
+      {people.length === 0 ? (
+        <SettingsEmpty
+          icon={<PeopleIcon size="2xl" />}
+          title={t('people.empty')}
+        />
+      ) : (
+        people.map((person) => (
+          <SettingsListItem
+            key={person.id}
+            leading={<Avatar name={person.name} />}
+            title={person.name}
+            description={person.email ?? '—'}
+            meta={
+              <>
+                <span>
+                  {t('people.keys')}{' '}
+                  <span className="font-mono text-mono-sm text-fg-secondary tabular-nums">
+                    {person.key_count}
+                  </span>
+                </span>
+                <span>
+                  {t('people.spend')}{' '}
+                  <span className="font-mono text-mono-sm text-fg-secondary tabular-nums">
+                    {money.usd(person.spend_usd)}
+                  </span>
+                </span>
+              </>
+            }
+            actions={
+              canManage && (
+                <Tooltip content={t('people.remove', { name: person.name })}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    icon={RemoveIcon}
+                    disabled={pending}
+                    aria-label={t('people.remove', { name: person.name })}
+                    onClick={() =>
+                      move(
+                        person,
+                        null,
+                        t('people.removed', { name: person.name }),
+                      )
+                    }
+                  />
+                </Tooltip>
+              )
+            }
+          />
+        ))
+      )}
+    </SettingSection>
   );
 }

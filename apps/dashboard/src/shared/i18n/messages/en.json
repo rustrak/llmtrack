@@ -18,7 +18,8 @@
   "theme": {
     "light": "Light",
     "dark": "Dark",
-    "system": "System"
+    "system": "System",
+    "label": "Theme"
   },
   "roles": {
     "admin": "Admin",
@@ -91,7 +92,6 @@
     "profile": "Profile and settings",
     "logout": "Log out",
     "tagline": "AI gateway",
-    "builtBy": "Built by",
     "breadcrumb": "Breadcrumb",
     "people": "People",
     "playground": "Playground",
@@ -642,7 +642,8 @@
       "output": "Output",
       "reasoning": "Reasoning",
       "latency": "Average latency",
-      "noModelSplit": "Customers and tags are not split by model: clear the model filter to see them."
+      "noModelSplit": "Customers and tags are not split by model: clear the model filter to see them.",
+      "metric": "Measure"
     },
     "chartTitle": "{metric} by {group}",
     "splitBy": "Split by",
@@ -747,7 +748,8 @@
       "noNotes": "None",
       "excluded": "{filter}: all but {values}"
     },
-    "label": "Label"
+    "label": "Label",
+    "filterPlaceholder": "Filter by team, key, model or label"
   },
   "logs": {
     "meta": {
@@ -912,10 +914,11 @@
       "personal": "Your account",
       "instance": "This instance",
       "profile": "Profile",
-      "appearance": "Appearance",
       "general": "General",
       "pricing": "Pricing",
-      "mcp": "AI assistants (MCP)"
+      "mcp": "AI assistants (MCP)",
+      "back": "Back to llmtrack",
+      "preferences": "Preferences"
     },
     "profile": {
       "meta": "Profile · llmtrack",
@@ -947,9 +950,6 @@
       "changed": "Password changed"
     },
     "appearance": {
-      "meta": "Appearance · llmtrack",
-      "title": "Appearance",
-      "subtitle": "How the dashboard looks on this device.",
       "theme": "Theme",
       "themeDescription": "System follows your operating system."
     },
@@ -1025,6 +1025,12 @@
         "revokeFailed": "Could not disconnect the assistant",
         "revoked": "{name} disconnected"
       }
+    },
+    "preferences": {
+      "meta": "Preferences · llmtrack",
+      "title": "Preferences",
+      "subtitle": "How llmtrack reads for you: language, region and theme.",
+      "display": "Display"
     }
   },
   "limits": {
@@ -1068,18 +1074,48 @@
   "table": {
     "clearFilter": "Clear filter",
     "clearFilters": "Clear filters",
-    "range": "{from}–{to} of {total}",
-    "perPage": "Rows per page",
-    "pages": "Pages",
-    "previous": "Previous page",
-    "next": "Next page",
+    "range": "{first}–{last} of {total}",
     "noResults": "No results",
     "noResultsHint": "Nothing matches these filters. Try other ones, or clear them.",
     "filterIs": "is",
     "filterIsNot": "is not",
     "filterNot": "not",
     "filterMore": "+{count}",
-    "excludeValues": "Leave out these {filter} values"
+    "excludeValues": "Leave out these {filter} values",
+    "rowsPerPage": "Rows {size}",
+    "rowsOption": "{size} rows",
+    "selected": "{count, plural, other {# selected}}",
+    "clearSelection": "Clear",
+    "selectionToolbar": "Actions for the selected rows",
+    "noMatches": "Nothing matches the current filters.",
+    "nothingYet": "There is nothing here yet.",
+    "selectAllPageRows": "Select all rows on this page",
+    "selectRow": "Select row",
+    "actions": "Actions",
+    "rowActions": "Row actions",
+    "columns": "Columns",
+    "chooseColumns": "Choose columns",
+    "resizeColumn": "Resize column",
+    "filterValues": "Filter values",
+    "filterValuesPlaceholder": "Filter values…",
+    "nothingMatches": "Nothing matches",
+    "contains": "Contains…",
+    "filterText": "Filter text",
+    "min": "Min",
+    "max": "Max",
+    "lowestFirst": "Lowest first",
+    "highestFirst": "Highest first",
+    "aToZ": "A to Z",
+    "zToA": "Z to A",
+    "hideColumn": "Hide column",
+    "previousPage": "Previous page",
+    "nextPage": "Next page",
+    "filterBy": "Filter by",
+    "suggestions": "Suggestions",
+    "filterAndSearch": "Filter by key:value, or search…",
+    "addFilter": "Add a filter…",
+    "clearAll": "Clear filters and search",
+    "excludedField": "{field} is not"
   },
   "people": {
     "meta": {

@@ -1,12 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Button, Field, FieldLabel, Input } from '@rustrak/ui';
 import { useRouter } from '@tanstack/react-router';
 import { useForm } from 'react-hook-form';
 import { useTranslations } from 'use-intl';
 import { z } from 'zod';
 import { acceptInvitation } from '@/features/user/api/mutations';
 import { intl } from '@/shared/i18n/intl';
-import { PasswordInput } from '@/shared/ui/components/password-input';
-import { Button } from '@/shared/ui/components/shadcn/button';
 import {
   Form,
   FormControl,
@@ -15,9 +14,10 @@ import {
   FormLabel,
   FormMessage,
   FormRootError,
-} from '@/shared/ui/components/shadcn/form';
-import { Input } from '@/shared/ui/components/shadcn/input';
+} from '@/shared/ui/components/form';
+import { PasswordInput } from '@/shared/ui/components/password-input';
 import { useServerErrors } from '@/shared/ui/hooks/use-form-errors';
+import { AuthHeading } from '../../-components/auth-screen';
 
 export function AcceptInvitationForm({
   token,
@@ -42,6 +42,7 @@ export function AcceptInvitationForm({
     defaultValues: { password: '', confirmPassword: '' },
   });
   const serverErrors = useServerErrors(form);
+  const submitting = form.formState.isSubmitting;
 
   const onSubmit = form.handleSubmit(async ({ password }) => {
     const result = await acceptInvitation(token, password);
@@ -54,19 +55,14 @@ export function AcceptInvitationForm({
   });
 
   return (
-    <div className="space-y-8">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
-        <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
-      </div>
+    <div className="flex flex-col gap-6">
+      <AuthHeading title={t('title')}>{t('subtitle')}</AuthHeading>
       <Form {...form}>
-        <form onSubmit={onSubmit} className="space-y-5" noValidate>
-          <div className="space-y-2">
-            <label htmlFor="invite-email" className="text-sm font-medium">
-              {t('email')}
-            </label>
-            <Input id="invite-email" value={email} disabled readOnly />
-          </div>
+        <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
+          <Field>
+            <FieldLabel>{t('email')}</FieldLabel>
+            <Input value={email} disabled readOnly />
+          </Field>
           <FormField
             control={form.control}
             name="password"
@@ -100,9 +96,10 @@ export function AcceptInvitationForm({
           <FormRootError />
           <Button
             type="submit"
+            variant="primary"
             size="lg"
-            className="w-full"
-            disabled={form.formState.isSubmitting}
+            className="mt-2 w-full"
+            loading={submitting}
           >
             {t('submit')}
           </Button>

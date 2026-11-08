@@ -16,24 +16,40 @@ export function SpendBar({
   const share = budgetShare(spent, budget);
   return (
     <div className="min-w-32 space-y-1">
-      <p className="text-sm tabular-nums">
+      <p className="text-body text-fg tabular-nums">
         {money.usd(spent)}
-        <span className="text-muted-foreground">
+        <span className="text-fg-subtle">
           {' / '}
           {budget === null ? t('noLimit') : money.usd(budget)}
         </span>
       </p>
-      {share !== null && (
-        <div className="h-1 w-full overflow-hidden rounded-full bg-muted">
-          <div
-            className={cn(
-              'h-full rounded-full',
-              share >= 0.9 ? 'bg-destructive' : 'bg-primary',
-            )}
-            style={{ width: `${Math.max(share * 100, 2)}%` }}
-          />
-        </div>
+      {share !== null && <ShareBar share={share} />}
+    </div>
+  );
+}
+
+/** A thin bar for a share of a budget, red from 90 %. */
+export function ShareBar({
+  share,
+  className,
+}: {
+  share: number;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        'h-1 w-full overflow-hidden rounded-pill bg-surface-chip',
+        className,
       )}
+    >
+      <div
+        className={cn(
+          'h-full rounded-pill transition-[width] duration-moderate ease-standard',
+          share >= 0.9 ? 'bg-danger' : 'bg-surface-brand',
+        )}
+        style={{ width: `${Math.max(share * 100, 2)}%` }}
+      />
     </div>
   );
 }

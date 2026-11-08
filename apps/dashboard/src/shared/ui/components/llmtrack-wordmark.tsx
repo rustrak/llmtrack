@@ -5,11 +5,11 @@ export function LlmtrackWordmark({ className }: { className?: string }) {
   return (
     <span
       className={cn(
-        'font-mono text-lg font-bold tracking-tight select-none',
+        'font-mono text-section font-bold tracking-tight text-fg select-none',
         className,
       )}
     >
-      llm<span className="text-primary">track</span>
+      llm<span className="text-fg-brand">track</span>
     </span>
   );
 }

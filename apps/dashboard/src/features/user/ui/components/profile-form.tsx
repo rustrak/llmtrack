@@ -1,14 +1,13 @@
+import { Button, Input } from '@rustrak/ui';
 import { useRouter } from '@tanstack/react-router';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useTranslations } from 'use-intl';
 import type { User } from '@/shared/api/schemas';
 import { readableMessage } from '@/shared/lib/form-errors';
-import { Button } from '@/shared/ui/components/shadcn/button';
-import { Input } from '@/shared/ui/components/shadcn/input';
-import { Label } from '@/shared/ui/components/shadcn/label';
 import { updateProfile } from '../../api/mutations';
 
+/** The name field of the profile row, saved on its own button. */
 export function ProfileForm({ user }: { user: User }) {
   const t = useTranslations('settings');
   const router = useRouter();
@@ -18,7 +17,7 @@ export function ProfileForm({ user }: { user: User }) {
 
   return (
     <form
-      className="space-y-4"
+      className="flex items-center gap-2"
       onSubmit={async (event) => {
         event.preventDefault();
         setPending(true);
@@ -32,24 +31,20 @@ export function ProfileForm({ user }: { user: User }) {
         await router.invalidate();
       }}
     >
-      <div className="space-y-1.5">
-        <Label htmlFor="profile-name">{t('profile.name')}</Label>
-        <Input
-          id="profile-name"
-          value={name}
-          maxLength={100}
-          placeholder={t('profile.namePlaceholder')}
-          onChange={(event) => setName(event.target.value)}
-        />
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="profile-email">{t('profile.email')}</Label>
-        <Input id="profile-email" value={user.email} disabled />
-        <p className="text-xs text-muted-foreground">
-          {t('profile.emailHint')}
-        </p>
-      </div>
-      <Button type="submit" disabled={!changed || pending}>
+      <Input
+        id="profile-name"
+        boxClassName="min-w-0 flex-1"
+        value={name}
+        maxLength={100}
+        placeholder={t('profile.namePlaceholder')}
+        onChange={(event) => setName(event.target.value)}
+      />
+      <Button
+        type="submit"
+        variant="primary"
+        disabled={!changed}
+        loading={pending}
+      >
         {t('profile.save')}
       </Button>
     </form>

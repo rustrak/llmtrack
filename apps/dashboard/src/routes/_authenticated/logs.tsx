@@ -1,6 +1,15 @@
+import {
+  Button,
+  createDataTableColumnHelper,
+  DataTable,
+  ExportIcon,
+  Menu,
+  PayloadIcon,
+  SegmentedControl,
+  SegmentedItem,
+} from '@rustrak/ui';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { ChevronDown, Download, FileJson, MessagesSquare } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslations } from 'use-intl';
 import { listKeys } from '@/features/key/api/queries';
 import { listLabels } from '@/features/label/api/queries';
@@ -34,28 +43,21 @@ import {
   readFilter,
 } from '@/shared/lib/filters';
 import { MAX_PAGE_SIZE, parseListParams } from '@/shared/lib/list-params';
-import { Choice } from '@/shared/ui/components/choice';
 import {
-  Cell,
-  ColumnHead,
-  DataRow,
-  DataTable,
-  DataTableEmpty,
   FilterPill,
   ListFilterPill,
-  ListFooter,
-  SearchField,
-  SortHead,
-} from '@/shared/ui/components/data-table';
+  ListQueryBar,
+} from '@/shared/ui/components/list-filters';
 import { Page } from '@/shared/ui/components/page';
-import { Button } from '@/shared/ui/components/shadcn/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/shared/ui/components/shadcn/dropdown-menu';
+import { useListTable } from '@/shared/ui/hooks/use-list-table';
 import { useMoney } from '@/shared/ui/hooks/use-money';
+import {
+  KeysIcon,
+  LabelsIcon,
+  ModelsIcon,
+  PlaygroundIcon,
+  TeamsIcon,
+} from '@/shared/ui/icons';
 
 type LogSearch = Omit<LogFilter, 'from'> & { window: LogWindow };
 /** What `GET /api/logs` sorts by when not told. */
@@ -116,14 +118,181 @@ function Tokens({ row }: { row: LogLine }) {
   ].filter(Boolean);
   return (
     <div className="text-right">
-      <p className="tabular-nums">
+      <p className="font-mono text-mono-sm tabular-nums">
         {money.compact(row.prompt_tokens)} →{' '}
         {money.compact(row.completion_tokens)}
       </p>
       {extras.length > 0 && (
-        <p className="text-xs text-muted-foreground">{extras.join(' · ')}</p>
+        <p className="text-fg-subtle text-meta">{extras.join(' · ')}</p>
       )}
     </div>
+  );
+}
+
+const column = createDataTableColumnHelper<LogLine>();
+
+/**
+ * The request log as the design system's table: server-paged and
+ * server-sorted, the column ids being the API's sort names. A row opens its
+ * detail panel.
+ */
+function LogsTable({
+  page,
+  params,
+  onParams,
+  onOpen,
+  empty,
+}: {
+  page: { data: LogLine[]; total: number };
+  params: LogSearch;
+  onParams: (patch: Partial<LogSearch>) => void;
+  onOpen: (row: LogLine) => void;
+  empty: { title: string; description?: string };
+}) {
+  const t = useTranslations('logs');
+  const money = useMoney();
+
+  const columns = useMemo(
+    () =>
+      column.columns([
+        column.accessor('created_at', {
+          id: 'created_at',
+          header: t('table.time'),
+          enableHiding: false,
+          cell: ({ getValue }) => (
+            <span className="whitespace-nowrap font-mono text-fg-subtle text-mono-sm">
+              {money.dateTime(getValue())}
+            </span>
+          ),
+          meta: { label: t('table.time'), width: 168 },
+        }),
+        column.accessor('status_code', {
+          id: 'status',
+          header: t('table.status'),
+          enableSorting: false,
+          cell: ({ getValue }) => <StatusBadge code={getValue()} />,
+          meta: { label: t('table.status'), width: 96 },
+        }),
+        column.accessor('model_name', {
+          id: 'model',
+          header: t('table.model'),
+          enableSorting: false,
+          enableHiding: false,
+          cell: ({ row }) => {
+            const log = row.original;
+            return (
+              <div className="flex min-w-0 flex-col gap-0.5 py-1.5">
+                <span className="truncate font-mono text-fg text-mono-sm">
+                  {log.model_name}
+                </span>
+                <span className="truncate text-fg-subtle text-meta">
+                  <span className="font-mono">/v1/{log.endpoint}</span>
+                  {log.stream && ` · ${t('stream')}`}
+                </span>
+                {log.error && (
+                  <span className="truncate text-danger-fg text-meta">
+                    {log.error}
+                  </span>
+                )}
+              </div>
+            );
+          },
+          meta: { label: t('table.model') },
+        }),
+        column.display({
+          id: 'team',
+          header: t('table.team'),
+          enableSorting: false,
+          cell: ({ row }) => billedTo(row.original, t('personal')),
+          meta: { label: t('table.team'), width: 180 },
+        }),
+        column.display({
+          id: 'key',
+          header: t('table.key'),
+          enableSorting: false,
+          cell: ({ row }) => {
+            const log = row.original;
+            return (
+              <div className="flex min-w-0 flex-col gap-0.5 py-1.5">
+                <span className="truncate">
+                  {log.key_name ?? `#${log.key_id}`}
+                </span>
+                <span className="truncate font-mono text-fg-subtle text-mono-sm">
+                  {log.key_hint}
+                </span>
+                {log.end_user && (
+                  <span className="truncate text-fg-subtle text-meta">
+                    {t('forEndUser', { user: log.end_user })}
+                  </span>
+                )}
+              </div>
+            );
+          },
+          meta: { label: t('table.key'), width: 180 },
+        }),
+        column.display({
+          id: 'tokens',
+          header: t('table.tokens'),
+          cell: ({ row }) => <Tokens row={row.original} />,
+          meta: {
+            label: t('table.tokens'),
+            width: 160,
+            align: 'end',
+            numeric: true,
+          },
+        }),
+        column.accessor('cost_usd', {
+          id: 'cost',
+          header: t('table.cost'),
+          cell: ({ getValue }) => (
+            <span className="font-mono text-fg text-mono-sm tabular-nums">
+              {money.usd(getValue())}
+            </span>
+          ),
+          meta: {
+            label: t('table.cost'),
+            width: 112,
+            align: 'end',
+            numeric: true,
+          },
+        }),
+        column.accessor('latency_ms', {
+          id: 'latency',
+          header: t('table.latency'),
+          cell: ({ getValue }) => (
+            <span className="font-mono text-fg-subtle text-mono-sm tabular-nums">
+              {t('ms', { value: getValue() })}
+            </span>
+          ),
+          meta: {
+            label: t('table.latency'),
+            width: 104,
+            align: 'end',
+            numeric: true,
+          },
+        }),
+      ]),
+    [t, money],
+  );
+
+  const table = useListTable({
+    data: page.data,
+    columns,
+    total: page.total,
+    params,
+    defaultSort: DEFAULT_SORT,
+    onParams,
+    getRowId: (row) => String(row.id),
+    storageKey: 'logs',
+  });
+
+  return (
+    <DataTable
+      table={table}
+      className="min-h-0 flex-1"
+      empty={empty}
+      onRowClick={(row) => onOpen(row.original)}
+    />
   );
 }
 
@@ -133,7 +302,6 @@ function LogsPage() {
   const { page, teams, models, keys, labels } = Route.useLoaderData();
   const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
-  const money = useMoney();
   const [open, setOpen] = useState<LogLine | null>(null);
   const windowLabels: Record<LogWindow, string> = {
     '1h': t('window.hour'),
@@ -142,6 +310,7 @@ function LogsPage() {
     '30d': t('window.month'),
     all: t('window.all'),
   };
+  // Any change but the page itself starts again from the first page.
   const set = (patch: Partial<LogSearch>) =>
     navigate({ search: (prev) => ({ ...prev, page: undefined, ...patch }) });
   const filtered = Boolean(
@@ -159,6 +328,14 @@ function LogsPage() {
   });
   const options = (rows: readonly { id: number; name: string }[]) =>
     rows.map((x) => ({ value: String(x.id), label: x.name }));
+  const teamOptions = options(teams);
+  const keyOptions = options(keys);
+  const modelOptions = models.map((name) => ({ value: name, label: name }));
+  const labelOptions = options(labels);
+  const statusOptions = [
+    { value: 'success', label: t('filters.success') },
+    { value: 'error', label: t('filters.errors') },
+  ];
   /** The stored request content behind what the filters show. */
   const download = (format: ExportFormat) => {
     const { window, ...filter } = search;
@@ -166,17 +343,6 @@ function LogsPage() {
     link.href = exportUrl({ ...filter, from: since(window) }, format);
     link.click();
   };
-  const sortable = (field: string, label: string, className?: string) => (
-    <SortHead
-      field={field}
-      sort={search.sort}
-      fallback={DEFAULT_SORT}
-      onSort={(sort) => set({ sort })}
-      className={className}
-    >
-      {label}
-    </SortHead>
-  );
 
   return (
     <Page
@@ -184,185 +350,184 @@ function LogsPage() {
       title={t('title')}
       description={t('subtitle')}
       actions={
-        <DropdownMenu>
-          <DropdownMenuTrigger render={<Button variant="outline" />}>
-            <Download />
-            {t('export.button')}
-            <ChevronDown />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => download('json')}>
-              <FileJson />
-              {t('export.json')}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => download('chat')}>
-              <MessagesSquare />
-              {t('export.chat')}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <Menu
+          align="end"
+          trigger={
+            <Button icon={ExportIcon} menu>
+              {t('export.button')}
+            </Button>
+          }
+          actions={[
+            {
+              id: 'json',
+              label: t('export.json'),
+              icon: PayloadIcon,
+              onSelect: () => download('json'),
+            },
+            {
+              id: 'chat',
+              label: t('export.chat'),
+              icon: PlaygroundIcon,
+              onSelect: () => download('chat'),
+            },
+          ]}
+        />
       }
     >
-      <DataTable
-        toolbar={
-          <>
-            <SearchField
-              value={search.q}
-              onChange={(q) => set({ q })}
-              placeholder={t('search')}
-            />
-            <SearchField
-              value={search.text}
-              onChange={(text) => set({ text })}
-              placeholder={t('searchConversations')}
-            />
-            <Choice
-              aria-label={t('filters.window')}
-              className="h-8 w-40"
-              value={search.window}
-              onChange={(v) => set({ window: parseWindow(v) })}
-              options={LOG_WINDOWS.map((value) => ({
-                value,
-                label: windowLabels[value],
-              }))}
-            />
-            <ListFilterPill
-              label={t('filters.team')}
-              {...filter('team_id')}
-              options={options(teams)}
-            />
-            <ListFilterPill
-              label={t('filters.key')}
-              {...filter('key_id')}
-              options={options(keys)}
-            />
-            <ListFilterPill
-              label={t('filters.model')}
-              {...filter('model')}
-              options={models.map((name) => ({ value: name, label: name }))}
-            />
-            <ListFilterPill
-              label={t('filters.label')}
-              {...filter('label_id')}
-              options={options(labels)}
-            />
-            <FilterPill
-              label={t('filters.status')}
-              value={search.status}
-              onChange={(v) =>
+      <div className="flex min-h-0 flex-1 flex-col gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <ListQueryBar
+            className="order-first min-w-0 basis-full"
+            placeholder={t('search')}
+            search={search}
+            onChange={(patch) => set(patch as Partial<LogSearch>)}
+            fields={[
+              {
+                key: 'team_id',
+                label: t('filters.team'),
+                icon: TeamsIcon,
+                variant: 'options',
+                options: teamOptions,
+                exclude: true,
+              },
+              {
+                key: 'key_id',
+                label: t('filters.key'),
+                icon: KeysIcon,
+                variant: 'options',
+                options: keyOptions,
+                exclude: true,
+              },
+              {
+                key: 'model',
+                label: t('filters.model'),
+                icon: ModelsIcon,
+                variant: 'options',
+                options: modelOptions,
+                exclude: true,
+              },
+              {
+                key: 'label_id',
+                label: t('filters.label'),
+                icon: LabelsIcon,
+                variant: 'options',
+                options: labelOptions,
+                exclude: true,
+              },
+              {
+                key: 'status',
+                label: t('filters.status'),
+                variant: 'options',
+                multiple: false,
+                options: statusOptions.map((o) => ({
+                  ...o,
+                  tone: o.value === 'success' ? 'brand' : 'error',
+                })),
+              },
+              {
+                key: 'end_user',
+                label: t('filters.endUser'),
+                variant: 'text',
+                exclude: true,
+              },
+              {
+                key: 'tag',
+                label: t('filters.tag'),
+                variant: 'text',
+                exclude: true,
+              },
+              {
+                key: 'text',
+                label: t('searchConversations'),
+                variant: 'text',
+              },
+            ]}
+          />
+          <SegmentedControl
+            aria-label={t('filters.window')}
+            value={search.window}
+            onValueChange={(v) => set({ window: parseWindow(v) })}
+          >
+            {LOG_WINDOWS.map((value) => (
+              <SegmentedItem key={value} value={value}>
+                {windowLabels[value]}
+              </SegmentedItem>
+            ))}
+          </SegmentedControl>
+          <ListFilterPill
+            label={t('filters.team')}
+            {...filter('team_id')}
+            options={teamOptions}
+          />
+          <ListFilterPill
+            label={t('filters.key')}
+            {...filter('key_id')}
+            options={keyOptions}
+          />
+          <ListFilterPill
+            label={t('filters.model')}
+            {...filter('model')}
+            options={modelOptions}
+          />
+          <ListFilterPill
+            label={t('filters.label')}
+            {...filter('label_id')}
+            options={labelOptions}
+          />
+          <FilterPill
+            label={t('filters.status')}
+            value={search.status}
+            onChange={(v) =>
+              set({
+                status: v === 'success' || v === 'error' ? v : undefined,
+              })
+            }
+            options={statusOptions}
+          />
+          <TextFilter label={t('filters.endUser')} {...filter('end_user')} />
+          <TextFilter label={t('filters.tag')} {...filter('tag')} />
+          {filtered && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() =>
                 set({
-                  status: v === 'success' || v === 'error' ? v : undefined,
+                  q: undefined,
+                  text: undefined,
+                  status: undefined,
+                  ...Object.assign(
+                    {},
+                    ...LOG_FILTERS.map((name) =>
+                      filterParams(name, { values: [], exclude: false }),
+                    ),
+                  ),
                 })
               }
-              options={[
-                { value: 'success', label: t('filters.success') },
-                { value: 'error', label: t('filters.errors') },
-              ]}
-            />
-            <TextFilter label={t('filters.endUser')} {...filter('end_user')} />
-            <TextFilter label={t('filters.tag')} {...filter('tag')} />
-            {filtered && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() =>
-                  set({
-                    q: undefined,
-                    text: undefined,
-                    status: undefined,
-                    ...Object.assign(
-                      {},
-                      ...LOG_FILTERS.map((name) =>
-                        filterParams(name, { values: [], exclude: false }),
-                      ),
-                    ),
-                  })
+            >
+              {tTable('clearFilters')}
+            </Button>
+          )}
+        </div>
+        <LogsTable
+          page={page}
+          params={search}
+          onParams={(patch) =>
+            navigate({ search: (prev) => ({ ...prev, ...patch }) })
+          }
+          onOpen={setOpen}
+          empty={
+            filtered
+              ? {
+                  title: tTable('noResults'),
+                  description: tTable('noResultsHint'),
                 }
-              >
-                {tTable('clearFilters')}
-              </Button>
-            )}
-          </>
-        }
-        head={
-          <>
-            {sortable('created_at', t('table.time'))}
-            <ColumnHead>{t('table.status')}</ColumnHead>
-            <ColumnHead>{t('table.model')}</ColumnHead>
-            <ColumnHead>{t('table.team')}</ColumnHead>
-            <ColumnHead>{t('table.key')}</ColumnHead>
-            {sortable('tokens', t('table.tokens'), 'text-right')}
-            {sortable('cost', t('table.cost'), 'text-right')}
-            {sortable('latency', t('table.latency'), 'text-right')}
-          </>
-        }
-        empty={
-          page.data.length === 0 &&
-          (filtered ? (
-            <DataTableEmpty
-              title={tTable('noResults')}
-              description={tTable('noResultsHint')}
-            />
-          ) : (
-            <DataTableEmpty
-              title={t('empty.title')}
-              description={t('empty.description')}
-            />
-          ))
-        }
-        footer={
-          <ListFooter
-            list={page}
-            onChange={(patch) =>
-              navigate({ search: (prev) => ({ ...prev, ...patch }) })
-            }
-          />
-        }
-      >
-        {page.data.map((row) => (
-          <DataRow key={row.id} onOpen={() => setOpen(row)}>
-            <Cell className="whitespace-nowrap text-muted-foreground">
-              {money.dateTime(row.created_at)}
-            </Cell>
-            <Cell>
-              <StatusBadge code={row.status_code} />
-            </Cell>
-            <Cell>
-              <span className="font-mono text-xs">{row.model_name}</span>
-              <p className="text-xs text-muted-foreground">
-                /v1/{row.endpoint}
-                {row.stream && ` · ${t('stream')}`}
-              </p>
-              {row.error && (
-                <p className="max-w-80 truncate text-xs text-destructive">
-                  {row.error}
-                </p>
-              )}
-            </Cell>
-            <Cell>{billedTo(row, t('personal'))}</Cell>
-            <Cell>
-              <p>{row.key_name ?? `#${row.key_id}`}</p>
-              <p className="font-mono text-xs text-muted-foreground">
-                {row.key_hint}
-              </p>
-              {row.end_user && (
-                <p className="text-xs text-muted-foreground">
-                  {t('forEndUser', { user: row.end_user })}
-                </p>
-              )}
-            </Cell>
-            <Cell>
-              <Tokens row={row} />
-            </Cell>
-            <Cell className="text-right tabular-nums">
-              {money.usd(row.cost_usd)}
-            </Cell>
-            <Cell className="text-right tabular-nums text-muted-foreground">
-              {t('ms', { value: row.latency_ms })}
-            </Cell>
-          </DataRow>
-        ))}
-      </DataTable>
+              : {
+                  title: t('empty.title'),
+                  description: t('empty.description'),
+                }
+          }
+        />
+      </div>
       <LogDetail row={open} onClose={() => setOpen(null)} />
     </Page>
   );

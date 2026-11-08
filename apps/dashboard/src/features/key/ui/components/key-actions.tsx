@@ -1,5 +1,15 @@
-import { Link } from '@tanstack/react-router';
-import { KeyRound, MoreHorizontal } from 'lucide-react';
+import {
+  ArrowRightIcon,
+  Button,
+  DeleteIcon,
+  EditIcon,
+  Menu,
+  MuteIcon,
+  OverflowIcon,
+  RefreshIcon,
+  UndoIcon,
+} from '@rustrak/ui';
+import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useTranslations } from 'use-intl';
@@ -11,15 +21,8 @@ import type {
 } from '@/shared/api/schemas';
 import { readableMessage } from '@/shared/lib/form-errors';
 import { ConfirmDialog } from '@/shared/ui/components/confirm-dialog';
-import { Button } from '@/shared/ui/components/shadcn/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/shared/ui/components/shadcn/dropdown-menu';
 import { SidePanel } from '@/shared/ui/components/side-panel';
+import { KeysIcon } from '@/shared/ui/icons';
 import { regenerateKey, revokeKey, setKeyBlocked } from '../../api/mutations';
 import { KeyReveal } from './create-key-panel';
 import { EditKeyPanel } from './edit-key-panel';
@@ -49,6 +52,7 @@ export function KeyActions({
   onRevoked?: () => void;
 }) {
   const t = useTranslations('keys');
+  const navigate = useNavigate();
   const [pending, setPending] = useState<Pending>(null);
   const [regenerated, setRegenerated] = useState<CreatedKey | null>(null);
   const close = (open: boolean) => !open && setPending(null);
@@ -69,44 +73,55 @@ export function KeyActions({
 
   return (
     <>
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          render={
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              aria-label={t('actionsFor', { name: apiKey.name })}
-            />
-          }
-        >
-          <MoreHorizontal />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem
-            render={
-              <Link to="/keys/$keyId" params={{ keyId: String(apiKey.id) }} />
-            }
-          >
-            {t('details')}
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setPending('edit')}>
-            {t('editAction')}
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setPending('regenerate')}>
-            {t('regenerate')}
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={toggleBlocked}>
-            {apiKey.blocked ? t('unblock') : t('block')}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            className="text-destructive"
-            onClick={() => setPending('revoke')}
-          >
-            {t('revoke')}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <Menu
+        align="end"
+        trigger={
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={OverflowIcon}
+            aria-label={t('actionsFor', { name: apiKey.name })}
+          />
+        }
+        actions={[
+          {
+            id: 'details',
+            label: t('details'),
+            icon: ArrowRightIcon,
+            onSelect: () =>
+              navigate({
+                to: '/keys/$keyId',
+                params: { keyId: String(apiKey.id) },
+              }),
+          },
+          {
+            id: 'edit',
+            label: t('editAction'),
+            icon: EditIcon,
+            onSelect: () => setPending('edit'),
+          },
+          {
+            id: 'regenerate',
+            label: t('regenerate'),
+            icon: RefreshIcon,
+            onSelect: () => setPending('regenerate'),
+          },
+          {
+            id: 'block',
+            label: apiKey.blocked ? t('unblock') : t('block'),
+            icon: apiKey.blocked ? UndoIcon : MuteIcon,
+            onSelect: toggleBlocked,
+          },
+          {
+            id: 'revoke',
+            label: t('revoke'),
+            icon: DeleteIcon,
+            tone: 'danger',
+            separated: true,
+            onSelect: () => setPending('revoke'),
+          },
+        ]}
+      />
       <EditKeyPanel
         open={pending === 'edit'}
         apiKey={apiKey}
@@ -147,7 +162,7 @@ export function KeyActions({
       <SidePanel
         open={regenerated !== null}
         onOpenChange={(open) => !open && setRegenerated(null)}
-        icon={KeyRound}
+        icon={KeysIcon}
         title={t('reveal.title')}
       >
         {regenerated && (

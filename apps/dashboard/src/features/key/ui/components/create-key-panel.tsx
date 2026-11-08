@@ -1,16 +1,22 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import {
+  Button,
+  Input,
+  SegmentedControl,
+  SegmentedItem,
+  Tab,
+  TabList,
+  TabPanel,
+  Tabs,
+  WarningIcon,
+} from '@rustrak/ui';
 import { Link } from '@tanstack/react-router';
-import { KeyRound, TriangleAlert } from 'lucide-react';
 import { useState } from 'react';
 import { useForm, useFormContext } from 'react-hook-form';
 import { useTranslations } from 'use-intl';
 import type { CreatedKey, LabelRef, ModelRef } from '@/shared/api/schemas';
 import { Choice } from '@/shared/ui/components/choice';
 import { CodeBlock, CopyButton } from '@/shared/ui/components/copy-button';
-import { LabelPicker } from '@/shared/ui/components/label-picker';
-import { LimitSections } from '@/shared/ui/components/limit-sections';
-import { ModelPicker } from '@/shared/ui/components/model-picker';
-import { Button } from '@/shared/ui/components/shadcn/button';
 import {
   Form,
   FormControl,
@@ -19,16 +25,12 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/shared/ui/components/shadcn/form';
-import { Input } from '@/shared/ui/components/shadcn/input';
+} from '@/shared/ui/components/form';
+import { LabelPicker } from '@/shared/ui/components/label-picker';
+import { LimitSections } from '@/shared/ui/components/limit-sections';
+import { ModelPicker } from '@/shared/ui/components/model-picker';
 import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/shared/ui/components/shadcn/tabs';
-import {
-  ModEnterHint,
+  modEnter,
   PanelBody,
   PanelFooter,
   PanelSection,
@@ -37,6 +39,7 @@ import {
 } from '@/shared/ui/components/side-panel';
 import { useServerErrors } from '@/shared/ui/hooks/use-form-errors';
 import { useMoney } from '@/shared/ui/hooks/use-money';
+import { KeysIcon } from '@/shared/ui/icons';
 import { createKey } from '../../api/mutations';
 import {
   type CreateKeyValues,
@@ -147,7 +150,7 @@ export function CreateKeyPanel({
         setCreated(null);
         form.reset();
       }}
-      icon={KeyRound}
+      icon={KeysIcon}
       title={created ? t('reveal.title') : t('create.title')}
       description={created ? undefined : t('create.description')}
     >
@@ -186,7 +189,9 @@ export function CreateKeyPanel({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>{t('form.owner')}</FormLabel>
-                    <Tabs
+                    <SegmentedControl
+                      aria-label={t('form.owner')}
+                      className="w-full [&>*]:flex-1"
                       value={personal ? PERSONAL : 'team'}
                       onValueChange={(next) => {
                         field.onChange(
@@ -196,15 +201,13 @@ export function CreateKeyPanel({
                         form.setValue('person_id', '');
                       }}
                     >
-                      <TabsList className="w-full">
-                        <TabsTrigger value="team" disabled={!firstTeam}>
-                          {t('form.ownerTeam')}
-                        </TabsTrigger>
-                        <TabsTrigger value={PERSONAL}>
-                          {t('form.ownerPersonal')}
-                        </TabsTrigger>
-                      </TabsList>
-                    </Tabs>
+                      <SegmentedItem value="team" disabled={!firstTeam}>
+                        {t('form.ownerTeam')}
+                      </SegmentedItem>
+                      <SegmentedItem value={PERSONAL}>
+                        {t('form.ownerPersonal')}
+                      </SegmentedItem>
+                    </SegmentedControl>
                     {!personal && (
                       <Choice
                         aria-label={t('form.ownerTeam')}
@@ -279,14 +282,18 @@ export function CreateKeyPanel({
             <PanelFooter>
               <Button
                 type="button"
-                variant="ghost"
+                variant="secondary"
                 onClick={() => close(false)}
               >
                 {tCommon('cancel')}
               </Button>
-              <Button type="submit" disabled={form.formState.isSubmitting}>
+              <Button
+                type="submit"
+                variant="primary"
+                shortcut={modEnter()}
+                loading={form.formState.isSubmitting}
+              >
                 {t('create.submit')}
-                <ModEnterHint />
               </Button>
             </PanelFooter>
           </form>
@@ -316,47 +323,58 @@ export function KeyReveal({
   return (
     <>
       <PanelBody>
-        <div className="flex gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
-          <TriangleAlert className="mt-0.5 size-4 shrink-0 text-amber-500" />
-          <p className="text-amber-950 dark:text-amber-100">
-            {t('reveal.description')}
-          </p>
+        <div className="flex gap-3 rounded-lg border border-sev-warning/30 bg-sev-warning-surface p-3 text-body text-fg">
+          <WarningIcon
+            size="md"
+            className="mt-0.5 shrink-0 text-sev-warning-fg"
+          />
+          <p>{t('reveal.description')}</p>
         </div>
         <div className="space-y-2">
-          <p className="text-sm font-medium">{created.name}</p>
-          <div className="flex items-center gap-2 rounded-lg border bg-background p-2 pl-3">
-            <code className="flex-1 truncate font-mono text-sm text-primary">
+          <p className="text-label text-fg-secondary">{created.name}</p>
+          <div className="flex items-center gap-2 rounded-lg border border-border-field bg-code p-1.5 pl-3">
+            <code className="flex-1 truncate font-mono text-mono text-fg-brand">
               {created.key}
             </code>
             <CopyButton text={created.key} />
           </div>
         </div>
         <div className="space-y-2">
-          <p className="text-sm font-medium">{t('reveal.usage')}</p>
+          <p className="text-label text-fg-secondary">{t('reveal.usage')}</p>
           <Tabs defaultValue="curl">
-            <TabsList>
-              <TabsTrigger value="curl">curl</TabsTrigger>
-              <TabsTrigger value="python">Python</TabsTrigger>
-              <TabsTrigger value="node">Node</TabsTrigger>
-              <TabsTrigger value="anthropic">Claude Code</TabsTrigger>
-            </TabsList>
-            <TabsContent value="curl">
+            <TabList>
+              <Tab size="sm" value="curl">
+                curl
+              </Tab>
+              <Tab size="sm" value="python">
+                Python
+              </Tab>
+              <Tab size="sm" value="node">
+                Node
+              </Tab>
+              <Tab size="sm" value="anthropic">
+                Claude Code
+              </Tab>
+            </TabList>
+            <TabPanel value="curl">
               <CodeBlock code={examples.curl} />
-            </TabsContent>
-            <TabsContent value="python">
+            </TabPanel>
+            <TabPanel value="python">
               <CodeBlock code={examples.python} />
-            </TabsContent>
-            <TabsContent value="node">
+            </TabPanel>
+            <TabPanel value="node">
               <CodeBlock code={examples.node} />
-            </TabsContent>
-            <TabsContent value="anthropic">
+            </TabPanel>
+            <TabPanel value="anthropic">
               <CodeBlock code={examples.anthropic} />
-            </TabsContent>
+            </TabPanel>
           </Tabs>
         </div>
       </PanelBody>
       <PanelFooter>
-        <Button onClick={onDone}>{t('reveal.done')}</Button>
+        <Button variant="primary" onClick={onDone}>
+          {t('reveal.done')}
+        </Button>
       </PanelFooter>
     </>
   );
@@ -395,7 +413,7 @@ export function PersonField({
             {people.length === 0 ? (
               <>
                 {t('form.personEmpty')}{' '}
-                <Link to="/people" className="underline underline-offset-4">
+                <Link to="/people" className="text-fg-brand hover:underline">
                   {t('form.personAdd')}
                 </Link>
               </>

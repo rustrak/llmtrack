@@ -1,6 +1,5 @@
+import { Button, Input, RefreshIcon, Tag } from '@rustrak/ui';
 import { useRouter } from '@tanstack/react-router';
-import { RefreshCw } from 'lucide-react';
-import type React from 'react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useTranslations } from 'use-intl';
@@ -8,12 +7,8 @@ import { syncCatalog } from '@/features/model/api/mutations';
 import { updateSettings } from '@/features/settings/api/mutations';
 import type { CatalogStatus } from '@/shared/api/schemas';
 import { readableMessage } from '@/shared/lib/form-errors';
-import { Badge } from '@/shared/ui/components/shadcn/badge';
-import { Button } from '@/shared/ui/components/shadcn/button';
-import { Input } from '@/shared/ui/components/shadcn/input';
-import { Label } from '@/shared/ui/components/shadcn/label';
+import { SettingRow, SettingSection } from '@/shared/ui/components/setting-row';
 import { useMoney } from '@/shared/ui/hooks/use-money';
-import { Section } from './section';
 
 /** Where prices come from, and the button that refreshes them. */
 export function CatalogPanel({ status }: { status: CatalogStatus }) {
@@ -45,62 +40,63 @@ export function CatalogPanel({ status }: { status: CatalogStatus }) {
     await router.invalidate();
   };
 
-  const facts: [string, React.ReactNode][] = [
-    [
-      t('pricing.source'),
-      <Badge
-        key="source"
-        variant={status.source === 'synced' ? 'default' : 'secondary'}
-      >
-        {status.source === 'synced'
-          ? t('pricing.syncedSource')
-          : t('pricing.builtin')}
-      </Badge>,
-    ],
-    [t('pricing.entries'), money.compact(status.entries)],
-    [
-      t('pricing.lastSync'),
-      status.synced_at ? money.date(status.synced_at) : t('pricing.never'),
-    ],
-  ];
-
   return (
     <>
-      <Section title={t('pricing.listTitle')}>
-        <dl className="grid grid-cols-3 gap-4 rounded-lg border px-4 py-3">
-          {facts.map(([label, value]) => (
-            <div key={label} className="space-y-1">
-              <dt className="text-xs text-muted-foreground">{label}</dt>
-              <dd className="text-sm font-medium tabular-nums">{value}</dd>
-            </div>
-          ))}
-        </dl>
-        <div className="space-y-1.5">
-          <Label htmlFor="catalog-url">{t('pricing.url')}</Label>
-          <div className="flex gap-2">
+      <SettingSection title={t('pricing.listTitle')}>
+        <SettingRow title={t('pricing.source')}>
+          <Tag
+            variant="soft"
+            tone={status.source === 'synced' ? 'brand' : 'neutral'}
+          >
+            {status.source === 'synced'
+              ? t('pricing.syncedSource')
+              : t('pricing.builtin')}
+          </Tag>
+        </SettingRow>
+        <SettingRow title={t('pricing.entries')}>
+          <p className="font-mono text-mono text-fg tabular-nums">
+            {money.compact(status.entries)}
+          </p>
+        </SettingRow>
+        <SettingRow title={t('pricing.lastSync')}>
+          <p className="text-value text-fg">
+            {status.synced_at
+              ? money.date(status.synced_at)
+              : t('pricing.never')}
+          </p>
+        </SettingRow>
+        <SettingRow
+          title={t('pricing.url')}
+          description={t('pricing.urlHint')}
+          htmlFor="catalog-url"
+          wide
+        >
+          <div className="flex items-center gap-2">
             <Input
               id="catalog-url"
-              className="font-mono text-xs"
+              boxClassName="min-w-0 flex-1"
+              className="font-mono"
               value={url}
               onChange={(event) => setUrl(event.target.value)}
             />
-            <Button onClick={sync} disabled={syncing}>
-              <RefreshCw className={syncing ? 'animate-spin' : undefined} />
+            <Button
+              variant="primary"
+              icon={RefreshIcon}
+              loading={syncing}
+              onClick={sync}
+            >
               {t('pricing.sync')}
             </Button>
           </div>
-          <p className="text-xs text-muted-foreground">
-            {t('pricing.urlHint')}
-          </p>
-        </div>
-      </Section>
-      <Section title={t('pricing.howTitle')}>
-        <div className="space-y-2 text-sm text-muted-foreground">
+        </SettingRow>
+      </SettingSection>
+      <SettingSection title={t('pricing.howTitle')}>
+        <div className="space-y-2 px-5 py-4 text-body text-fg-subtle">
           <p>{t('pricing.howCatalog')}</p>
           <p>{t('pricing.howCustom')}</p>
           <p>{t('pricing.howCache')}</p>
         </div>
-      </Section>
+      </SettingSection>
     </>
   );
 }

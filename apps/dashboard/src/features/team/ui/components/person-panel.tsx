@@ -1,18 +1,18 @@
-import { Contact } from 'lucide-react';
+import { Button, Input } from '@rustrak/ui';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useTranslations } from 'use-intl';
 import { readableMessage } from '@/shared/lib/form-errors';
 import { Choice } from '@/shared/ui/components/choice';
-import { Button } from '@/shared/ui/components/shadcn/button';
-import { Input } from '@/shared/ui/components/shadcn/input';
-import { Label } from '@/shared/ui/components/shadcn/label';
 import {
   PanelBody,
   PanelFooter,
   SidePanel,
 } from '@/shared/ui/components/side-panel';
+import { PeopleIcon } from '@/shared/ui/icons';
 import { createPerson } from '../../api/mutations';
+
+const LABEL = 'w-fit text-label text-fg-secondary';
 
 /**
  * Adding someone, straight into one of the teams the reader manages or,
@@ -52,7 +52,7 @@ export function PersonPanel({
         setEmail('');
         setError(null);
       }}
-      icon={Contact}
+      icon={PeopleIcon}
       title={t('create.title')}
       description={t('create.description')}
     >
@@ -77,9 +77,12 @@ export function PersonPanel({
         }}
       >
         <PanelBody>
-          <div className="space-y-1.5">
-            <Label>{t('table.team')}</Label>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="person-team" className={LABEL}>
+              {t('table.team')}
+            </label>
             <Choice
+              id="person-team"
               aria-label={t('table.team')}
               value={teamId}
               onChange={setTeamId}
@@ -88,12 +91,12 @@ export function PersonPanel({
                 ...teams.map((x) => ({ value: String(x.id), label: x.name })),
               ]}
             />
-            <p className="text-xs text-muted-foreground">
-              {t('create.teamHint')}
-            </p>
+            <p className="text-hint text-fg-subtle">{t('create.teamHint')}</p>
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="person-name">{t('table.name')}</Label>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="person-name" className={LABEL}>
+              {t('table.name')}
+            </label>
             <Input
               id="person-name"
               autoFocus
@@ -102,8 +105,10 @@ export function PersonPanel({
               required
             />
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="person-email">{t('create.email')}</Label>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="person-email" className={LABEL}>
+              {t('create.email')}
+            </label>
             <Input
               id="person-email"
               type="email"
@@ -111,7 +116,7 @@ export function PersonPanel({
               onChange={(event) => setEmail(event.target.value)}
             />
           </div>
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          {error && <p className="text-hint text-danger-fg">{error}</p>}
         </PanelBody>
         <PanelFooter>
           <Button type="button" variant="ghost" onClick={onClose}>
@@ -119,9 +124,9 @@ export function PersonPanel({
           </Button>
           <Button
             type="submit"
-            disabled={
-              pending || (!teamId && !allowNoTeam) || name.trim() === ''
-            }
+            variant="primary"
+            loading={pending}
+            disabled={(!teamId && !allowNoTeam) || name.trim() === ''}
           >
             {t('create.submit')}
           </Button>

@@ -1,14 +1,14 @@
+import { ChevronRightIcon, Input } from '@rustrak/ui';
 import type { Control } from 'react-hook-form';
 import { useTranslations } from 'use-intl';
-import { Caption } from '@/shared/ui/components/page';
 import {
   FormControl,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/shared/ui/components/shadcn/form';
-import { Input } from '@/shared/ui/components/shadcn/input';
+} from '@/shared/ui/components/form';
+import { Caption } from '@/shared/ui/components/page';
 import type { ModelFormValues, RateField } from '../../model/model-form';
 
 function Rate({
@@ -26,9 +26,13 @@ function Rate({
       name={`rates.${field}`}
       render={({ field: input }) => (
         <FormItem>
-          <FormLabel className="text-xs">{label}</FormLabel>
+          <FormLabel>{label}</FormLabel>
           <FormControl>
-            <Input inputMode="decimal" className="tabular-nums" {...input} />
+            <Input
+              inputMode="decimal"
+              className="font-mono tabular-nums"
+              {...input}
+            />
           </FormControl>
           <FormMessage />
         </FormItem>
@@ -61,11 +65,15 @@ export function RateFields({ control }: { control: Control<ModelFormValues> }) {
           label={t('rates.cacheWrite')}
         />
       </div>
-      <details className="group rounded-lg border px-3 py-2">
-        <summary className="cursor-pointer text-sm font-medium">
+      <details className="group/adv rounded-xl border border-border-subtle bg-surface-raised open:bg-transparent">
+        <summary className="flex h-control-lg cursor-pointer list-none items-center gap-2 rounded-xl px-3 text-control font-medium text-fg select-none hover:bg-surface-hover [&::-webkit-details-marker]:hidden">
+          <ChevronRightIcon
+            size="sm"
+            className="text-fg-ghost transition-[rotate] duration-fast ease-standard group-open/adv:rotate-90"
+          />
           {t('rates.advanced')}
         </summary>
-        <div className="space-y-4 pt-3">
+        <div className="space-y-4 border-border-subtle border-t px-3 pt-3 pb-4">
           <div className="grid grid-cols-2 gap-3">
             <Rate
               control={control}
@@ -80,7 +88,7 @@ export function RateFields({ control }: { control: Control<ModelFormValues> }) {
           </div>
           <div className="space-y-2">
             <Caption>{t('rates.longContext')}</Caption>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-hint text-fg-subtle">
               {t('rates.longContextHint')}
             </p>
             <div className="grid grid-cols-2 gap-3">

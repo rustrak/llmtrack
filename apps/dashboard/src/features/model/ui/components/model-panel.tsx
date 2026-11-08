@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Boxes } from 'lucide-react';
+import { Button, Input, TestIcon } from '@rustrak/ui';
 import { useCallback, useEffect, useState } from 'react';
 import { type UseFormReturn, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -7,7 +7,6 @@ import { useTranslations } from 'use-intl';
 import type { CatalogEntry, Model, Provider } from '@/shared/api/schemas';
 import { readableMessage } from '@/shared/lib/form-errors';
 import { Choice } from '@/shared/ui/components/choice';
-import { Button } from '@/shared/ui/components/shadcn/button';
 import {
   Form,
   FormControl,
@@ -16,10 +15,9 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/shared/ui/components/shadcn/form';
-import { Input } from '@/shared/ui/components/shadcn/input';
+} from '@/shared/ui/components/form';
 import {
-  ModEnterHint,
+  modEnter,
   PanelBody,
   PanelFooter,
   PanelSection,
@@ -27,6 +25,7 @@ import {
   submitOnModEnter,
 } from '@/shared/ui/components/side-panel';
 import { useServerErrors } from '@/shared/ui/hooks/use-form-errors';
+import { ModelsIcon } from '@/shared/ui/icons';
 import { createModel, updateModel } from '../../api/mutations';
 import { searchCatalog } from '../../api/queries';
 import {
@@ -68,7 +67,7 @@ export function ModelPanel({
       open={open}
       onOpenChange={(next) => !next && onClose()}
       size="lg"
-      icon={Boxes}
+      icon={ModelsIcon}
       title={
         model
           ? t('dialog.editTitle', { name: model.name })
@@ -270,9 +269,13 @@ function ModelForm({ model, providers, onClose, onSaved }: ModelFormProps) {
           <Button type="button" variant="ghost" onClick={onClose}>
             {tCommon('cancel')}
           </Button>
-          <Button type="submit" disabled={form.formState.isSubmitting}>
+          <Button
+            type="submit"
+            variant="primary"
+            loading={form.formState.isSubmitting}
+            shortcut={modEnter()}
+          >
             {model ? t('dialog.save') : t('dialog.add')}
-            <ModEnterHint />
           </Button>
         </PanelFooter>
       </form>
@@ -341,8 +344,10 @@ function TestConnect({
   return (
     <Button
       type="button"
-      variant="outline"
-      disabled={!first || testing}
+      variant="secondary"
+      icon={TestIcon}
+      loading={testing}
+      disabled={!first}
       onClick={async () => {
         setTesting(true);
         const values = form.getValues();

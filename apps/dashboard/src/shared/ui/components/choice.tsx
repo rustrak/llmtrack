@@ -1,10 +1,5 @@
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from './shadcn/select';
+import { Select, SelectItem } from '@rustrak/ui';
+import { useMemo } from 'react';
 
 export interface Option {
   value: string;
@@ -19,8 +14,10 @@ export function Choice({
   options,
   placeholder,
   disabled,
+  size,
   className,
   'aria-label': ariaLabel,
+  'aria-describedby': ariaDescribedBy,
 }: {
   id?: string;
   value: string;
@@ -28,33 +25,36 @@ export function Choice({
   options: readonly Option[];
   placeholder?: string;
   disabled?: boolean;
+  size?: 'sm' | 'md';
   className?: string;
   'aria-label'?: string;
+  'aria-describedby'?: string;
 }) {
+  // By content, not identity: callers build `options` inline, and Base UI
+  // syncs a new `items` object in an effect that renders again, forever.
+  const signature = JSON.stringify(options);
+  const items = useMemo(
+    () => Object.fromEntries(options.map((o) => [o.value, o.label])),
+    [signature],
+  );
   return (
     <Select
-      value={value}
-      onValueChange={(next) => onChange(next ?? '')}
+      id={id}
+      value={value || null}
+      onValueChange={onChange}
+      items={items}
+      placeholder={placeholder}
       disabled={disabled}
+      size={size}
+      className={className}
+      aria-label={ariaLabel}
+      aria-describedby={ariaDescribedBy}
     >
-      <SelectTrigger
-        id={id}
-        className={className ?? 'w-full'}
-        aria-label={ariaLabel}
-      >
-        <SelectValue placeholder={placeholder}>
-          {(current) =>
-            options.find((o) => o.value === current)?.label ?? placeholder ?? ''
-          }
-        </SelectValue>
-      </SelectTrigger>
-      <SelectContent>
-        {options.map((option) => (
-          <SelectItem key={option.value} value={option.value}>
-            {option.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
+      {options.map((option) => (
+        <SelectItem key={option.value} value={option.value}>
+          {option.label}
+        </SelectItem>
+      ))}
     </Select>
   );
 }

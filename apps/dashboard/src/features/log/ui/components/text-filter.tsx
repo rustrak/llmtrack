@@ -1,8 +1,7 @@
+import { Button, Input } from '@rustrak/ui';
 import { useState } from 'react';
 import { useTranslations } from 'use-intl';
 import { type ListFilter, parseList } from '@/shared/lib/filters';
-import { Button } from '@/shared/ui/components/shadcn/button';
-import { Input } from '@/shared/ui/components/shadcn/input';
 
 /**
  * A free-text list filter (`alice, bob`) that applies on Enter or when it
@@ -31,7 +30,6 @@ export function TextFilter({
       <Button
         variant={exclude ? 'secondary' : 'ghost'}
         size="sm"
-        className="h-8 px-2"
         aria-pressed={exclude}
         aria-label={t('excludeValues', { filter: label })}
         title={t('excludeValues', { filter: label })}
@@ -47,7 +45,8 @@ export function TextFilter({
         key={text}
         aria-label={label}
         placeholder={label}
-        className="h-8 w-40"
+        size="sm"
+        boxClassName="w-40"
         defaultValue={text}
         onBlur={(e) => commit(e.target.value)}
         onKeyDown={(e) => e.key === 'Enter' && commit(e.currentTarget.value)}

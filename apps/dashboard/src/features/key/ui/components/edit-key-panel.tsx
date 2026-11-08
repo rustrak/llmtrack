@@ -1,12 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { KeyRound } from 'lucide-react';
+import { Button, Input } from '@rustrak/ui';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useTranslations } from 'use-intl';
 import type { ApiKey, LabelRef, ModelRef } from '@/shared/api/schemas';
-import { LimitSections } from '@/shared/ui/components/limit-sections';
-import { ModelPicker } from '@/shared/ui/components/model-picker';
-import { Button } from '@/shared/ui/components/shadcn/button';
 import {
   Form,
   FormControl,
@@ -15,10 +12,11 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/shared/ui/components/shadcn/form';
-import { Input } from '@/shared/ui/components/shadcn/input';
+} from '@/shared/ui/components/form';
+import { LimitSections } from '@/shared/ui/components/limit-sections';
+import { ModelPicker } from '@/shared/ui/components/model-picker';
 import {
-  ModEnterHint,
+  modEnter,
   PanelBody,
   PanelFooter,
   PanelSection,
@@ -27,6 +25,7 @@ import {
 } from '@/shared/ui/components/side-panel';
 import { useServerErrors } from '@/shared/ui/hooks/use-form-errors';
 import { useMoney } from '@/shared/ui/hooks/use-money';
+import { KeysIcon } from '@/shared/ui/icons';
 import { updateKey } from '../../api/mutations';
 import {
   editDefaults,
@@ -61,7 +60,7 @@ export function EditKeyPanel({
     <SidePanel
       open={open}
       onOpenChange={(next) => !next && onClose()}
-      icon={KeyRound}
+      icon={KeysIcon}
       title={t('edit.title', { name: apiKey.name })}
       description={[apiKey.key_hint, apiKey.team_name ?? t('personal')].join(
         ' · ',
@@ -181,12 +180,16 @@ function EditKeyForm({
           </div>
         </PanelBody>
         <PanelFooter>
-          <Button type="button" variant="ghost" onClick={onClose}>
+          <Button type="button" variant="secondary" onClick={onClose}>
             {tCommon('cancel')}
           </Button>
-          <Button type="submit" disabled={form.formState.isSubmitting}>
+          <Button
+            type="submit"
+            variant="primary"
+            shortcut={modEnter()}
+            loading={form.formState.isSubmitting}
+          >
             {t('edit.submit')}
-            <ModEnterHint />
           </Button>
         </PanelFooter>
       </form>

@@ -1,13 +1,23 @@
+import {
+  Avatar,
+  Button,
+  CloseIcon,
+  CopyIcon,
+  MailIcon,
+  Tag,
+  Tooltip,
+} from '@rustrak/ui';
 import { useRouter } from '@tanstack/react-router';
-import { Copy, Mail, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslations } from 'use-intl';
 import type { Invitation } from '@/shared/api/schemas';
 import { copyToClipboard } from '@/shared/lib/clipboard';
 import { readableMessage } from '@/shared/lib/form-errors';
-import { Caption } from '@/shared/ui/components/page';
-import { Badge } from '@/shared/ui/components/shadcn/badge';
-import { Button } from '@/shared/ui/components/shadcn/button';
+import {
+  SettingSection,
+  SettingsEmpty,
+  SettingsListItem,
+} from '@/shared/ui/components/setting-row';
 import { useMoney } from '@/shared/ui/hooks/use-money';
 import { revokeInvitation } from '../../api/mutations';
 import { inviteLink, isOpen } from '../../model/invitation';
@@ -37,45 +47,61 @@ export function PendingInvitations({
   };
 
   return (
-    <div className="space-y-2">
-      <Caption>{t('invite.pending')}</Caption>
+    <SettingSection title={t('invite.pending')}>
       {pending.length === 0 ? (
-        <div className="flex items-center gap-3 rounded-xl border border-dashed p-5 text-sm text-muted-foreground">
-          <Mail className="size-4" />
-          {t('invite.none')}
-        </div>
+        <SettingsEmpty
+          icon={<MailIcon size="2xl" />}
+          title={t('invite.none')}
+        />
       ) : (
-        <ul className="divide-y rounded-xl border bg-card">
-          {pending.map((invite) => (
-            <li
+        pending.map((invite) => {
+          const revokeLabel = t('invite.revokeOf', { email: invite.email });
+          return (
+            <SettingsListItem
               key={invite.token}
-              className="flex flex-wrap items-center gap-3 px-4 py-3 text-sm"
-            >
-              <span className="font-medium">{invite.email}</span>
-              <Badge variant="outline">{tRoles(invite.role)}</Badge>
-              <span className="flex-1 text-xs text-muted-foreground">
-                {isOpen(invite)
+              leading={<Avatar name={invite.email} />}
+              title={
+                <span className="flex min-w-0 items-center gap-2">
+                  <span className="truncate">{invite.email}</span>
+                  <Tag
+                    variant="soft"
+                    tone={invite.role === 'admin' ? 'brand' : 'neutral'}
+                  >
+                    {tRoles(invite.role)}
+                  </Tag>
+                </span>
+              }
+              description={
+                isOpen(invite)
                   ? t('invite.expires', {
                       date: money.dateTime(invite.expires_at),
                     })
-                  : t('invite.expired')}
-              </span>
-              <Button variant="outline" size="sm" onClick={() => copy(invite)}>
-                <Copy />
-                {t('invite.copy')}
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                aria-label={t('invite.revokeOf', { email: invite.email })}
-                onClick={() => revoke(invite)}
-              >
-                <X />
-              </Button>
-            </li>
-          ))}
-        </ul>
+                  : t('invite.expired')
+              }
+              actions={
+                <>
+                  <Button
+                    size="sm"
+                    icon={CopyIcon}
+                    onClick={() => copy(invite)}
+                  >
+                    {t('invite.copy')}
+                  </Button>
+                  <Tooltip content={revokeLabel}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      icon={CloseIcon}
+                      aria-label={revokeLabel}
+                      onClick={() => revoke(invite)}
+                    />
+                  </Tooltip>
+                </>
+              }
+            />
+          );
+        })
       )}
-    </div>
+    </SettingSection>
   );
 }

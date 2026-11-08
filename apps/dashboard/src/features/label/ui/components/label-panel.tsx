@@ -1,12 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Tag } from 'lucide-react';
+import { Button, Input, Textarea } from '@rustrak/ui';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useTranslations } from 'use-intl';
 import { LABEL_COLORS, type Label } from '@/shared/api/schemas';
 import { cn } from '@/shared/lib/utils';
-import { LabelBadge, LabelDot } from '@/shared/ui/components/label-badge';
-import { Button } from '@/shared/ui/components/shadcn/button';
 import {
   Form,
   FormControl,
@@ -15,17 +13,17 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/shared/ui/components/shadcn/form';
-import { Input } from '@/shared/ui/components/shadcn/input';
-import { Textarea } from '@/shared/ui/components/shadcn/textarea';
+} from '@/shared/ui/components/form';
+import { LabelBadge, LabelDot } from '@/shared/ui/components/label-badge';
 import {
-  ModEnterHint,
+  modEnter,
   PanelBody,
   PanelFooter,
   SidePanel,
   submitOnModEnter,
 } from '@/shared/ui/components/side-panel';
 import { useServerErrors } from '@/shared/ui/hooks/use-form-errors';
+import { LabelsIcon } from '@/shared/ui/icons';
 import { createLabel, updateLabel } from '../../api/mutations';
 import {
   type LabelValues,
@@ -54,7 +52,7 @@ export function LabelPanel({
     <SidePanel
       open={open}
       onOpenChange={(next) => !next && props.onClose()}
-      icon={Tag}
+      icon={LabelsIcon}
       title={
         props.label
           ? t('edit.title', { name: props.label.name })
@@ -132,8 +130,9 @@ function LabelForm({ label, onClose, onSaved }: LabelPanelProps) {
                       key={value}
                       title={t(`colors.${value}`)}
                       className={cn(
-                        'flex size-8 cursor-pointer items-center justify-center rounded-md border transition-colors hover:bg-muted has-focus-visible:ring-2 has-focus-visible:ring-ring',
-                        field.value === value && 'border-foreground bg-muted',
+                        'flex size-8 cursor-pointer items-center justify-center rounded-md border border-border-field transition-[background-color,border-color] duration-fast ease-standard hover:bg-surface-hover has-focus-visible:outline-2 has-focus-visible:outline-border-brand',
+                        field.value === value &&
+                          'border-border-strong bg-surface-selected',
                       )}
                     >
                       <input
@@ -177,9 +176,13 @@ function LabelForm({ label, onClose, onSaved }: LabelPanelProps) {
           <Button type="button" variant="ghost" onClick={onClose}>
             {tCommon('cancel')}
           </Button>
-          <Button type="submit" disabled={form.formState.isSubmitting}>
+          <Button
+            type="submit"
+            variant="primary"
+            loading={form.formState.isSubmitting}
+            shortcut={modEnter()}
+          >
             {label ? t('edit.submit') : t('create.submit')}
-            <ModEnterHint />
           </Button>
         </PanelFooter>
       </form>

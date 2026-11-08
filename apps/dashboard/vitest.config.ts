@@ -11,7 +11,18 @@ import { defineConfig } from 'vitest/config';
  */
 export default defineConfig({
   resolve: {
-    alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
+    alias: [
+      {
+        find: '@',
+        replacement: fileURLToPath(new URL('./src', import.meta.url)),
+      },
+      {
+        find: /^@rustrak\/ui$/,
+        replacement: fileURLToPath(
+          new URL('./node_modules/@rustrak/ui/src/index.ts', import.meta.url),
+        ),
+      },
+    ],
   },
   test: {
     isolate: false,

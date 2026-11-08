@@ -1,19 +1,13 @@
-import { Link, useNavigate } from '@tanstack/react-router';
+import { createDataTableColumnHelper, DataTable, Tag } from '@rustrak/ui';
+import { useNavigate } from '@tanstack/react-router';
 import type React from 'react';
+import { useMemo } from 'react';
 import { useTranslations } from 'use-intl';
 import type { ApiKey } from '@/shared/api/schemas';
-import {
-  ActionsCell,
-  Cell,
-  ColumnHead,
-  DataRow,
-  DataTable,
-  DataTableEmpty,
-  SortHead,
-} from '@/shared/ui/components/data-table';
+import type { ListParams } from '@/shared/lib/list-params';
 import { LabelBadges } from '@/shared/ui/components/label-badge';
-import { Badge } from '@/shared/ui/components/shadcn/badge';
 import { SpendBar } from '@/shared/ui/components/spend-bar';
+import { useListTable } from '@/shared/ui/hooks/use-list-table';
 import { useMoney } from '@/shared/ui/hooks/use-money';
 
 export function ModelBadges({
@@ -24,14 +18,17 @@ export function ModelBadges({
   allLabel: string;
 }) {
   if (models.length === 0) {
-    return <span className="text-sm text-muted-foreground">{allLabel}</span>;
+    return <span className="text-fg-subtle">{allLabel}</span>;
   }
   return (
     <div className="flex max-w-64 flex-wrap gap-1">
       {models.map((model) => (
-        <Badge key={model.id} variant="outline" className="font-mono">
+        <span
+          key={model.id}
+          className="inline-flex h-5 items-center rounded-sm bg-surface-chip px-1.5 font-mono text-mono-sm text-fg-secondary"
+        >
           {model.name}
-        </Badge>
+        </span>
       ))}
     </div>
   );
@@ -43,8 +40,8 @@ export function KeyOwner({ apiKey }: { apiKey: ApiKey }) {
   if (apiKey.team_name !== null) return <>{apiKey.team_name}</>;
   return (
     <span className="flex flex-wrap items-center gap-1.5">
-      <Badge variant="secondary">{t('personal')}</Badge>
-      <span className="text-muted-foreground">{apiKey.owner_email}</span>
+      <Tag variant="soft">{t('personal')}</Tag>
+      <span className="text-fg-subtle">{apiKey.owner_email}</span>
     </span>
   );
 }
@@ -54,137 +51,171 @@ export function KeyStatus({ apiKey }: { apiKey: ApiKey }) {
   const t = useTranslations('keys');
   const money = useMoney();
   if (apiKey.blocked) {
-    return <Badge variant="destructive">{t('blocked')}</Badge>;
+    return <Tag tone="error">{t('blocked')}</Tag>;
   }
   if (apiKey.expires_at === null) {
-    return <span className="text-muted-foreground">{t('never')}</span>;
+    return <span className="text-fg-subtle">{t('never')}</span>;
   }
   if (Date.parse(apiKey.expires_at) <= Date.now()) {
-    return <Badge variant="destructive">{t('expired')}</Badge>;
+    return <Tag tone="error">{t('expired')}</Tag>;
   }
   return <>{money.date(apiKey.expires_at)}</>;
 }
 
+const column = createDataTableColumnHelper<ApiKey>();
+
+/**
+ * The keys as the design system's table: server-paged and server-sorted, the
+ * column ids being the API's sort names. A row opens the key's page; its last
+ * cell is the key's own actions (a menu that also owns panels and dialogs).
+ */
 export function KeysTable({
   keys,
+  total,
+  params,
+  onParams,
   actions,
   showTeam = true,
-  sort,
-  onSort,
-  toolbar,
-  footer,
   empty,
 }: {
   keys: ApiKey[];
+  total: number;
+  /** The list's URL params; their sort and page drive the table. */
+  params: ListParams;
+  onParams: (patch: Partial<ListParams>) => void;
   actions: (key: ApiKey) => React.ReactNode;
   showTeam?: boolean;
-  /** With `onSort`, headers sort the list (server field names). */
-  sort?: string;
-  onSort?: (sort: string | undefined) => void;
-  toolbar?: React.ReactNode;
-  footer?: React.ReactNode;
-  /** Shown instead of rows when there are none. */
-  empty: { title: string; description?: string; action?: React.ReactNode };
+  empty: { title: string; description?: string };
 }) {
   const t = useTranslations('keys');
   const money = useMoney();
-  const head = (field: string, label: string, className?: string) =>
-    onSort ? (
-      <SortHead
-        field={field}
-        sort={sort}
-        fallback={KEYS_DEFAULT_SORT}
-        onSort={onSort}
-        className={className}
-      >
-        {label}
-      </SortHead>
-    ) : (
-      <ColumnHead className={className}>{label}</ColumnHead>
-    );
+  const navigate = useNavigate();
+
+  const columns = useMemo(
+    () =>
+      column.columns([
+        column.accessor('name', {
+          id: 'name',
+          header: t('table.name'),
+          enableHiding: false,
+          cell: ({ row }) => {
+            const key = row.original;
+            return (
+              <div className="flex min-w-0 flex-col gap-0.5 py-1.5">
+                <span className="truncate text-value font-medium text-fg">
+                  {key.name}
+                </span>
+                <span className="truncate font-mono text-mono-sm text-fg-subtle">
+                  {key.key_hint}
+                  {key.person_name && (
+                    <span className="font-sans text-meta">
+                      {' '}
+                      · {key.person_name}
+                    </span>
+                  )}
+                </span>
+                <LabelBadges labels={key.labels} />
+              </div>
+            );
+          },
+          meta: { label: t('table.name') },
+        }),
+        ...(showTeam
+          ? [
+              column.accessor('team_name', {
+                id: 'team',
+                header: t('table.owner'),
+                cell: ({ row }) => <KeyOwner apiKey={row.original} />,
+                meta: { label: t('table.owner'), width: 180 },
+              }),
+            ]
+          : []),
+        column.accessor('models', {
+          id: 'models',
+          header: t('table.models'),
+          enableSorting: false,
+          cell: ({ getValue }) => (
+            <ModelBadges models={getValue()} allLabel={t('table.allModels')} />
+          ),
+          meta: { label: t('table.models'), width: 180 },
+        }),
+        column.accessor('spend_usd', {
+          id: 'spend',
+          header: t('table.spend'),
+          cell: ({ row }) => (
+            <SpendBar
+              spent={row.original.spend_usd}
+              budget={row.original.max_budget_usd}
+            />
+          ),
+          meta: { label: t('table.spend'), width: 180 },
+        }),
+        column.accessor('expires_at', {
+          id: 'expires_at',
+          header: t('table.expires'),
+          cell: ({ row }) => <KeyStatus apiKey={row.original} />,
+          meta: { label: t('table.expires'), width: 128 },
+        }),
+        column.accessor('last_used_at', {
+          id: 'last_used_at',
+          header: t('table.lastUsed'),
+          cell: ({ getValue }) => {
+            const at = getValue();
+            return (
+              <span className="text-fg-subtle tabular-nums">
+                {at ? money.dateTime(at) : t('never')}
+              </span>
+            );
+          },
+          meta: { label: t('table.lastUsed'), width: 156 },
+        }),
+        column.accessor('created_by_email', {
+          id: 'created_by',
+          header: t('table.createdBy'),
+          enableSorting: false,
+          cell: ({ getValue }) => (
+            <span className="truncate text-fg-subtle">{getValue() ?? '—'}</span>
+          ),
+          meta: { label: t('table.createdBy'), width: 180 },
+        }),
+        column.display({
+          id: 'actions',
+          header: '',
+          enableSorting: false,
+          enableHiding: false,
+          cell: ({ row }) => actions(row.original),
+          meta: { width: 56, align: 'end' },
+        }),
+      ]),
+    [t, money, showTeam, actions],
+  );
+
+  const table = useListTable({
+    data: keys,
+    columns,
+    total,
+    params,
+    defaultSort: KEYS_DEFAULT_SORT,
+    onParams,
+    getRowId: (key) => String(key.id),
+    storageKey: showTeam ? 'keys' : 'team-keys',
+    initialVisibility: { created_by: false },
+  });
+
   return (
     <DataTable
-      toolbar={toolbar}
-      footer={footer}
-      empty={keys.length === 0 && <DataTableEmpty {...empty} />}
-      head={
-        <>
-          {head('name', t('table.name'), 'min-w-56')}
-          {showTeam && head('team', t('table.owner'))}
-          <ColumnHead>{t('table.models')}</ColumnHead>
-          {head('spend', t('table.spend'), 'min-w-40')}
-          {head('expires_at', t('table.expires'))}
-          {head('last_used_at', t('table.lastUsed'))}
-          <ColumnHead>{t('table.createdBy')}</ColumnHead>
-          <ColumnHead className="w-12" />
-        </>
+      table={table}
+      className="min-h-0 flex-1"
+      empty={empty}
+      onRowClick={(row) =>
+        navigate({
+          to: '/keys/$keyId',
+          params: { keyId: String(row.original.id) },
+        })
       }
-    >
-      {keys.map((key) => (
-        <KeyRow key={key.id} apiKey={key}>
-          <Cell>
-            <div className="flex min-w-0 flex-col gap-0.5">
-              <Link
-                to="/keys/$keyId"
-                params={{ keyId: String(key.id) }}
-                className="truncate font-medium underline-offset-4 hover:underline"
-              >
-                {key.name}
-              </Link>
-              <span className="font-mono text-xs text-muted-foreground">
-                {key.key_hint}
-                {key.person_name && (
-                  <span className="font-sans"> · {key.person_name}</span>
-                )}
-              </span>
-              <LabelBadges labels={key.labels} />
-            </div>
-          </Cell>
-          {showTeam && (
-            <Cell>
-              <KeyOwner apiKey={key} />
-            </Cell>
-          )}
-          <Cell>
-            <ModelBadges models={key.models} allLabel={t('table.allModels')} />
-          </Cell>
-          <Cell>
-            <SpendBar spent={key.spend_usd} budget={key.max_budget_usd} />
-          </Cell>
-          <Cell className="whitespace-nowrap">
-            <KeyStatus apiKey={key} />
-          </Cell>
-          <Cell className="whitespace-nowrap text-muted-foreground">
-            {key.last_used_at ? money.dateTime(key.last_used_at) : t('never')}
-          </Cell>
-          <Cell className="text-muted-foreground">
-            {key.created_by_email ?? '—'}
-          </Cell>
-          <ActionsCell>{actions(key)}</ActionsCell>
-        </KeyRow>
-      ))}
-    </DataTable>
+    />
   );
 }
 
 /** What `GET /api/keys` sorts by when not told. */
 export const KEYS_DEFAULT_SORT = '-created_at';
-
-function KeyRow({
-  apiKey,
-  children,
-}: {
-  apiKey: ApiKey;
-  children: React.ReactNode;
-}) {
-  const navigate = useNavigate();
-  return (
-    <DataRow
-      onOpen={() =>
-        navigate({ to: '/keys/$keyId', params: { keyId: String(apiKey.id) } })
-      }
-    >
-      {children}
-    </DataRow>
-  );
-}

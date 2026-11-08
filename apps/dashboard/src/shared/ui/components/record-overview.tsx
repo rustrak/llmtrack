@@ -1,10 +1,9 @@
+import { ExternalLinkIcon } from '@rustrak/ui';
 import { Link } from '@tanstack/react-router';
-import { ArrowUpRight } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslations } from 'use-intl';
-import { cn } from '@/shared/lib/utils';
 import { useMoney } from '@/shared/ui/hooks/use-money';
-import { Badge } from './shadcn/badge';
+import { ShareBar } from './spend-bar';
 
 /**
  * The pieces of a record's page (a team, a key), so every record reads the
@@ -37,13 +36,13 @@ export function RecordTitle({
     <span className="flex min-w-0 items-center gap-4">
       <span
         aria-hidden
-        className="flex size-12 shrink-0 items-center justify-center rounded-xl border bg-muted/60 font-mono text-base font-semibold [&_svg]:size-5 [&_svg]:text-muted-foreground"
+        className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-border-subtle bg-surface-raised font-mono text-value font-semibold text-fg-secondary [&_svg]:text-fg-subtle"
       >
         {tile}
       </span>
       <span className="truncate">{name}</span>
       {aside && (
-        <span className="shrink-0 font-mono text-sm font-normal text-muted-foreground">
+        <span className="shrink-0 font-mono text-mono text-fg-subtle">
           {aside}
         </span>
       )}
@@ -54,13 +53,13 @@ export function RecordTitle({
 /** The line of facts under the title, aligned with the name. */
 export function RecordFacts({ children }: { children: ReactNode }) {
   return (
-    <span className="flex flex-wrap items-center gap-2 pl-16">{children}</span>
+    <span className="flex flex-wrap items-center gap-2 pl-15">{children}</span>
   );
 }
 
 /** A quiet fact in the facts line. */
 export function Fact({ children }: { children: ReactNode }) {
-  return <span className="text-xs text-muted-foreground">{children}</span>;
+  return <span className="text-meta text-fg-subtle">{children}</span>;
 }
 
 /**
@@ -91,34 +90,24 @@ export function SpendSummary({
   chart: ReactNode;
 }) {
   return (
-    <section className="flex flex-col gap-5 rounded-xl border bg-card p-5 lg:col-span-2">
+    <section className="flex flex-col gap-5 rounded-2xl border border-border-subtle bg-surface p-5 lg:col-span-2">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="space-y-1">
-          <p className="text-xs font-medium text-muted-foreground">{label}</p>
-          <p className="text-3xl font-semibold tracking-tight tabular-nums">
-            {total}
-          </p>
-          <p className="text-xs text-muted-foreground tabular-nums">{hint}</p>
+          <p className="text-card-title text-fg">{label}</p>
+          <p className="text-numeric-lg text-fg tabular-nums">{total}</p>
+          <p className="text-meta text-fg-subtle tabular-nums">{hint}</p>
         </div>
         {link}
       </header>
       {budget && (
         <div className="space-y-2">
-          <div className="flex flex-wrap items-baseline justify-between gap-2 text-sm">
-            <span className="tabular-nums">{budget.text}</span>
-            <span className="text-xs text-muted-foreground">
-              {budget.reset}
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <span className="text-value text-fg tabular-nums">
+              {budget.text}
             </span>
+            <span className="text-meta text-fg-subtle">{budget.reset}</span>
           </div>
-          <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-            <div
-              className={cn(
-                'h-full rounded-full transition-[width]',
-                budget.share >= 0.9 ? 'bg-destructive' : 'bg-primary',
-              )}
-              style={{ width: `${Math.max(budget.share * 100, 1)}%` }}
-            />
-          </div>
+          <ShareBar share={budget.share} className="h-1.5" />
         </div>
       )}
       {chart}
@@ -135,16 +124,16 @@ export function DetailsList({
   rows: [label: string, value: ReactNode][];
 }) {
   return (
-    <section className="rounded-xl border bg-card px-5 py-4">
-      <h2 className="pb-1 text-sm font-medium">{title}</h2>
-      <dl className="divide-y">
+    <section className="rounded-2xl border border-border-subtle bg-surface px-5 pt-4 pb-2">
+      <h2 className="pb-1 text-card-title text-fg">{title}</h2>
+      <dl>
         {rows.map(([label, value]) => (
           <div
             key={label}
-            className="flex items-start justify-between gap-4 py-2.5 text-sm"
+            className="flex items-start justify-between gap-4 border-border-divider border-b py-2.5 text-value last:border-b-0"
           >
-            <dt className="text-muted-foreground">{label}</dt>
-            <dd className="min-w-0 text-right font-medium tabular-nums">
+            <dt className="text-fg-subtle">{label}</dt>
+            <dd className="min-w-0 text-right font-medium text-fg tabular-nums">
               {value}
             </dd>
           </div>
@@ -156,7 +145,7 @@ export function DetailsList({
 
 /** A value that means "nothing set", in the details list. */
 export function Unset({ children }: { children: ReactNode }) {
-  return <span className="font-normal text-muted-foreground">{children}</span>;
+  return <span className="font-normal text-fg-subtle">{children}</span>;
 }
 
 /** Where to read more about the record's spend: Usage, filtered to it. */
@@ -171,10 +160,10 @@ export function UsageLink({
     <Link
       to="/usage"
       search={search}
-      className="flex items-center gap-1 rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+      className="flex h-control-sm items-center gap-1.5 rounded-md px-2 text-control text-fg-subtle transition-[background-color,color] duration-fast hover:bg-surface-hover hover:text-fg"
     >
       {label}
-      <ArrowUpRight className="size-4" />
+      <ExternalLinkIcon size="md" />
     </Link>
   );
 }
@@ -223,9 +212,12 @@ export function ModelList({
   return (
     <span className="flex max-w-56 flex-wrap justify-end gap-1">
       {models.map((m) => (
-        <Badge key={m.id} variant="outline" className="font-mono">
+        <span
+          key={m.id}
+          className="inline-flex h-5 items-center rounded-sm bg-surface-chip px-1.5 font-mono text-mono-sm text-fg-secondary"
+        >
           {m.name}
-        </Badge>
+        </span>
       ))}
     </span>
   );

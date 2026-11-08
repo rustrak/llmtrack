@@ -1,34 +1,31 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
-import { Plus } from 'lucide-react';
-import { useState } from 'react';
+import {
+  Button,
+  createDataTableColumnHelper,
+  DataTable,
+  NewIcon,
+  Tag,
+} from '@rustrak/ui';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { useMemo, useState } from 'react';
 import { useTranslations } from 'use-intl';
 import { listModels } from '@/features/model/api/queries';
 import { listTeams, type TeamListParams } from '@/features/team/api/queries';
 import { TeamPanel } from '@/features/team/ui/components/team-panel';
 import { unwrap } from '@/shared/api/http';
+import type { Team } from '@/shared/api/schemas';
 import { translator } from '@/shared/i18n/intl';
 import { MAX_PAGE_SIZE, parseListParams } from '@/shared/lib/list-params';
-import {
-  Cell,
-  ColumnHead,
-  DataRow,
-  DataTable,
-  DataTableEmpty,
-  FilterPill,
-  ListFooter,
-  SearchField,
-  SortHead,
-} from '@/shared/ui/components/data-table';
+import { FilterPill, ListQueryBar } from '@/shared/ui/components/list-filters';
 import { Page } from '@/shared/ui/components/page';
-import { Badge } from '@/shared/ui/components/shadcn/badge';
-import { Button } from '@/shared/ui/components/shadcn/button';
 import { SpendBar } from '@/shared/ui/components/spend-bar';
 import { useCurrentUser } from '@/shared/ui/hooks/use-current-user';
+import { useListTable } from '@/shared/ui/hooks/use-list-table';
 import { useMoney } from '@/shared/ui/hooks/use-money';
 
 const ACCESS = ['all', 'restricted'] as const;
 /** What `GET /api/teams` sorts by when not told. */
 const DEFAULT_SORT = 'name';
+const column = createDataTableColumnHelper<Team>();
 
 export const Route = createFileRoute('/_authenticated/teams/')({
   validateSearch: (search: Record<string, unknown>): TeamListParams => {
@@ -60,17 +57,120 @@ function TeamsPage() {
   const set = (patch: TeamListParams) =>
     navigate({ search: (prev) => ({ ...prev, page: undefined, ...patch }) });
   const filtered = Boolean(search.q || search.models);
-  const sortable = (field: string, label: string, className?: string) => (
-    <SortHead
-      field={field}
-      sort={search.sort}
-      fallback={DEFAULT_SORT}
-      onSort={(sort) => set({ sort })}
-      className={className}
-    >
-      {label}
-    </SortHead>
+  const accessOptions = ACCESS.map((value) => ({
+    value,
+    label: t(`access.${value}`),
+  }));
+
+  const columns = useMemo(
+    () =>
+      column.columns([
+        column.accessor('name', {
+          id: 'name',
+          header: t('table.team'),
+          enableHiding: false,
+          cell: ({ getValue }) => (
+            <span className="truncate text-value font-medium text-fg">
+              {getValue()}
+            </span>
+          ),
+          meta: { label: t('table.team') },
+        }),
+        column.accessor('spend_usd', {
+          id: 'spend',
+          header: t('table.spend'),
+          cell: ({ row }) => (
+            <SpendBar
+              spent={row.original.spend_usd}
+              budget={row.original.max_budget_usd}
+            />
+          ),
+          meta: { label: t('table.spend'), width: 180 },
+        }),
+        column.accessor('all_models', {
+          id: 'models',
+          header: t('table.models'),
+          enableSorting: false,
+          cell: ({ row }) => (
+            <span className="text-fg-subtle">
+              {row.original.all_models
+                ? t('allModels')
+                : t('modelCount', { count: row.original.models.length })}
+            </span>
+          ),
+          meta: { label: t('table.models'), width: 160 },
+        }),
+        column.accessor('member_count', {
+          id: 'members',
+          header: t('table.members'),
+          cell: ({ getValue }) => (
+            <span className="font-mono text-mono-sm tabular-nums">
+              {getValue()}
+            </span>
+          ),
+          meta: {
+            label: t('table.members'),
+            width: 112,
+            align: 'end',
+            numeric: true,
+          },
+        }),
+        column.accessor('key_count', {
+          id: 'keys',
+          header: t('table.keys'),
+          cell: ({ getValue }) => (
+            <span className="font-mono text-mono-sm tabular-nums">
+              {getValue()}
+            </span>
+          ),
+          meta: {
+            label: t('table.keys'),
+            width: 96,
+            align: 'end',
+            numeric: true,
+          },
+        }),
+        column.accessor('my_role', {
+          id: 'my_role',
+          header: t('table.yourRole'),
+          enableSorting: false,
+          cell: ({ getValue }) => {
+            const role = getValue();
+            return role ? (
+              <Tag tone={role === 'admin' ? 'brand' : 'neutral'}>
+                {tRoles(role)}
+              </Tag>
+            ) : (
+              <span className="text-fg-subtle">—</span>
+            );
+          },
+          meta: { label: t('table.yourRole'), width: 128 },
+        }),
+        column.accessor('created_at', {
+          id: 'created_at',
+          header: t('table.created'),
+          cell: ({ getValue }) => (
+            <span className="whitespace-nowrap text-fg-subtle">
+              {money.date(getValue())}
+            </span>
+          ),
+          meta: { label: t('table.created'), width: 128 },
+        }),
+      ]),
+    [t, tRoles, money],
   );
+
+  const table = useListTable({
+    data: teams.data,
+    columns,
+    total: teams.total,
+    params: search,
+    defaultSort: DEFAULT_SORT,
+    onParams: (patch) =>
+      navigate({ search: (prev) => ({ ...prev, ...patch }) }),
+    getRowId: (team) => String(team.id),
+    storageKey: 'teams',
+  });
 
   return (
     <Page
@@ -79,117 +179,71 @@ function TeamsPage() {
       description={t('subtitle')}
       actions={
         isAdmin && (
-          <Button onClick={() => setCreating(true)}>
-            <Plus />
+          <Button
+            variant="primary"
+            icon={NewIcon}
+            onClick={() => setCreating(true)}
+          >
             {t('create')}
           </Button>
         )
       }
     >
-      <DataTable
-        toolbar={
-          <>
-            <SearchField
-              value={search.q}
-              onChange={(q) => set({ q })}
-              placeholder={t('search')}
-            />
-            <FilterPill
-              label={t('filters.models')}
-              value={search.models}
-              onChange={(v) => set({ models: ACCESS.find((a) => a === v) })}
-              options={ACCESS.map((value) => ({
-                value,
-                label: t(`access.${value}`),
-              }))}
-            />
-            {filtered && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => set({ q: undefined, models: undefined })}
-              >
-                {tTable('clearFilters')}
-              </Button>
-            )}
-          </>
-        }
-        head={
-          <>
-            {sortable('name', t('table.team'), 'min-w-48')}
-            {sortable('spend', t('table.spend'), 'min-w-40')}
-            <ColumnHead>{t('table.models')}</ColumnHead>
-            {sortable('members', t('table.members'))}
-            {sortable('keys', t('table.keys'))}
-            <ColumnHead>{t('table.yourRole')}</ColumnHead>
-            {sortable('created_at', t('table.created'))}
-          </>
-        }
-        empty={
-          teams.data.length === 0 &&
-          (filtered ? (
-            <DataTableEmpty
-              title={tTable('noResults')}
-              description={tTable('noResultsHint')}
-            />
-          ) : (
-            <DataTableEmpty
-              title={t('empty.title')}
-              description={isAdmin ? t('empty.admin') : t('empty.member')}
-            />
-          ))
-        }
-        footer={
-          <ListFooter
-            list={teams}
-            onChange={(patch) =>
-              navigate({ search: (prev) => ({ ...prev, ...patch }) })
-            }
+      <div className="flex min-h-0 flex-1 flex-col gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <ListQueryBar
+            className="min-w-0 flex-1 sm:max-w-md max-sm:basis-full"
+            placeholder={t('search')}
+            search={search}
+            onChange={(patch) => set(patch as TeamListParams)}
+            fields={[
+              {
+                key: 'models',
+                label: t('filters.models'),
+                variant: 'options',
+                multiple: false,
+                options: accessOptions,
+              },
+            ]}
           />
-        }
-      >
-        {teams.data.map((team) => (
-          <DataRow
-            key={team.id}
-            onOpen={() =>
-              navigate({
-                to: '/teams/$teamId',
-                params: { teamId: String(team.id) },
-              })
-            }
-          >
-            <Cell>
-              <Link
-                to="/teams/$teamId"
-                params={{ teamId: String(team.id) }}
-                className="font-medium underline-offset-4 hover:underline"
-              >
-                {team.name}
-              </Link>
-            </Cell>
-            <Cell>
-              <SpendBar spent={team.spend_usd} budget={team.max_budget_usd} />
-            </Cell>
-            <Cell className="text-muted-foreground">
-              {team.all_models
-                ? t('allModels')
-                : t('modelCount', { count: team.models.length })}
-            </Cell>
-            <Cell className="tabular-nums">{team.member_count}</Cell>
-            <Cell className="tabular-nums">{team.key_count}</Cell>
-            <Cell>
-              {team.my_role ? (
-                <Badge variant="outline">{tRoles(team.my_role)}</Badge>
-              ) : (
-                <span className="text-muted-foreground">—</span>
-              )}
-            </Cell>
-            <Cell className="whitespace-nowrap text-muted-foreground">
-              {money.date(team.created_at)}
-            </Cell>
-          </DataRow>
-        ))}
-      </DataTable>
+          <FilterPill
+            label={t('filters.models')}
+            value={search.models}
+            onChange={(v) => set({ models: ACCESS.find((a) => a === v) })}
+            options={accessOptions}
+          />
+          {filtered && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => set({ q: undefined, models: undefined })}
+            >
+              {tTable('clearFilters')}
+            </Button>
+          )}
+        </div>
+        <DataTable
+          table={table}
+          className="min-h-0 flex-1"
+          empty={
+            filtered
+              ? {
+                  title: tTable('noResults'),
+                  description: tTable('noResultsHint'),
+                }
+              : {
+                  title: t('empty.title'),
+                  description: isAdmin ? t('empty.admin') : t('empty.member'),
+                }
+          }
+          onRowClick={(row) =>
+            navigate({
+              to: '/teams/$teamId',
+              params: { teamId: String(row.original.id) },
+            })
+          }
+        />
+      </div>
       <TeamPanel
         open={creating}
         models={models}

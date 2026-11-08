@@ -1,8 +1,7 @@
+import { Checkbox, Input } from '@rustrak/ui';
 import type { UseFormReturn } from 'react-hook-form';
 import { useTranslations } from 'use-intl';
 import type { Model, Provider } from '@/shared/api/schemas';
-import { PasswordInput } from '@/shared/ui/components/password-input';
-import { Checkbox } from '@/shared/ui/components/shadcn/checkbox';
 import {
   FormControl,
   FormDescription,
@@ -10,8 +9,8 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/shared/ui/components/shadcn/form';
-import { Input } from '@/shared/ui/components/shadcn/input';
+} from '@/shared/ui/components/form';
+import { PasswordInput } from '@/shared/ui/components/password-input';
 import type { ModelFormValues } from '../../model/model-form';
 
 /** Where the provider is and the key to reach it, shared by every row. */
@@ -33,7 +32,7 @@ export function ConnectionFields({
       : 'http://vllm.internal:8000/v1');
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-4">
       <div className="grid grid-cols-2 gap-4">
         <FormField
           control={form.control}
@@ -102,8 +101,9 @@ export function ConnectionFields({
           control={form.control}
           name="clear_api_key"
           render={({ field }) => (
-            <label className="flex items-center gap-2 text-sm">
+            <label className="flex w-fit cursor-pointer items-center gap-2 text-body text-fg-secondary">
               <Checkbox
+                aria-label={t('form.clearApiKey')}
                 checked={field.value}
                 onCheckedChange={field.onChange}
               />

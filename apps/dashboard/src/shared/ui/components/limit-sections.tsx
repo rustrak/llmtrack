@@ -1,3 +1,4 @@
+import { Input } from '@rustrak/ui';
 import { useFormContext } from 'react-hook-form';
 import { useFormatter, useTranslations } from 'use-intl';
 import { BUDGET_PERIODS } from '@/shared/lib/limits';
@@ -9,8 +10,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from './shadcn/form';
-import { Input } from './shadcn/input';
+} from './form';
 import { PanelSection } from './side-panel';
 
 interface LimitValues {
@@ -70,7 +70,7 @@ export function LimitSections({ budgetHint }: { budgetHint?: string }) {
       name={name}
       render={({ field }) => (
         <FormItem>
-          <FormLabel className="text-xs">{label}</FormLabel>
+          <FormLabel>{label}</FormLabel>
           <FormControl>
             <Input inputMode="numeric" placeholder={t('noLimit')} {...field} />
           </FormControl>
@@ -93,7 +93,7 @@ export function LimitSections({ budgetHint }: { budgetHint?: string }) {
             name="max_budget_usd"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs">
+                <FormLabel>
                   {t('budget', { currency: money.currency })}
                 </FormLabel>
                 <FormControl>
@@ -112,7 +112,7 @@ export function LimitSections({ budgetHint }: { budgetHint?: string }) {
             name="budget_duration"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs">{t('period')}</FormLabel>
+                <FormLabel>{t('period')}</FormLabel>
                 <Choice
                   aria-label={t('period')}
                   value={field.value}
@@ -127,7 +127,7 @@ export function LimitSections({ budgetHint }: { budgetHint?: string }) {
           />
         </div>
         {budgetHint && (
-          <p className="mt-3 text-xs text-muted-foreground">{budgetHint}</p>
+          <p className="mt-3 text-hint text-fg-subtle">{budgetHint}</p>
         )}
       </PanelSection>
       <PanelSection

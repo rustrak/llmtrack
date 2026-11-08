@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from 'react';
+import { useMemo, useSyncExternalStore } from 'react';
 import { useFormatter } from 'use-intl';
 import { intl } from '@/shared/i18n/intl';
 import { moneyOptions } from '@/shared/lib/format';
@@ -11,17 +11,20 @@ export function useMoney() {
     intl.snapshot,
     intl.snapshot,
   );
-  /** An amount already in the reader's currency, as typed in a form. */
-  const local = (amount: number) =>
-    format.number(amount, moneyOptions(amount, currency));
-  return {
-    /** Dollars from the server, shown in the reader's currency. */
-    usd: (amount: number) => local(amount * perUsd),
-    local,
-    currency,
-    perUsd,
-    compact: (value: number) => format.number(value, 'compact'),
-    dateTime: (iso: string) => format.dateTime(new Date(iso), 'dateTime'),
-    date: (iso: string) => format.dateTime(new Date(iso), 'date'),
-  };
+  // Stable while the formats are: tables memoise their columns on it.
+  return useMemo(() => {
+    /** An amount already in the reader's currency, as typed in a form. */
+    const local = (amount: number) =>
+      format.number(amount, moneyOptions(amount, currency));
+    return {
+      /** Dollars from the server, shown in the reader's currency. */
+      usd: (amount: number) => local(amount * perUsd),
+      local,
+      currency,
+      perUsd,
+      compact: (value: number) => format.number(value, 'compact'),
+      dateTime: (iso: string) => format.dateTime(new Date(iso), 'dateTime'),
+      date: (iso: string) => format.dateTime(new Date(iso), 'date'),
+    };
+  }, [format, currency, perUsd]);
 }

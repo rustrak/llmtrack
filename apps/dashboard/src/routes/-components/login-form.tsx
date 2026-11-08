@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Button, Input } from '@rustrak/ui';
 import { useRouter } from '@tanstack/react-router';
 import { useForm } from 'react-hook-form';
 import { useTranslations } from 'use-intl';
@@ -7,8 +8,6 @@ import { login } from '@/features/user/api/mutations';
 import { returnPath } from '@/shared/api/return-path';
 import { intl } from '@/shared/i18n/intl';
 import { SERVER_ERROR_PATH } from '@/shared/lib/form-errors';
-import { PasswordInput } from '@/shared/ui/components/password-input';
-import { Button } from '@/shared/ui/components/shadcn/button';
 import {
   Form,
   FormControl,
@@ -17,8 +16,9 @@ import {
   FormLabel,
   FormMessage,
   FormRootError,
-} from '@/shared/ui/components/shadcn/form';
-import { Input } from '@/shared/ui/components/shadcn/input';
+} from '@/shared/ui/components/form';
+import { PasswordInput } from '@/shared/ui/components/password-input';
+import { AuthHeading } from './auth-screen';
 
 export function LoginForm() {
   const t = useTranslations('auth');
@@ -31,6 +31,7 @@ export function LoginForm() {
     resolver: zodResolver(schema),
     defaultValues: { email: '', password: '' },
   });
+  const submitting = form.formState.isSubmitting;
 
   const onSubmit = form.handleSubmit(async ({ email, password }) => {
     const result = await login(email, password);
@@ -56,13 +57,10 @@ export function LoginForm() {
   });
 
   return (
-    <div className="space-y-8">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
-        <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
-      </div>
+    <div className="flex flex-col gap-6">
+      <AuthHeading title={t('title')}>{t('subtitle')}</AuthHeading>
       <Form {...form}>
-        <form onSubmit={onSubmit} className="space-y-5" noValidate>
+        <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
           <FormField
             control={form.control}
             name="email"
@@ -94,16 +92,16 @@ export function LoginForm() {
               </FormItem>
             )}
           />
+          {/* Where an outage lands, kept off the credential fields. */}
           <FormRootError />
           <Button
             type="submit"
+            variant="primary"
             size="lg"
-            className="w-full"
-            disabled={form.formState.isSubmitting}
+            className="mt-2 w-full"
+            loading={submitting}
           >
-            {form.formState.isSubmitting
-              ? t('form.submitting')
-              : t('form.submit')}
+            {submitting ? t('form.submitting') : t('form.submit')}
           </Button>
         </form>
       </Form>

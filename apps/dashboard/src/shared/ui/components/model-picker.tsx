@@ -1,7 +1,8 @@
+import { Checkbox } from '@rustrak/ui';
 import { useTranslations } from 'use-intl';
 import type { ModelRef } from '@/shared/api/schemas';
 import { byName, isPicked, toggle } from '@/shared/lib/models';
-import { Checkbox } from './shadcn/checkbox';
+import { PickRow } from './label-picker';
 
 /**
  * Picks an allowlist of models, one line per model name: a name with several
@@ -22,33 +23,28 @@ export function ModelPicker({
   const t = useTranslations('common');
   if (models.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground">
+      <p className="text-hint text-fg-subtle">
         {t('noModelsYet')} {emptyMeaning}
       </p>
     );
   }
   return (
     <div className="space-y-2">
-      <div className="max-h-48 overflow-y-auto rounded-lg border divide-y">
-        {byName(models).map((model) => {
-          const checked = isPicked(models, value, model.name);
-          return (
-            <label
-              key={model.id}
-              className="flex cursor-pointer items-center gap-3 px-3 py-2 text-sm hover:bg-muted/50"
-            >
-              <Checkbox
-                checked={checked}
-                onCheckedChange={(next) =>
-                  onChange(toggle(models, value, model.name, next))
-                }
-              />
-              <span className="font-mono text-xs">{model.name}</span>
-            </label>
-          );
-        })}
+      <div className="max-h-48 overflow-y-auto rounded-lg border border-border-subtle">
+        {byName(models).map((model) => (
+          <PickRow key={model.id}>
+            <Checkbox
+              aria-label={model.name}
+              checked={isPicked(models, value, model.name)}
+              onCheckedChange={(next) =>
+                onChange(toggle(models, value, model.name, next))
+              }
+            />
+            <span className="font-mono text-mono text-fg">{model.name}</span>
+          </PickRow>
+        ))}
       </div>
-      <p className="text-xs text-muted-foreground">
+      <p className="text-hint text-fg-subtle">
         {value.length === 0
           ? emptyMeaning
           : t('selectedCount', {

@@ -1,6 +1,14 @@
+import {
+  Avatar,
+  Button,
+  createDataTableColumnHelper,
+  DataTable,
+  DeleteIcon,
+  NewIcon,
+  Tooltip,
+} from '@rustrak/ui';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
-import { Plus, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslations } from 'use-intl';
 import { deletePerson } from '@/features/team/api/mutations';
 import {
@@ -15,25 +23,16 @@ import { translator } from '@/shared/i18n/intl';
 import { readableMessage } from '@/shared/lib/form-errors';
 import { MAX_PAGE_SIZE, parseListParams } from '@/shared/lib/list-params';
 import { ConfirmDialog } from '@/shared/ui/components/confirm-dialog';
-import {
-  ActionsCell,
-  Cell,
-  ColumnHead,
-  DataRow,
-  DataTable,
-  DataTableEmpty,
-  FilterPill,
-  ListFooter,
-  SearchField,
-  SortHead,
-} from '@/shared/ui/components/data-table';
+import { FilterPill, ListQueryBar } from '@/shared/ui/components/list-filters';
 import { Page } from '@/shared/ui/components/page';
-import { Button } from '@/shared/ui/components/shadcn/button';
 import { useCurrentUser } from '@/shared/ui/hooks/use-current-user';
+import { useListTable } from '@/shared/ui/hooks/use-list-table';
 import { useMoney } from '@/shared/ui/hooks/use-money';
+import { TeamsIcon } from '@/shared/ui/icons';
 
 /** What `GET /api/people` sorts by when not told. */
 const DEFAULT_SORT = 'name';
+const column = createDataTableColumnHelper<Person>();
 
 export const Route = createFileRoute('/_authenticated/people')({
   validateSearch: (search: Record<string, unknown>): PeopleListParams => {
@@ -72,17 +71,133 @@ function PeoplePage() {
   const set = (patch: PeopleListParams) =>
     navigate({ search: (prev) => ({ ...prev, page: undefined, ...patch }) });
   const filtered = Boolean(search.q || search.team_id);
-  const sortable = (field: string, label: string, className?: string) => (
-    <SortHead
-      field={field}
-      sort={search.sort}
-      fallback={DEFAULT_SORT}
-      onSort={(sort) => set({ sort })}
-      className={className}
-    >
-      {label}
-    </SortHead>
+  const teamOptions = teams.map((x) => ({
+    value: String(x.id),
+    label: x.name,
+  }));
+
+  const columns = useMemo(
+    () =>
+      column.columns([
+        column.accessor('name', {
+          id: 'name',
+          header: t('table.name'),
+          enableHiding: false,
+          cell: ({ row }) => {
+            const person = row.original;
+            return (
+              <div className="flex min-w-0 items-center gap-3 py-1.5">
+                <Avatar name={person.name} />
+                <div className="flex min-w-0 flex-col gap-0.5">
+                  <span className="truncate text-value font-medium text-fg">
+                    {person.name}
+                  </span>
+                  {person.email && (
+                    <span className="truncate text-hint text-fg-subtle">
+                      {person.email}
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          },
+          meta: { label: t('table.name') },
+        }),
+        column.accessor('team_name', {
+          id: 'team',
+          header: t('table.team'),
+          cell: ({ row }) =>
+            row.original.team_id === null ? (
+              <span className="text-fg-subtle">{t('noTeam')}</span>
+            ) : (
+              <Link
+                to="/teams/$teamId"
+                params={{ teamId: String(row.original.team_id) }}
+                className="text-fg hover:underline"
+              >
+                {row.original.team_name}
+              </Link>
+            ),
+          meta: { label: t('table.team'), width: 180 },
+        }),
+        column.accessor('key_count', {
+          id: 'keys',
+          header: t('table.keys'),
+          cell: ({ getValue }) => (
+            <span className="font-mono text-mono-sm tabular-nums">
+              {getValue()}
+            </span>
+          ),
+          meta: {
+            label: t('table.keys'),
+            width: 96,
+            align: 'end',
+            numeric: true,
+          },
+        }),
+        column.accessor('spend_usd', {
+          id: 'spend',
+          header: t('table.spend'),
+          cell: ({ getValue }) => (
+            <span className="font-mono text-mono-sm tabular-nums">
+              {money.usd(getValue())}
+            </span>
+          ),
+          meta: {
+            label: t('table.spend'),
+            width: 128,
+            align: 'end',
+            numeric: true,
+          },
+        }),
+        column.accessor('created_at', {
+          id: 'created_at',
+          header: t('table.created'),
+          cell: ({ getValue }) => (
+            <span className="whitespace-nowrap text-fg-subtle">
+              {money.date(getValue())}
+            </span>
+          ),
+          meta: { label: t('table.created'), width: 128 },
+        }),
+        column.display({
+          id: 'actions',
+          header: '',
+          enableSorting: false,
+          enableHiding: false,
+          cell: ({ row }) => {
+            const person = row.original;
+            return (
+              canManage(person) && (
+                <Tooltip content={t('delete.label', { name: person.name })}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    icon={DeleteIcon}
+                    aria-label={t('delete.label', { name: person.name })}
+                    onClick={() => setDeleting(person)}
+                  />
+                </Tooltip>
+              )
+            );
+          },
+          meta: { width: 56, align: 'end' },
+        }),
+      ]),
+    [t, money, canManage],
   );
+
+  const table = useListTable({
+    data: people.data,
+    columns,
+    total: people.total,
+    params: search,
+    defaultSort: DEFAULT_SORT,
+    onParams: (patch) =>
+      navigate({ search: (prev) => ({ ...prev, ...patch }) }),
+    getRowId: (person) => String(person.id),
+    storageKey: 'people',
+  });
 
   return (
     <Page
@@ -91,120 +206,66 @@ function PeoplePage() {
       description={t('subtitle')}
       actions={
         (isAdmin || managed.length > 0) && (
-          <Button onClick={() => setCreating(true)}>
-            <Plus />
+          <Button
+            variant="primary"
+            icon={NewIcon}
+            onClick={() => setCreating(true)}
+          >
             {t('create.button')}
           </Button>
         )
       }
     >
-      <DataTable
-        toolbar={
-          <>
-            <SearchField
-              value={search.q}
-              onChange={(q) => set({ q })}
-              placeholder={t('search')}
-            />
-            <FilterPill
-              label={t('table.team')}
-              value={search.team_id ? String(search.team_id) : undefined}
-              onChange={(v) => set({ team_id: v ? Number(v) : undefined })}
-              options={teams.map((x) => ({
-                value: String(x.id),
-                label: x.name,
-              }))}
-            />
-            {filtered && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => set({ q: undefined, team_id: undefined })}
-              >
-                {tTable('clearFilters')}
-              </Button>
-            )}
-          </>
-        }
-        head={
-          <>
-            {sortable('name', t('table.name'), 'min-w-48')}
-            {sortable('team', t('table.team'), 'min-w-40')}
-            {sortable('keys', t('table.keys'))}
-            {sortable('spend', t('table.spend'))}
-            {sortable('created_at', t('table.created'))}
-            <ColumnHead className="w-10" />
-          </>
-        }
-        empty={
-          people.data.length === 0 &&
-          (filtered ? (
-            <DataTableEmpty
-              title={tTable('noResults')}
-              description={tTable('noResultsHint')}
-            />
-          ) : (
-            <DataTableEmpty
-              title={t('empty.title')}
-              description={t('empty.description')}
-            />
-          ))
-        }
-        footer={
-          <ListFooter
-            list={people}
-            onChange={(patch) =>
-              navigate({ search: (prev) => ({ ...prev, ...patch }) })
-            }
+      <div className="flex min-h-0 flex-1 flex-col gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <ListQueryBar
+            className="min-w-0 flex-1 sm:max-w-md max-sm:basis-full"
+            placeholder={t('search')}
+            search={search}
+            onChange={(patch) => set(patch as PeopleListParams)}
+            fields={[
+              {
+                key: 'team_id',
+                label: t('table.team'),
+                icon: TeamsIcon,
+                variant: 'options',
+                multiple: false,
+                options: teamOptions,
+              },
+            ]}
           />
-        }
-      >
-        {people.data.map((person) => (
-          <DataRow key={person.id}>
-            <Cell>
-              <div className="flex min-w-0 flex-col gap-0.5">
-                <span className="truncate font-medium">{person.name}</span>
-                {person.email && (
-                  <span className="truncate text-xs text-muted-foreground">
-                    {person.email}
-                  </span>
-                )}
-              </div>
-            </Cell>
-            <Cell>
-              {person.team_id === null ? (
-                <span className="text-muted-foreground">{t('noTeam')}</span>
-              ) : (
-                <Link
-                  to="/teams/$teamId"
-                  params={{ teamId: String(person.team_id) }}
-                  className="underline-offset-4 hover:underline"
-                >
-                  {person.team_name}
-                </Link>
-              )}
-            </Cell>
-            <Cell className="tabular-nums">{person.key_count}</Cell>
-            <Cell className="tabular-nums">{money.usd(person.spend_usd)}</Cell>
-            <Cell className="whitespace-nowrap text-muted-foreground">
-              {money.date(person.created_at)}
-            </Cell>
-            <ActionsCell>
-              {canManage(person) && (
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label={t('delete.label', { name: person.name })}
-                  title={t('delete.label', { name: person.name })}
-                  onClick={() => setDeleting(person)}
-                >
-                  <Trash2 />
-                </Button>
-              )}
-            </ActionsCell>
-          </DataRow>
-        ))}
-      </DataTable>
+          <FilterPill
+            label={t('table.team')}
+            value={search.team_id ? String(search.team_id) : undefined}
+            onChange={(v) => set({ team_id: v ? Number(v) : undefined })}
+            options={teamOptions}
+          />
+          {filtered && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => set({ q: undefined, team_id: undefined })}
+            >
+              {tTable('clearFilters')}
+            </Button>
+          )}
+        </div>
+        <DataTable
+          table={table}
+          className="min-h-0 flex-1"
+          empty={
+            filtered
+              ? {
+                  title: tTable('noResults'),
+                  description: tTable('noResultsHint'),
+                }
+              : {
+                  title: t('empty.title'),
+                  description: t('empty.description'),
+                }
+          }
+        />
+      </div>
       <PersonPanel
         open={creating}
         teams={managed}

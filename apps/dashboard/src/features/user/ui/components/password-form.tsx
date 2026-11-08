@@ -1,10 +1,17 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import {
+  Button,
+  Dialog,
+  DialogBody,
+  DialogClose,
+  DialogFooter,
+  DialogHeader,
+} from '@rustrak/ui';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useTranslations } from 'use-intl';
 import { z } from 'zod';
-import { PasswordInput } from '@/shared/ui/components/password-input';
-import { Button } from '@/shared/ui/components/shadcn/button';
 import {
   Form,
   FormControl,
@@ -13,12 +20,24 @@ import {
   FormLabel,
   FormMessage,
   FormRootError,
-} from '@/shared/ui/components/shadcn/form';
+} from '@/shared/ui/components/form';
+import { PasswordInput } from '@/shared/ui/components/password-input';
 import { useServerErrors } from '@/shared/ui/hooks/use-form-errors';
 import { changePassword } from '../../api/mutations';
 
-export function PasswordForm() {
+const EMPTY = { current_password: '', new_password: '', confirm: '' };
+
+const FIELDS = [
+  ['current_password', 'current', 'current-password'],
+  ['new_password', 'new', 'new-password'],
+  ['confirm', 'confirm', 'new-password'],
+] as const;
+
+/** The "Change password" button and the dialog it opens, as in Rustrak. */
+export function PasswordDialog() {
   const t = useTranslations('settings');
+  const tCommon = useTranslations('common');
+  const [open, setOpen] = useState(false);
   const schema = z
     .object({
       current_password: z.string().min(1, t('password.currentRequired')),
@@ -31,9 +50,18 @@ export function PasswordForm() {
     });
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
-    defaultValues: { current_password: '', new_password: '', confirm: '' },
+    defaultValues: EMPTY,
   });
   const serverErrors = useServerErrors(form);
+  const pending = form.formState.isSubmitting;
+
+  // Typed passwords must not survive the dialog closing, whichever way.
+  const onOpenChange = (next: boolean) => {
+    if (next) return setOpen(true);
+    if (pending) return;
+    form.reset(EMPTY);
+    setOpen(false);
+  };
 
   const onSubmit = form.handleSubmit(async (values) => {
     const result = await changePassword(
@@ -51,56 +79,61 @@ export function PasswordForm() {
       return;
     }
     toast.success(t('password.changed'));
-    form.reset();
+    form.reset(EMPTY);
+    setOpen(false);
   });
 
   return (
-    <Form {...form}>
-      <form onSubmit={onSubmit} className="max-w-sm space-y-4" noValidate>
-        <FormField
-          control={form.control}
-          name="current_password"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{t('password.current')}</FormLabel>
-              <FormControl>
-                <PasswordInput autoComplete="current-password" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+    <>
+      <Button onClick={() => setOpen(true)}>{t('password.submit')}</Button>
+      <Dialog open={open} onOpenChange={onOpenChange} size="md">
+        <DialogHeader
+          title={t('password.submit')}
+          description={t('password.description')}
         />
-        <FormField
-          control={form.control}
-          name="new_password"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{t('password.new')}</FormLabel>
-              <FormControl>
-                <PasswordInput autoComplete="new-password" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="confirm"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{t('password.confirm')}</FormLabel>
-              <FormControl>
-                <PasswordInput autoComplete="new-password" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormRootError />
-        <Button type="submit" disabled={form.formState.isSubmitting}>
-          {t('password.submit')}
-        </Button>
-      </form>
-    </Form>
+        <Form {...form}>
+          <form
+            noValidate
+            onSubmit={onSubmit}
+            className="flex min-h-0 flex-col"
+          >
+            <DialogBody className="flex flex-col gap-4">
+              {FIELDS.map(([name, label, autoComplete]) => (
+                <FormField
+                  key={name}
+                  control={form.control}
+                  name={name}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t(`password.${label}`)}</FormLabel>
+                      <FormControl>
+                        <PasswordInput
+                          autoComplete={autoComplete}
+                          disabled={pending}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              ))}
+              <FormRootError />
+            </DialogBody>
+            <DialogFooter>
+              <DialogClose
+                disabled={pending}
+                render={
+                  <Button variant="secondary">{tCommon('cancel')}</Button>
+                }
+              />
+              <Button type="submit" variant="primary" loading={pending}>
+                {t('password.submit')}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </Dialog>
+    </>
   );
 }

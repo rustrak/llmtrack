@@ -1,3 +1,4 @@
+import { Tag } from '@rustrak/ui';
 import type { ReactNode } from 'react';
 import { useTranslations } from 'use-intl';
 import type { TeamDetail, Usage } from '@/shared/api/schemas';
@@ -13,7 +14,6 @@ import {
   UsageLink,
   useLimitRows,
 } from '@/shared/ui/components/record-overview';
-import { Badge } from '@/shared/ui/components/shadcn/badge';
 import { useMoney } from '@/shared/ui/hooks/use-money';
 
 /** The team's name with its tile, as the page title. */
@@ -28,15 +28,15 @@ export function TeamFacts({ team }: { team: TeamDetail }) {
   const money = useMoney();
   return (
     <RecordFacts>
-      <Badge variant="secondary">
+      <Tag variant="soft">
         {team.all_models
           ? t('allModels')
           : t('modelCount', { count: team.models.length })}
-      </Badge>
+      </Tag>
       {team.my_role && (
-        <Badge variant="outline">
+        <Tag variant="soft" tone="brand">
           {t('detail.yourRole', { role: tRoles(team.my_role) })}
-        </Badge>
+        </Tag>
       )}
       <Fact>
         {t('detail.createdOn', { date: money.date(team.created_at) })}
@@ -94,7 +94,7 @@ export function DetailsCard({ team }: { team: TeamDetail }) {
   const access = team.all_models ? (
     t('allModels')
   ) : team.models.length === 0 ? (
-    <span className="font-normal text-destructive">{t('detail.noModels')}</span>
+    <span className="font-normal text-danger-fg">{t('detail.noModels')}</span>
   ) : (
     <ModelList models={team.models} />
   );

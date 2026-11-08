@@ -1,5 +1,13 @@
+import {
+  Button,
+  ExportIcon,
+  Input,
+  Menu,
+  PayloadIcon,
+  SegmentedControl,
+  SegmentedItem,
+} from '@rustrak/ui';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { ChevronDown, Download, FileSpreadsheet, FileText } from 'lucide-react';
 import { useState } from 'react';
 import { useFormatter, useTranslations } from 'use-intl';
 import { listKeys } from '@/features/key/api/queries';
@@ -57,23 +65,21 @@ import {
   readFilter,
 } from '@/shared/lib/filters';
 import { MAX_PAGE_SIZE } from '@/shared/lib/list-params';
-import { Choice } from '@/shared/ui/components/choice';
-import { ListFilterPill } from '@/shared/ui/components/data-table';
+import {
+  type ListField,
+  ListFilterPill,
+  ListQueryBar,
+} from '@/shared/ui/components/list-filters';
 import { Page } from '@/shared/ui/components/page';
-import { Button } from '@/shared/ui/components/shadcn/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/shared/ui/components/shadcn/dropdown-menu';
-import { Input } from '@/shared/ui/components/shadcn/input';
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-} from '@/shared/ui/components/shadcn/tabs';
 import { useMoney } from '@/shared/ui/hooks/use-money';
+import {
+  KeysIcon,
+  LabelsIcon,
+  ModelsIcon,
+  PeopleIcon,
+  TeamsIcon,
+  UsageIcon,
+} from '@/shared/ui/icons';
 
 type FilterName = keyof typeof USAGE_FILTERS;
 
@@ -255,23 +261,28 @@ function UsagePage() {
       title={t('title')}
       description={t('subtitle')}
       actions={
-        <DropdownMenu>
-          <DropdownMenuTrigger render={<Button variant="outline" />}>
-            <Download />
-            {t('export')}
-            <ChevronDown />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => setReporting(true)}>
-              <FileText />
-              {t('exportReport')}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={download}>
-              <FileSpreadsheet />
-              {t('exportCsv')}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <Menu
+          align="end"
+          trigger={
+            <Button icon={ExportIcon} menu>
+              {t('export')}
+            </Button>
+          }
+          actions={[
+            {
+              id: 'report',
+              label: t('exportReport'),
+              icon: UsageIcon,
+              onSelect: () => setReporting(true),
+            },
+            {
+              id: 'csv',
+              label: t('exportCsv'),
+              icon: PayloadIcon,
+              onSelect: download,
+            },
+          ]}
+        />
       }
     >
       <ReportPanel
@@ -283,37 +294,39 @@ function UsagePage() {
         scopeLabel={scopeLabels.join(' · ')}
         scope={scope}
       />
-      <UsageToolbar bucketLabel={bucketLabel} set={set} />
-      <KpiRow usage={usage} />
-      <MainChart
-        usage={usage}
-        group={group}
-        metric={metric}
-        granularity={granularity}
-        bucketLabel={bucketLabel}
-        set={set}
-        nameOf={nameOf}
-      />
-      <DetailCharts
-        usage={usage}
-        granularity={granularity}
-        bucketLabel={bucketLabel}
-      />
-      {group && (
-        <section className="space-y-3">
-          <h2 className="text-sm font-medium">
-            {t('ranking', { group: groupNames[group] })}
-          </h2>
-          <UsageRanking
-            groups={groupTotals(usage.series, metric)}
-            metric={metric}
-            groupLabel={groupNames[group]}
-            nameOf={nameOf}
-            onPick={pick}
-            empty={t('table.empty')}
-          />
-        </section>
-      )}
+      <div className="flex flex-col gap-5">
+        <UsageToolbar bucketLabel={bucketLabel} set={set} />
+        <KpiRow usage={usage} />
+        <MainChart
+          usage={usage}
+          group={group}
+          metric={metric}
+          granularity={granularity}
+          bucketLabel={bucketLabel}
+          set={set}
+          nameOf={nameOf}
+        />
+        <DetailCharts
+          usage={usage}
+          granularity={granularity}
+          bucketLabel={bucketLabel}
+        />
+        {group && (
+          <section className="flex flex-col gap-3">
+            <h2 className="text-section text-fg">
+              {t('ranking', { group: groupNames[group] })}
+            </h2>
+            <UsageRanking
+              groups={groupTotals(usage.series, metric)}
+              metric={metric}
+              groupLabel={groupNames[group]}
+              nameOf={nameOf}
+              onPick={pick}
+              empty={t('table.empty')}
+            />
+          </section>
+        )}
+      </div>
     </Page>
   );
 }
@@ -364,6 +377,8 @@ function UsageToolbar({
   );
   const options = (rows: readonly { id: number; name: string }[]) =>
     rows.map((x) => ({ value: String(x.id), label: x.name }));
+  // Another team's people do not carry over.
+  const resetPerson = { person: undefined, exclude_person: undefined };
   const teamFilter = readFilter(search, 'team');
   // The keys of the kept teams; a left-out team does not hide its keys.
   const teamKeys = keys.filter(
@@ -372,6 +387,29 @@ function UsageToolbar({
       teamFilter.values.length === 0 ||
       teamFilter.values.includes(String(k.team_id)),
   );
+  const modelOptions = models.map((name) => ({ value: name, label: name }));
+  const field = (
+    key: FilterName,
+    label: string,
+    icon: ListField['icon'],
+    options: { value: string; label: string }[],
+  ): ListField => ({
+    key,
+    label,
+    icon,
+    variant: 'options',
+    options,
+    exclude: true,
+  });
+  const fields = [
+    field('team', t('team'), TeamsIcon, options(teams)),
+    ...(onlyValue(search.team)
+      ? [field('person', t('person'), PeopleIcon, options(people))]
+      : []),
+    field('key', t('key'), KeysIcon, options(teamKeys)),
+    field('model', t('model'), ModelsIcon, modelOptions),
+    field('label', t('label'), LabelsIcon, options(labels)),
+  ];
   const custom = search.from !== undefined;
   const rangeLabels: Record<RangePreset, string> = {
     '7d': t('range.days7'),
@@ -382,11 +420,10 @@ function UsageToolbar({
   };
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <Choice
+      <SegmentedControl
         aria-label={t('dateRange')}
-        className="h-8 w-44"
         value={custom ? CUSTOM : (search.range ?? '30d')}
-        onChange={(value) =>
+        onValueChange={(value) =>
           value === CUSTOM
             ? set({ from: usage.from, to: usage.to })
             : set({
@@ -395,20 +432,21 @@ function UsageToolbar({
                 to: undefined,
               })
         }
-        options={[
-          ...RANGE_PRESETS.map((value) => ({
-            value,
-            label: rangeLabels[value],
-          })),
-          { value: CUSTOM, label: t('range.custom') },
-        ]}
-      />
+      >
+        {RANGE_PRESETS.map((value) => (
+          <SegmentedItem key={value} value={value}>
+            {rangeLabels[value]}
+          </SegmentedItem>
+        ))}
+        <SegmentedItem value={CUSTOM}>{t('range.custom')}</SegmentedItem>
+      </SegmentedControl>
       {custom && (
         <>
           <Input
             type="date"
             aria-label={t('range.from')}
-            className="h-8 w-40"
+            size="sm"
+            boxClassName="w-40"
             value={usage.from}
             max={usage.to}
             onChange={(e) => e.target.value && set({ from: e.target.value })}
@@ -416,26 +454,32 @@ function UsageToolbar({
           <Input
             type="date"
             aria-label={t('range.to')}
-            className="h-8 w-40"
+            size="sm"
+            boxClassName="w-40"
             value={usage.to}
             min={usage.from}
             onChange={(e) => e.target.value && set({ to: e.target.value })}
           />
         </>
       )}
-      <span className="mx-1 hidden h-5 w-px bg-border sm:block" />
-      {/* Another team's people do not carry over. */}
-      {pill('team', t('team'), options(teams), {
-        person: undefined,
-        exclude_person: undefined,
-      })}
+      <span className="mx-1 hidden h-5 border-border-divider border-l sm:block" />
+      <ListQueryBar
+        className="order-first min-w-0 basis-full"
+        placeholder={t('filterPlaceholder')}
+        search={search}
+        fields={fields}
+        onChange={(patch) => {
+          const teamChanged =
+            patch.team !== search.team ||
+            patch.exclude_team !== search.exclude_team;
+          // `q` and `page` mean nothing here; validateSearch drops them.
+          set({ ...patch, ...(teamChanged ? resetPerson : {}) });
+        }}
+      />
+      {pill('team', t('team'), options(teams), resetPerson)}
       {onlyValue(search.team) && pill('person', t('person'), options(people))}
       {pill('key', t('key'), options(teamKeys))}
-      {pill(
-        'model',
-        t('model'),
-        models.map((name) => ({ value: name, label: name })),
-      )}
+      {pill('model', t('model'), modelOptions)}
       {pill('label', t('label'), options(labels))}
       {filtered && (
         <Button
@@ -455,7 +499,7 @@ function UsageToolbar({
           {tTable('clearFilters')}
         </Button>
       )}
-      <span className="ml-auto text-xs text-muted-foreground">
+      <span className="ml-auto text-fg-subtle text-meta">
         {t('kpi.comparedWith', {
           from: bucketLabel(previousFrom(usage.from, usage.to)),
           to: bucketLabel(previousTo(usage.from)),
@@ -565,41 +609,41 @@ function MainChart({
           : t(`metric.${metric}`)
       }
       actions={
-        <Tabs
+        <SegmentedControl
+          aria-label={t('chart.metric')}
           value={metric}
           onValueChange={(value) =>
             set({ metric: METRICS.find((m) => m === value) })
           }
         >
-          <TabsList>
-            {METRICS.map((value) => (
-              <TabsTrigger key={value} value={value}>
-                {t(`metric.${value}`)}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
+          {METRICS.map((value) => (
+            <SegmentedItem key={value} value={value}>
+              {t(`metric.${value}`)}
+            </SegmentedItem>
+          ))}
+        </SegmentedControl>
       }
     >
       {group && groups.length > 1 && (
-        <div className="-mt-1 flex flex-wrap items-center gap-1 text-sm">
-          <span className="mr-1 text-muted-foreground">{t('splitBy')}</span>
-          {groups.map((value) => (
-            <Button
-              key={value}
-              size="sm"
-              variant={value === group ? 'secondary' : 'ghost'}
-              aria-pressed={value === group}
-              className="h-7 capitalize"
-              onClick={() => set({ group: value })}
-            >
-              {groupNames[value]}
-            </Button>
-          ))}
+        <div className="-mt-1 flex flex-wrap items-center gap-2">
+          <span className="text-fg-subtle text-meta">{t('splitBy')}</span>
+          <SegmentedControl
+            aria-label={t('splitBy')}
+            value={group}
+            onValueChange={(value) =>
+              set({ group: groups.find((g) => g === value) })
+            }
+          >
+            {groups.map((value) => (
+              <SegmentedItem key={value} value={value} className="capitalize">
+                {groupNames[value]}
+              </SegmentedItem>
+            ))}
+          </SegmentedControl>
         </div>
       )}
       {empty || series.length === 0 ? (
-        <p className="flex h-72 items-center justify-center text-sm text-muted-foreground">
+        <p className="flex h-72 items-center justify-center text-fg-subtle text-meta">
           {t('table.empty')}
         </p>
       ) : (
@@ -632,7 +676,7 @@ function DetailCharts({
     <div className="grid gap-4 lg:grid-cols-3">
       <ChartCard title={t('chart.requests')}>
         <StackedBars
-          height="h-56"
+          height={224}
           rows={buckets.map((b) => ({
             bucket: b.bucket,
             ok: b.totals.requests - b.totals.failed_requests,
@@ -652,7 +696,7 @@ function DetailCharts({
       </ChartCard>
       <ChartCard title={t('chart.tokens')}>
         <StackedBars
-          height="h-56"
+          height={224}
           rows={buckets.map((b) => ({
             bucket: b.bucket,
             ...tokenParts(b.totals),
