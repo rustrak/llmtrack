@@ -1,6 +1,13 @@
+import {
+  Button,
+  createDataTableColumnHelper,
+  DataTable,
+  DeleteIcon,
+  EditIcon,
+  NewIcon,
+} from '@rustrak/ui';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
-import { Pencil, Plus, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslations } from 'use-intl';
 import { deleteLabel } from '@/features/label/api/mutations';
 import { listLabels } from '@/features/label/api/queries';
@@ -11,25 +18,16 @@ import { translator } from '@/shared/i18n/intl';
 import { readableMessage } from '@/shared/lib/form-errors';
 import { type ListParams, parseListParams } from '@/shared/lib/list-params';
 import { ConfirmDialog } from '@/shared/ui/components/confirm-dialog';
-import {
-  ActionsCell,
-  Cell,
-  ColumnHead,
-  DataRow,
-  DataTable,
-  DataTableEmpty,
-  ListFooter,
-  SearchField,
-  SortHead,
-} from '@/shared/ui/components/data-table';
 import { LabelBadge } from '@/shared/ui/components/label-badge';
+import { ListQueryBar } from '@/shared/ui/components/list-filters';
 import { Page } from '@/shared/ui/components/page';
-import { Button } from '@/shared/ui/components/shadcn/button';
 import { useCurrentUser } from '@/shared/ui/hooks/use-current-user';
+import { useListTable } from '@/shared/ui/hooks/use-list-table';
 import { useMoney } from '@/shared/ui/hooks/use-money';
 
 /** What `GET /api/labels` sorts by when not told. */
 const DEFAULT_SORT = 'name';
+const column = createDataTableColumnHelper<Label>();
 
 export const Route = createFileRoute('/_authenticated/labels')({
   validateSearch: (search: Record<string, unknown>): ListParams =>
@@ -54,17 +52,98 @@ function LabelsPage() {
   const set = (patch: ListParams) =>
     navigate({ search: (prev) => ({ ...prev, page: undefined, ...patch }) });
   const reload = () => navigate({ search: (prev) => prev });
-  const sortable = (field: string, label: string, className?: string) => (
-    <SortHead
-      field={field}
-      sort={search.sort}
-      fallback={DEFAULT_SORT}
-      onSort={(sort) => set({ sort })}
-      className={className}
-    >
-      {label}
-    </SortHead>
+
+  const columns = useMemo(
+    () =>
+      column.columns([
+        column.accessor('name', {
+          id: 'name',
+          header: t('table.name'),
+          enableHiding: false,
+          cell: ({ row }) => <LabelBadge label={row.original} />,
+          meta: { label: t('table.name'), width: 220 },
+        }),
+        column.accessor('description', {
+          id: 'description',
+          header: t('table.description'),
+          enableSorting: false,
+          cell: ({ getValue }) => (
+            <span className="truncate text-fg-subtle">{getValue() ?? '—'}</span>
+          ),
+          meta: { label: t('table.description') },
+        }),
+        column.accessor('key_count', {
+          id: 'keys',
+          header: t('table.keys'),
+          cell: ({ row }) => {
+            const label = row.original;
+            return (
+              <span className="font-mono text-mono-sm tabular-nums">
+                {label.key_count > 0 ? (
+                  <Link
+                    to="/usage"
+                    search={{ label: label.id }}
+                    className="text-fg-brand hover:underline"
+                    title={t('table.usage')}
+                  >
+                    {label.key_count}
+                  </Link>
+                ) : (
+                  0
+                )}
+              </span>
+            );
+          },
+          meta: {
+            label: t('table.keys'),
+            width: 96,
+            align: 'end',
+            numeric: true,
+          },
+        }),
+        column.accessor('created_at', {
+          id: 'created_at',
+          header: t('table.created'),
+          cell: ({ getValue }) => (
+            <span className="whitespace-nowrap text-fg-subtle">
+              {money.date(getValue())}
+            </span>
+          ),
+          meta: { label: t('table.created'), width: 128 },
+        }),
+      ]),
+    [t, money],
   );
+
+  const table = useListTable({
+    data: labels.data,
+    columns,
+    total: labels.total,
+    params: search,
+    defaultSort: DEFAULT_SORT,
+    onParams: (patch) =>
+      navigate({ search: (prev) => ({ ...prev, ...patch }) }),
+    getRowId: (label) => String(label.id),
+    storageKey: 'labels',
+    // Only admins edit or delete labels.
+    rowMenu: isAdmin
+      ? ({ original: label }) => [
+          {
+            id: 'edit',
+            label: t('edit.label', { name: label.name }),
+            icon: EditIcon,
+            onSelect: () => setEditing({ label }),
+          },
+          {
+            id: 'delete',
+            label: t('delete.label', { name: label.name }),
+            icon: DeleteIcon,
+            tone: 'danger',
+            onSelect: () => setDeleting(label),
+          },
+        ]
+      : undefined,
+  });
 
   return (
     <Page
@@ -73,107 +152,44 @@ function LabelsPage() {
       description={t('subtitle')}
       actions={
         isAdmin && (
-          <Button onClick={() => setEditing({})}>
-            <Plus />
+          <Button
+            variant="primary"
+            icon={NewIcon}
+            onClick={() => setEditing({})}
+          >
             {t('create.button')}
           </Button>
         )
       }
     >
-      <DataTable
-        toolbar={
-          <SearchField
-            value={search.q}
-            onChange={(q) => set({ q })}
+      <div className="flex min-h-0 flex-1 flex-col gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <ListQueryBar
+            className="min-w-0 flex-1 sm:max-w-md max-sm:basis-full"
             placeholder={t('search')}
+            search={search}
+            onChange={(patch) => set(patch as ListParams)}
+            fields={[]}
           />
-        }
-        head={
-          <>
-            {sortable('name', t('table.name'), 'min-w-48')}
-            <ColumnHead className="min-w-64">
-              {t('table.description')}
-            </ColumnHead>
-            {sortable('keys', t('table.keys'))}
-            {sortable('created_at', t('table.created'))}
-            <ColumnHead className="w-20" />
-          </>
-        }
-        empty={
-          labels.data.length === 0 &&
-          (search.q ? (
-            <DataTableEmpty
-              title={tTable('noResults')}
-              description={tTable('noResultsHint')}
-            />
-          ) : (
-            <DataTableEmpty
-              title={t('empty.title')}
-              description={isAdmin ? t('empty.description') : t('empty.member')}
-            />
-          ))
-        }
-        footer={
-          <ListFooter
-            list={labels}
-            onChange={(patch) =>
-              navigate({ search: (prev) => ({ ...prev, ...patch }) })
-            }
-          />
-        }
-      >
-        {labels.data.map((label) => (
-          <DataRow key={label.id}>
-            <Cell>
-              <LabelBadge label={label} />
-            </Cell>
-            <Cell className="text-muted-foreground">
-              {label.description ?? '—'}
-            </Cell>
-            <Cell className="tabular-nums">
-              {label.key_count > 0 ? (
-                <Link
-                  to="/usage"
-                  search={{ label: label.id }}
-                  className="underline-offset-4 hover:underline"
-                  title={t('table.usage')}
-                >
-                  {label.key_count}
-                </Link>
-              ) : (
-                0
-              )}
-            </Cell>
-            <Cell className="whitespace-nowrap text-muted-foreground">
-              {money.date(label.created_at)}
-            </Cell>
-            <ActionsCell>
-              {isAdmin && (
-                <div className="flex justify-end">
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label={t('edit.label', { name: label.name })}
-                    title={t('edit.label', { name: label.name })}
-                    onClick={() => setEditing({ label })}
-                  >
-                    <Pencil />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label={t('delete.label', { name: label.name })}
-                    title={t('delete.label', { name: label.name })}
-                    onClick={() => setDeleting(label)}
-                  >
-                    <Trash2 />
-                  </Button>
-                </div>
-              )}
-            </ActionsCell>
-          </DataRow>
-        ))}
-      </DataTable>
+        </div>
+        <DataTable
+          table={table}
+          className="min-h-0 flex-1"
+          empty={
+            search.q
+              ? {
+                  title: tTable('noResults'),
+                  description: tTable('noResultsHint'),
+                }
+              : {
+                  title: t('empty.title'),
+                  description: isAdmin
+                    ? t('empty.description')
+                    : t('empty.member'),
+                }
+          }
+        />
+      </div>
       <LabelPanel
         open={editing !== null}
         label={editing?.label}

@@ -9,8 +9,8 @@ import { returnPath } from '@/shared/api/return-path';
 import { session } from '@/shared/api/session';
 import { translator } from '@/shared/i18n/intl';
 import { readableMessage } from '@/shared/lib/form-errors';
-import { LlmtrackWordmark } from '@/shared/ui/components/llmtrack-wordmark';
 import { OutageScreen } from '@/shared/ui/components/status-screens';
+import { AuthHeading, AuthScreen } from '../-components/auth-screen';
 
 const text = (value: unknown) => (typeof value === 'string' ? value : '');
 const optional = (value: unknown) =>
@@ -63,29 +63,25 @@ function AuthorizePage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-card p-8 lg:p-12">
-      <div className="w-full max-w-[460px] space-y-10">
-        <LlmtrackWordmark className="text-2xl" />
-        {client?.success && answer.state === 'authenticated' ? (
-          <ConsentForm
-            request={request}
-            client={client.data}
-            email={answer.user.email}
-          />
-        ) : (
-          <div className="space-y-2">
-            <h1 className="text-3xl font-bold tracking-tight">
-              {t('failedTitle')}
-            </h1>
-            <p className="text-muted-foreground">{t('failedDescription')}</p>
-            {client && !client.success && (
-              <p className="font-mono text-sm text-muted-foreground">
-                {readableMessage(client.error)}
-              </p>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
+    <AuthScreen>
+      {client?.success && answer.state === 'authenticated' ? (
+        <ConsentForm
+          request={request}
+          client={client.data}
+          email={answer.user.email}
+        />
+      ) : (
+        <div className="flex flex-col gap-3">
+          <AuthHeading title={t('failedTitle')}>
+            {t('failedDescription')}
+          </AuthHeading>
+          {client && !client.success && (
+            <p className="font-mono text-mono-sm text-fg-subtle">
+              {readableMessage(client.error)}
+            </p>
+          )}
+        </div>
+      )}
+    </AuthScreen>
   );
 }

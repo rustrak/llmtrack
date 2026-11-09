@@ -1,10 +1,8 @@
-import { Check, Plus, Search } from 'lucide-react';
+import { Button, Input, NewIcon, SearchIcon, SelectedIcon } from '@rustrak/ui';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'use-intl';
 import type { CatalogEntry } from '@/shared/api/schemas';
 import { cn } from '@/shared/lib/utils';
-import { Button } from '@/shared/ui/components/shadcn/button';
-import { Input } from '@/shared/ui/components/shadcn/input';
 import { listProviderModels } from '../../api/queries';
 import { PriceSummary } from './price-summary';
 
@@ -60,17 +58,15 @@ export function ProviderModelPicker({
     <div className="space-y-2">
       {entries.length > 0 && (
         <>
-          <div className="relative">
-            <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              className="pl-8 font-mono"
-              placeholder={t('picker.search', { count: entries.length })}
-              aria-label={t('picker.searchLabel')}
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-            />
-          </div>
-          <div className="max-h-56 overflow-y-auto rounded-lg border divide-y">
+          <Input
+            leading={<SearchIcon size="md" />}
+            className="font-mono"
+            placeholder={t('picker.search', { count: entries.length })}
+            aria-label={t('picker.searchLabel')}
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+          />
+          <div className="max-h-56 divide-y divide-border-divider overflow-y-auto rounded-lg border border-border-subtle bg-surface">
             {shown.map((entry) => {
               const selected = picked.includes(entry.key);
               return (
@@ -79,25 +75,28 @@ export function ProviderModelPicker({
                   type="button"
                   onClick={() => onToggle(entry)}
                   className={cn(
-                    'flex w-full items-start gap-2 px-3 py-2 text-left hover:bg-muted/50',
-                    selected && 'bg-muted',
+                    'flex w-full items-start gap-2.5 px-3 py-2 text-left transition-[background-color] duration-fast hover:bg-surface-hover',
+                    selected && 'bg-surface-selected',
                   )}
                 >
-                  <Check
+                  <SelectedIcon
+                    size="md"
                     className={cn(
-                      'mt-0.5 size-4 shrink-0 text-primary',
+                      'mt-0.5 shrink-0 text-fg-brand',
                       !selected && 'invisible',
                     )}
                   />
                   <div className="min-w-0 space-y-0.5">
-                    <p className="truncate font-mono text-xs">{entry.model}</p>
+                    <p className="truncate font-mono text-mono text-fg">
+                      {entry.model}
+                    </p>
                     <PriceSummary pricing={entry.pricing} />
                   </div>
                 </button>
               );
             })}
             {shown.length === 0 && (
-              <p className="px-3 py-4 text-center text-sm text-muted-foreground">
+              <p className="px-3 py-4 text-center text-meta text-fg-subtle">
                 {t('picker.noMatch')}
               </p>
             )}
@@ -106,6 +105,7 @@ export function ProviderModelPicker({
       )}
       <div className="flex gap-2">
         <Input
+          boxClassName="flex-1"
           className="font-mono"
           placeholder={
             entries.length > 0
@@ -124,11 +124,11 @@ export function ProviderModelPicker({
         />
         <Button
           type="button"
-          variant="outline"
+          variant="secondary"
+          icon={NewIcon}
           onClick={addCustom}
           disabled={!custom.trim()}
         >
-          <Plus />
           {t('picker.addCustom')}
         </Button>
       </div>

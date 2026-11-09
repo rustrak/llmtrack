@@ -1,9 +1,8 @@
+import { Input, SearchIcon } from '@rustrak/ui';
 import { useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import { useTranslations } from 'use-intl';
 import type { CatalogEntry } from '@/shared/api/schemas';
-import { Button } from '@/shared/ui/components/shadcn/button';
-import { Input } from '@/shared/ui/components/shadcn/input';
 import { searchCatalog } from '../../api/queries';
 import {
   type ModelFormValues,
@@ -44,7 +43,7 @@ export function PricingSection({
         {PRICING_MODES.map((value) => (
           <label
             key={value}
-            className="cursor-pointer rounded-lg border px-3 py-2 text-sm transition-colors hover:bg-muted/50 has-[:checked]:border-primary has-[:checked]:bg-primary/10 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring"
+            className="cursor-pointer rounded-lg border border-border-subtle bg-surface px-3 py-2.5 transition-[background-color,border-color] duration-fast hover:bg-surface-hover has-[:checked]:border-border-brand has-[:checked]:bg-surface-brand/10 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-ring"
           >
             <input
               type="radio"
@@ -54,10 +53,10 @@ export function PricingSection({
               onChange={() => choose(value)}
               className="sr-only"
             />
-            <span className="block font-medium">
+            <span className="block text-control text-fg">
               {t(`pricingMode.${value}`)}
             </span>
-            <span className="block text-xs text-muted-foreground">
+            <span className="mt-0.5 block text-hint text-fg-subtle">
               {t(`pricingMode.${value}Hint`)}
             </span>
           </label>
@@ -92,31 +91,31 @@ export function CatalogEntryLine({
   };
   return (
     <div className="space-y-2">
-      <div className="flex flex-wrap items-center gap-2 text-xs">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-hint">
         {catalogKey ? (
           <>
-            <span className="text-muted-foreground">
-              {t('pricingMode.billedBy')}
-            </span>
-            <code className="font-mono">{catalogKey}</code>
+            <span className="text-fg-subtle">{t('pricingMode.billedBy')}</span>
+            <code className="font-mono text-mono-sm text-fg">{catalogKey}</code>
             {entry && <PriceSummary pricing={entry.pricing} />}
           </>
         ) : (
-          <span className="text-amber-500">{t('mappings.unpriced')}</span>
+          <span className="text-sev-warning-fg">{t('mappings.unpriced')}</span>
         )}
-        <Button
+        <button
           type="button"
-          variant="link"
-          size="sm"
-          className="h-auto p-0 text-xs"
+          className="text-fg-brand hover:underline"
+          aria-expanded={open}
           onClick={() => setOpen(!open)}
         >
           {t('pricingMode.change')}
-        </Button>
+        </button>
       </div>
       {open && (
-        <div className="space-y-1 rounded-md border p-2">
+        <div className="space-y-1 rounded-lg border border-border-subtle bg-surface-raised p-1.5">
           <Input
+            size="sm"
+            leading={<SearchIcon size="md" />}
+            className="font-mono"
             autoFocus
             value={query}
             placeholder={t('pricingMode.search')}
@@ -125,7 +124,7 @@ export function CatalogEntryLine({
           />
           <button
             type="button"
-            className="block w-full rounded px-2 py-1 text-left text-xs text-muted-foreground hover:bg-muted/50"
+            className="flex h-menu-item w-full items-center rounded-md px-2.5 text-left text-control text-fg-muted hover:bg-surface-selected hover:text-fg"
             onClick={() => {
               onPick(null);
               setOpen(false);
@@ -137,13 +136,13 @@ export function CatalogEntryLine({
             <button
               key={hit.key}
               type="button"
-              className="flex w-full flex-wrap items-center justify-between gap-2 rounded px-2 py-1 text-left text-xs hover:bg-muted/50"
+              className="flex min-h-menu-item w-full flex-wrap items-center justify-between gap-2 rounded-md px-2.5 py-1 text-left hover:bg-surface-selected"
               onClick={() => {
                 onPick(hit);
                 setOpen(false);
               }}
             >
-              <code className="font-mono">{hit.key}</code>
+              <code className="font-mono text-mono-sm text-fg">{hit.key}</code>
               <PriceSummary pricing={hit.pricing} />
             </button>
           ))}

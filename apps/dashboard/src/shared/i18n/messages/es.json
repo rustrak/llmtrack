@@ -18,7 +18,8 @@
   "theme": {
     "light": "Claro",
     "dark": "Oscuro",
-    "system": "Sistema"
+    "system": "Sistema",
+    "label": "Tema"
   },
   "roles": {
     "admin": "Administrador",
@@ -91,7 +92,6 @@
     "profile": "Perfil y ajustes",
     "logout": "Cerrar sesión",
     "tagline": "Gateway de IA",
-    "builtBy": "Hecho por",
     "breadcrumb": "Ruta de navegación",
     "people": "Personas",
     "playground": "Playground",
@@ -642,7 +642,8 @@
       "output": "Salida",
       "reasoning": "Razonamiento",
       "latency": "Latencia media",
-      "noModelSplit": "Clientes y tags no se desglosan por modelo: quita el filtro de modelo para verlos."
+      "noModelSplit": "Clientes y tags no se desglosan por modelo: quita el filtro de modelo para verlos.",
+      "metric": "Medida"
     },
     "chartTitle": "{metric} por {group}",
     "splitBy": "Desglosar por",
@@ -747,7 +748,8 @@
       "noNotes": "Sin notas",
       "excluded": "{filter}: todo salvo {values}"
     },
-    "label": "Etiqueta"
+    "label": "Etiqueta",
+    "filterPlaceholder": "Filtrar por equipo, clave, modelo o etiqueta"
   },
   "logs": {
     "meta": {
@@ -912,10 +914,11 @@
       "personal": "Tu cuenta",
       "instance": "Esta instancia",
       "profile": "Perfil",
-      "appearance": "Apariencia",
       "general": "General",
       "pricing": "Precios",
-      "mcp": "Asistentes de IA (MCP)"
+      "mcp": "Asistentes de IA (MCP)",
+      "back": "Volver a llmtrack",
+      "preferences": "Preferencias"
     },
     "profile": {
       "meta": "Perfil · llmtrack",
@@ -947,9 +950,6 @@
       "changed": "Contraseña cambiada"
     },
     "appearance": {
-      "meta": "Apariencia · llmtrack",
-      "title": "Apariencia",
-      "subtitle": "Cómo se ve el panel en este dispositivo.",
       "theme": "Tema",
       "themeDescription": "Sistema sigue al de tu sistema operativo."
     },
@@ -1025,6 +1025,12 @@
         "revokeFailed": "No se pudo desconectar el asistente",
         "revoked": "{name} desconectado"
       }
+    },
+    "preferences": {
+      "meta": "Preferencias · llmtrack",
+      "title": "Preferencias",
+      "subtitle": "Cómo se lee llmtrack para ti: idioma, región y tema.",
+      "display": "Visualización"
     }
   },
   "limits": {
@@ -1068,18 +1074,48 @@
   "table": {
     "clearFilter": "Quitar filtro",
     "clearFilters": "Quitar filtros",
-    "range": "{from}–{to} de {total}",
-    "perPage": "Filas por página",
-    "pages": "Páginas",
-    "previous": "Página anterior",
-    "next": "Página siguiente",
+    "range": "{first}–{last} de {total}",
     "noResults": "Sin resultados",
     "noResultsHint": "Nada coincide con estos filtros. Prueba otros o quítalos.",
     "filterIs": "es",
     "filterIsNot": "no es",
     "filterNot": "no",
     "filterMore": "+{count}",
-    "excludeValues": "Excluir estos valores de {filter}"
+    "excludeValues": "Excluir estos valores de {filter}",
+    "rowsPerPage": "{size} filas",
+    "rowsOption": "{size} filas",
+    "selected": "{count, plural, one {# seleccionado} other {# seleccionados}}",
+    "clearSelection": "Limpiar",
+    "selectionToolbar": "Acciones para las filas seleccionadas",
+    "noMatches": "Nada coincide con los filtros actuales.",
+    "nothingYet": "Aún no hay nada aquí.",
+    "selectAllPageRows": "Seleccionar todas las filas de esta página",
+    "selectRow": "Seleccionar fila",
+    "actions": "Acciones",
+    "rowActions": "Acciones de la fila",
+    "columns": "Columnas",
+    "chooseColumns": "Elegir columnas",
+    "resizeColumn": "Cambiar ancho de columna",
+    "filterValues": "Filtrar valores",
+    "filterValuesPlaceholder": "Filtrar valores…",
+    "nothingMatches": "Nada coincide",
+    "contains": "Contiene…",
+    "filterText": "Filtrar texto",
+    "min": "Mín",
+    "max": "Máx",
+    "lowestFirst": "Menor primero",
+    "highestFirst": "Mayor primero",
+    "aToZ": "A a Z",
+    "zToA": "Z a A",
+    "hideColumn": "Ocultar columna",
+    "previousPage": "Página anterior",
+    "nextPage": "Página siguiente",
+    "filterBy": "Filtrar por",
+    "suggestions": "Sugerencias",
+    "filterAndSearch": "Filtra con clave:valor o busca…",
+    "addFilter": "Añadir un filtro…",
+    "clearAll": "Quitar filtros y búsqueda",
+    "excludedField": "{field} no es"
   },
   "people": {
     "meta": {

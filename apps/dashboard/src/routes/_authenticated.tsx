@@ -1,15 +1,13 @@
+import { AppShell, Topbar, TopbarMenuButton } from '@rustrak/ui';
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
 import { TimeZoneSync } from '@/features/user/ui/components/time-zone-sync';
 import { session } from '@/shared/api/session';
-import { Separator } from '@/shared/ui/components/shadcn/separator';
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from '@/shared/ui/components/shadcn/sidebar';
 import { OutageScreen } from '@/shared/ui/components/status-screens';
-import { AppSidebar } from './_authenticated/-components/app-sidebar';
-import { Crumbs } from './_authenticated/-components/crumbs';
+import { TableLabels } from '@/shared/ui/components/table-labels';
+import {
+  AppBreadcrumbs,
+  AppSidebar,
+} from './_authenticated/-components/app-frame';
 
 /** The one auth gate: every signed-in page sits under this layout. */
 export const Route = createFileRoute('/_authenticated')({
@@ -29,21 +27,37 @@ function AuthenticatedLayout() {
     ) : null;
   }
   return (
-    <SidebarProvider>
+    <AppShell
+      sidebar={<AppSidebar user={answer.user} />}
+      defaultCollapsed={sidebarWasCollapsed()}
+      onCollapsedChange={rememberSidebar}
+    >
       <TimeZoneSync hasTimeZone={Boolean(answer.user.timezone)} />
-      <AppSidebar user={answer.user} />
-      {/* Fixed to the viewport: pages scroll inside, so a list page can
-          hand the leftover height to its table. */}
-      <SidebarInset className="h-svh overflow-hidden md:h-[calc(100svh-1rem)]">
-        <header className="flex h-12 shrink-0 items-center gap-2 border-b px-3">
-          <SidebarTrigger />
-          <Separator orientation="vertical" className="my-3.5" />
-          <Crumbs user={answer.user} />
-        </header>
-        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+      <Topbar menu={<TopbarMenuButton />}>
+        <AppBreadcrumbs user={answer.user} />
+      </Topbar>
+      {/* The sheet's only scroller. Screens that own their scrolling fill it
+          with `h-full` and scroll inside. */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+        <TableLabels>
           <Outlet />
-        </div>
-      </SidebarInset>
-    </SidebarProvider>
+        </TableLabels>
+      </div>
+    </AppShell>
   );
+}
+
+/**
+ * Whether the sidebar was left collapsed, read synchronously so the first
+ * paint matches what the reader left rather than expanding and snapping shut.
+ */
+function sidebarWasCollapsed(): boolean {
+  return document.cookie
+    .split('; ')
+    .some((entry) => entry === 'sidebar_state=false');
+}
+
+function rememberSidebar(collapsed: boolean) {
+  // biome-ignore lint/suspicious/noDocumentCookie: one boolean, read before the first paint; the Cookie Store API is async.
+  document.cookie = `sidebar_state=${!collapsed}; path=/; max-age=31536000; SameSite=Lax`;
 }

@@ -1,9 +1,19 @@
 import {
+  Button,
+  Count,
+  DeleteIcon,
+  EditIcon,
+  Menu,
+  OverflowIcon,
+  Tab,
+  TabList,
+  Tabs,
+} from '@rustrak/ui';
+import {
   createFileRoute,
   useNavigate,
   useRouter,
 } from '@tanstack/react-router';
-import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslations } from 'use-intl';
 import { listKeys } from '@/features/key/api/queries';
@@ -35,36 +45,30 @@ import { listUsers } from '@/features/user/api/queries';
 import { unwrap } from '@/shared/api/http';
 import { translator } from '@/shared/i18n/intl';
 import { readableMessage } from '@/shared/lib/form-errors';
-import { MAX_PAGE_SIZE } from '@/shared/lib/list-params';
+import {
+  type ListParams,
+  MAX_PAGE_SIZE,
+  parseListParams,
+} from '@/shared/lib/list-params';
 import { ConfirmDialog } from '@/shared/ui/components/confirm-dialog';
 import { Page } from '@/shared/ui/components/page';
-import { Badge } from '@/shared/ui/components/shadcn/badge';
-import { Button } from '@/shared/ui/components/shadcn/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/shared/ui/components/shadcn/dropdown-menu';
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/shared/ui/components/shadcn/tabs';
 import { useCurrentUser } from '@/shared/ui/hooks/use-current-user';
 import { useMoney } from '@/shared/ui/hooks/use-money';
+import { usePageTrail } from '@/shared/ui/hooks/use-page-trail';
 
 export const Route = createFileRoute('/_authenticated/teams/$teamId')({
-  loader: async ({ params, context }) => {
+  // The team's keys page and sort like /keys, in the URL.
+  validateSearch: (search: Record<string, unknown>): ListParams =>
+    parseListParams(search),
+  loaderDeps: ({ search }) => search,
+  loader: async ({ params, context, deps }) => {
     const id = Number(params.teamId);
     const isAdmin =
       context.state === 'authenticated' && context.user.role === 'admin';
     const [team, keys, models, labels, settings, unassigned, users, usage] =
       await Promise.all([
         getTeam(id),
-        // ponytail: a team's first 200 keys; page it like /keys if teams get bigger.
-        listKeys({ team_id: id, per_page: MAX_PAGE_SIZE }),
+        listKeys({ ...deps, team_id: id }),
         listModels({ per_page: MAX_PAGE_SIZE }),
         listLabels({ per_page: MAX_PAGE_SIZE }),
         getSettings(),
@@ -79,7 +83,7 @@ export const Route = createFileRoute('/_authenticated/teams/$teamId')({
       unassigned: unassigned ? unwrap(unassigned).data : [],
       users: users ? unwrap(users).data : undefined,
       team: unwrap(team),
-      keys: unwrap(keys).data,
+      keys: unwrap(keys),
       models: unwrap(models).data,
       labels: unwrap(labels).data,
       publicUrl: unwrap(settings).public_url,
@@ -107,18 +111,16 @@ function TeamPage() {
   const user = useCurrentUser();
   const router = useRouter();
   const navigate = useNavigate();
+  const search = Route.useSearch();
   const money = useMoney();
   const bucketLabel = useBucketLabel('day');
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [tab, setTab] = useState('keys');
   const isAdmin = user.role === 'admin';
   const canManageMembers = isAdmin || team.my_role === 'admin';
   const modelRefs = models.map(({ id, name }) => ({ id, name }));
-  const count = (n: number) => (
-    <Badge variant="secondary" className="ml-1.5 tabular-nums">
-      {n}
-    </Badge>
-  );
+  usePageTrail([{ label: team.name }]);
 
   return (
     <Page
@@ -127,118 +129,125 @@ function TeamPage() {
       actions={
         isAdmin && (
           <>
-            <Button variant="outline" onClick={() => setEditing(true)}>
-              <Pencil />
+            <Button icon={EditIcon} onClick={() => setEditing(true)}>
               {t('detail.edit')}
             </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                render={
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    aria-label={t('detail.moreActions')}
-                  />
-                }
-              >
-                <MoreHorizontal />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  className="text-destructive"
-                  onClick={() => setDeleting(true)}
-                >
-                  <Trash2 />
-                  {t('detail.deleteTeam')}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <Menu
+              align="end"
+              trigger={
+                <Button
+                  icon={OverflowIcon}
+                  aria-label={t('detail.moreActions')}
+                />
+              }
+              actions={[
+                {
+                  id: 'delete',
+                  label: t('detail.deleteTeam'),
+                  icon: DeleteIcon,
+                  tone: 'danger',
+                  onSelect: () => setDeleting(true),
+                },
+              ]}
+            />
           </>
         )
       }
+      tabs={
+        <Tabs value={tab} onValueChange={(next) => setTab(String(next))}>
+          <TabList>
+            <Tab value="keys">
+              {t('detail.keysTab')}
+              <Count>{keys.total}</Count>
+            </Tab>
+            <Tab value="people">
+              {t('detail.peopleTab')}
+              <Count>{team.people.length}</Count>
+            </Tab>
+            <Tab value="members">
+              {t('detail.membersTab')}
+              <Count>{team.members.length}</Count>
+            </Tab>
+          </TabList>
+        </Tabs>
+      }
     >
-      <div className="grid gap-4 lg:grid-cols-3">
-        <SpendCard
-          team={team}
-          usage={usage}
-          chart={
-            <StackedBars
-              height="h-44"
-              rows={usage.daily.map((d) => ({
-                bucket: d.day,
-                spend: d.cost_usd,
-              }))}
-              series={[
-                {
-                  key: 'spend',
-                  label: tUsage('spend'),
-                  color: 'var(--chart-1)',
-                },
-              ]}
-              format={(v) => money.usd(v)}
-              bucketLabel={bucketLabel}
-            />
-          }
-        />
-        <DetailsCard team={team} />
-      </div>
-      <Tabs defaultValue="keys">
-        <TabsList>
-          <TabsTrigger value="keys">
-            {t('detail.keysTab')}
-            {count(keys.length)}
-          </TabsTrigger>
-          <TabsTrigger value="people">
-            {t('detail.peopleTab')}
-            {count(team.people.length)}
-          </TabsTrigger>
-          <TabsTrigger value="members">
-            {t('detail.membersTab')}
-            {count(team.members.length)}
-          </TabsTrigger>
-        </TabsList>
-        <TabsContent value="keys" className="pt-4">
-          <KeyManager
-            keys={keys}
-            teams={[team]}
-            allModels={modelRefs}
-            labels={labels}
-            teamId={team.id}
-            publicUrl={publicUrl}
-            toolbar={
-              <div className="ml-auto">
-                <CreateKeyButton
-                  teams={[team]}
-                  allModels={modelRefs}
-                  labels={labels}
-                  teamId={team.id}
-                  publicUrl={publicUrl}
-                />
-              </div>
+      <div className="flex flex-col gap-6">
+        <div className="grid gap-4 lg:grid-cols-3">
+          <SpendCard
+            team={team}
+            usage={usage}
+            chart={
+              <StackedBars
+                height={176}
+                rows={usage.daily.map((d) => ({
+                  bucket: d.day,
+                  spend: d.cost_usd,
+                }))}
+                series={[
+                  {
+                    key: 'spend',
+                    label: tUsage('spend'),
+                    color: 'var(--chart-1)',
+                  },
+                ]}
+                format={(v) => money.usd(v)}
+                bucketLabel={bucketLabel}
+              />
             }
-            empty={{
-              title: tKeys('empty.title'),
-              description: tKeys('empty.description'),
-            }}
           />
-        </TabsContent>
-        <TabsContent value="people" className="pt-4">
+          <DetailsCard team={team} />
+        </div>
+        {tab === 'keys' && (
+          <div className="flex min-h-96 flex-col gap-3">
+            <div className="flex justify-end">
+              <CreateKeyButton
+                teams={[team]}
+                allModels={modelRefs}
+                labels={labels}
+                teamId={team.id}
+                publicUrl={publicUrl}
+              />
+            </div>
+            <KeyManager
+              keys={keys.data}
+              total={keys.total}
+              params={search}
+              onParams={(patch) =>
+                navigate({
+                  to: '.',
+                  search: (prev: ListParams) => ({ ...prev, ...patch }),
+                })
+              }
+              teams={[team]}
+              allModels={modelRefs}
+              labels={labels}
+              teamId={team.id}
+              publicUrl={publicUrl}
+              empty={{
+                title: tKeys('empty.title'),
+                description: tKeys('empty.description'),
+              }}
+            />
+          </div>
+        )}
+        {tab === 'people' && (
           <PeoplePanel
             teamId={team.id}
             people={team.people}
             unassigned={unassigned}
             canManage={canManageMembers}
           />
-        </TabsContent>
-        <TabsContent value="members" className="pt-4">
+        )}
+        {tab === 'members' && (
           <MembersPanel
             teamId={team.id}
             members={team.members}
             candidates={users}
             canManage={canManageMembers}
           />
-        </TabsContent>
-      </Tabs>
+        )}
+      </div>
       <TeamPanel
         open={editing}
         team={team}

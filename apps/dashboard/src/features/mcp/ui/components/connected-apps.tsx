@@ -1,11 +1,14 @@
+import { AgentsIcon, Avatar, Button } from '@rustrak/ui';
 import { useRouter } from '@tanstack/react-router';
-import { Bot } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useTranslations } from 'use-intl';
 import type { OAuthGrant } from '@/shared/api/schemas';
 import { readableMessage } from '@/shared/lib/form-errors';
-import { Button } from '@/shared/ui/components/shadcn/button';
+import {
+  SettingsEmpty,
+  SettingsListItem,
+} from '@/shared/ui/components/setting-row';
 import { useMoney } from '@/shared/ui/hooks/use-money';
 import { revokeGrant } from '../../api/mutations';
 
@@ -19,8 +22,8 @@ function clientHost(clientId: string): string {
 }
 
 /**
- * The assistants connected to the reader's account by signing in, and the
- * one control that matters for each: cutting it off.
+ * The assistants connected to the reader's account by signing in, one row
+ * each, and the one control that matters for each: cutting it off.
  */
 export function ConnectedApps({ grants }: { grants: OAuthGrant[] }) {
   const t = useTranslations('settings');
@@ -44,42 +47,36 @@ export function ConnectedApps({ grants }: { grants: OAuthGrant[] }) {
 
   if (grants.length === 0) {
     return (
-      <div className="flex items-center gap-3 rounded-xl border border-dashed p-5 text-sm text-muted-foreground">
-        <Bot className="size-4" />
-        {t('mcp.connected.empty')}
-      </div>
+      <SettingsEmpty
+        icon={<AgentsIcon size="2xl" />}
+        title={t('mcp.connected.empty')}
+      />
     );
   }
 
-  return (
-    <ul className="divide-y rounded-xl border bg-card">
-      {grants.map((grant) => (
-        <li
-          key={grant.id}
-          className="flex flex-wrap items-center gap-3 px-4 py-3 text-sm"
+  return grants.map((grant) => (
+    <SettingsListItem
+      key={grant.id}
+      leading={<Avatar name={grant.client_name} shape="square" />}
+      title={grant.client_name}
+      description={
+        <span className="font-mono">{clientHost(grant.client_id)}</span>
+      }
+      meta={t('mcp.connected.since', { date: money.date(grant.created_at) })}
+      actions={
+        <Button
+          variant="danger"
+          size="sm"
+          loading={pending === grant.id}
+          disabled={pending !== null}
+          onClick={() => revoke(grant)}
+          aria-label={t('mcp.connected.revokeLabel', {
+            name: grant.client_name,
+          })}
         >
-          <div className="min-w-0 flex-1">
-            <p className="font-medium">{grant.client_name}</p>
-            <p className="truncate font-mono text-xs text-muted-foreground">
-              {clientHost(grant.client_id)}
-            </p>
-          </div>
-          <span className="text-xs text-muted-foreground">
-            {t('mcp.connected.since', { date: money.date(grant.created_at) })}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={pending !== null}
-            onClick={() => revoke(grant)}
-            aria-label={t('mcp.connected.revokeLabel', {
-              name: grant.client_name,
-            })}
-          >
-            {t('mcp.connected.revoke')}
-          </Button>
-        </li>
-      ))}
-    </ul>
-  );
+          {t('mcp.connected.revoke')}
+        </Button>
+      }
+    />
+  ));
 }

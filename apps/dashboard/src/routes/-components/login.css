@@ -1,0 +1,72 @@
+/*
+ * The sign-in screens' entrance (login, invitation, consent), after Rustrak's
+ * login. Every animation ends where the static page already is, so without
+ * motion nothing moves and nothing is missing.
+ */
+@keyframes login-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes login-rise {
+  from {
+    opacity: 0;
+    translate: 0 6px;
+    filter: blur(4px);
+  }
+}
+
+@keyframes login-orbit {
+  to {
+    rotate: 360deg;
+  }
+}
+
+/* The panel's edges falling away to the frame's tone; a tighter, greyer edge
+   on white, where the full veil would wash the tiles out. */
+.login-vignette {
+  box-shadow: inset 0 0 180px 70px var(--surface-canvas);
+}
+[data-theme="light"] .login-vignette {
+  box-shadow: inset 0 0 110px 10px var(--surface-active);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .login-fade {
+    animation: login-fade 1.2s var(--ease-entrance) both;
+  }
+  .login-rise {
+    animation: login-rise 0.7s var(--ease-entrance) both;
+  }
+  /* Each ring turns as one; each tile turns back so its word stays upright. */
+  .login-orbit {
+    animation: login-orbit var(--orbit-duration) linear infinite;
+  }
+  .login-orbit-tile {
+    animation: login-orbit var(--orbit-duration) linear infinite reverse;
+  }
+
+  /* The form's own blocks arrive a beat apart. The form itself does not
+     move; its children do, so a block is never animated twice. */
+  .login-stagger > div > :not(form),
+  .login-stagger form > * {
+    animation: login-rise 0.7s var(--ease-entrance) both;
+    animation-delay: 250ms;
+  }
+  .login-stagger > div > :nth-child(2):not(form) {
+    animation-delay: 320ms;
+  }
+  .login-stagger > div > :nth-child(3):not(form) {
+    animation-delay: 390ms;
+  }
+  .login-stagger form > :nth-child(1) {
+    animation-delay: 340ms;
+  }
+  .login-stagger form > :nth-child(2) {
+    animation-delay: 410ms;
+  }
+  .login-stagger form > :nth-child(n + 3) {
+    animation-delay: 480ms;
+  }
+}

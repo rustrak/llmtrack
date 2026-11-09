@@ -1,15 +1,13 @@
+import {
+  Button,
+  Dialog,
+  DialogBody,
+  DialogClose,
+  DialogFooter,
+  DialogHeader,
+} from '@rustrak/ui';
 import { useState } from 'react';
 import { useTranslations } from 'use-intl';
-import {
-  AlertDialog,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from './shadcn/alert-dialog';
-import { Button } from './shadcn/button';
 
 /**
  * Asks before something that cannot be undone. `onConfirm` resolves to an
@@ -34,38 +32,46 @@ export function ConfirmDialog({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   return (
-    <AlertDialog
+    <Dialog
+      alert
       open={open}
       onOpenChange={(next) => {
+        if (pending) return;
         setError(null);
         onOpenChange(next);
       }}
     >
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{title}</AlertDialogTitle>
-          <AlertDialogDescription>{description}</AlertDialogDescription>
-        </AlertDialogHeader>
-        {error && <p className="text-sm text-destructive">{error}</p>}
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={pending}>
-            {t('cancel')}
-          </AlertDialogCancel>
-          <Button
-            variant="destructive"
-            disabled={pending}
-            onClick={async () => {
-              setPending(true);
-              const failure = await onConfirm();
-              setPending(false);
-              if (failure) setError(failure);
-              else onOpenChange(false);
-            }}
-          >
-            {pending ? t('working') : confirmLabel}
-          </Button>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+      <DialogHeader
+        title={title}
+        description={description}
+        dismissible={false}
+      />
+      {error && (
+        <DialogBody>
+          <p role="alert" className="text-hint text-danger-fg">
+            {error}
+          </p>
+        </DialogBody>
+      )}
+      <DialogFooter>
+        <DialogClose
+          disabled={pending}
+          render={<Button variant="secondary">{t('cancel')}</Button>}
+        />
+        <Button
+          variant="danger-primary"
+          loading={pending}
+          onClick={async () => {
+            setPending(true);
+            const failure = await onConfirm();
+            setPending(false);
+            if (failure) setError(failure);
+            else onOpenChange(false);
+          }}
+        >
+          {pending ? t('working') : confirmLabel}
+        </Button>
+      </DialogFooter>
+    </Dialog>
   );
 }

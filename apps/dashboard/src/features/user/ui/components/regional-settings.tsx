@@ -1,3 +1,4 @@
+import { Input } from '@rustrak/ui';
 import { useRouter } from '@tanstack/react-router';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -7,17 +8,16 @@ import { intl } from '@/shared/i18n/intl';
 import { LOCALES } from '@/shared/i18n/routing';
 import { CURRENCIES } from '@/shared/lib/format';
 import { Choice } from '@/shared/ui/components/choice';
-import { Input } from '@/shared/ui/components/shadcn/input';
-import { Label } from '@/shared/ui/components/shadcn/label';
+import { SettingRow } from '@/shared/ui/components/setting-row';
 import { updateProfile } from '../../api/mutations';
 import { listTimeZones } from '../../model/time-zones';
 
 const BROWSER = 'browser';
 
 /**
- * Language, time zone and currency. Saving reloads the catalogue and the formats at
- * once, so the change shows without a page reload (the step Rustrak skips
- * for languages).
+ * Language, time zone and currency, one row each. Saving reloads the
+ * catalogue and the formats at once, so the change shows without a page
+ * reload.
  */
 export function RegionalSettings({ user }: { user: User }) {
   const t = useTranslations('locale');
@@ -44,9 +44,8 @@ export function RegionalSettings({ user }: { user: User }) {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-1.5">
-        <Label>{t('label')}</Label>
+    <>
+      <SettingRow title={t('label')} description={t('storedOnAccount')}>
         <Choice
           aria-label={t('label')}
           disabled={pending}
@@ -59,10 +58,8 @@ export function RegionalSettings({ user }: { user: User }) {
             ...LOCALES.map((locale) => ({ value: locale, label: t(locale) })),
           ]}
         />
-        <p className="text-xs text-muted-foreground">{t('storedOnAccount')}</p>
-      </div>
-      <div className="space-y-1.5">
-        <Label>{t('timeZoneLabel')}</Label>
+      </SettingRow>
+      <SettingRow title={t('timeZoneLabel')} description={t('timeZoneHint')}>
         <Choice
           aria-label={t('timeZoneLabel')}
           disabled={pending}
@@ -75,10 +72,8 @@ export function RegionalSettings({ user }: { user: User }) {
             ...listTimeZones().map((zone) => ({ value: zone, label: zone })),
           ]}
         />
-        <p className="text-xs text-muted-foreground">{t('timeZoneHint')}</p>
-      </div>
-      <div className="space-y-1.5">
-        <Label>{t('currencyLabel')}</Label>
+      </SettingRow>
+      <SettingRow title={t('currencyLabel')} description={t('currencyHint')}>
         <Choice
           aria-label={t('currencyLabel')}
           disabled={pending}
@@ -86,14 +81,16 @@ export function RegionalSettings({ user }: { user: User }) {
           onChange={(currency) => save({ currency })}
           options={CURRENCIES.map((code) => ({ value: code, label: t(code) }))}
         />
-        <p className="text-xs text-muted-foreground">{t('currencyHint')}</p>
-      </div>
+      </SettingRow>
       {currency !== 'USD' && (
-        <div className="space-y-1.5">
-          <Label htmlFor="currency-rate">{t('rateLabel', { currency })}</Label>
+        <SettingRow
+          title={t('rateLabel', { currency })}
+          description={t('rateHint')}
+          htmlFor="currency-rate"
+        >
           <Input
             id="currency-rate"
-            className="max-w-40"
+            className="font-mono"
             inputMode="decimal"
             placeholder="0.86"
             disabled={pending}
@@ -106,9 +103,8 @@ export function RegionalSettings({ user }: { user: User }) {
               }
             }}
           />
-          <p className="text-xs text-muted-foreground">{t('rateHint')}</p>
-        </div>
+        </SettingRow>
       )}
-    </div>
+    </>
   );
 }

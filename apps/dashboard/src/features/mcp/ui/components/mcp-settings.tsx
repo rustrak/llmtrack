@@ -1,24 +1,27 @@
+import {
+  Switch,
+  Tab,
+  TabList,
+  TabPanel,
+  Tabs,
+  Tag,
+  WarningIcon,
+} from '@rustrak/ui';
 import { Link, useRouter } from '@tanstack/react-router';
-import { TriangleAlert } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
 import { toast } from 'sonner';
 import { useTranslations } from 'use-intl';
 import type { McpSettings } from '@/shared/api/schemas';
 import { readableMessage } from '@/shared/lib/form-errors';
 import { CodeBlock, CopyButton } from '@/shared/ui/components/copy-button';
-import { Switch } from '@/shared/ui/components/shadcn/switch';
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/shared/ui/components/shadcn/tabs';
+import { SettingRow } from '@/shared/ui/components/setting-row';
 import { updateMcpSettings } from '../../api/mutations';
 import { mcpSnippet, type SnippetClient } from '../../model/snippets';
 
 /**
- * The on/off of `/mcp`. Admins flip it; everyone else sees which way it is.
- * The switch moves at once; the server's answer settles it either way.
+ * The on/off of `/mcp`, as a settings row. Admins flip it; everyone else sees
+ * which way it is. The switch moves at once; the server's answer settles it
+ * either way.
  */
 export function McpServerToggle({
   settings,
@@ -45,22 +48,24 @@ export function McpServerToggle({
   };
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-3 text-sm">
+    <SettingRow
+      title={t('mcp.server.title')}
+      description={
+        isAdmin ? t('mcp.server.description') : t('mcp.server.adminOnly')
+      }
+    >
+      <div className="flex items-center gap-3">
         <Switch
           checked={enabled}
           onCheckedChange={toggle}
           disabled={!isAdmin || next !== null}
           aria-label={t('mcp.server.toggleLabel')}
         />
-        <span>{enabled ? t('mcp.server.on') : t('mcp.server.off')}</span>
+        <Tag tone={enabled ? 'brand' : 'neutral'}>
+          {enabled ? t('mcp.server.on') : t('mcp.server.off')}
+        </Tag>
       </div>
-      {!isAdmin && (
-        <p className="text-xs text-muted-foreground">
-          {t('mcp.server.adminOnly')}
-        </p>
-      )}
-    </div>
+    </SettingRow>
   );
 }
 
@@ -102,7 +107,7 @@ export function McpConnect({
         {isAdmin ? (
           <Link
             to="/settings/general"
-            className="font-medium text-foreground underline underline-offset-4"
+            className="font-medium text-fg-brand hover:underline"
           >
             {t('mcp.page.setPublicUrl')}
           </Link>
@@ -114,44 +119,45 @@ export function McpConnect({
   }
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-1.5">
-        <p className="text-sm font-medium">{t('mcp.server.endpoint')}</p>
-        <div className="flex items-center gap-2 rounded-lg border bg-background py-1 ps-3 pe-1">
-          <code className="min-w-0 flex-1 truncate font-mono text-xs">
+    <>
+      <SettingRow title={t('mcp.server.endpoint')} wide>
+        <div className="flex items-center gap-2 rounded-md border border-border-field bg-canvas py-1 ps-3 pe-1">
+          <code className="min-w-0 flex-1 truncate font-mono text-mono text-fg">
             {url}
           </code>
           <CopyButton text={url} />
         </div>
-      </div>
-      <Tabs defaultValue="web">
-        <TabsList>
-          {(['web', ...CLIENTS] as const).map((client) => (
-            <TabsTrigger key={client} value={client}>
-              {clientName[client]}
-            </TabsTrigger>
+      </SettingRow>
+      <div className="px-5 py-4">
+        <Tabs defaultValue="web">
+          <TabList>
+            {(['web', ...CLIENTS] as const).map((client) => (
+              <Tab key={client} value={client} size="sm">
+                {clientName[client]}
+              </Tab>
+            ))}
+          </TabList>
+          <TabPanel value="web">
+            <p className="text-body text-fg-subtle">
+              {t('mcp.clients.webSteps')}
+            </p>
+          </TabPanel>
+          {CLIENTS.map((client) => (
+            <TabPanel key={client} value={client}>
+              <CodeBlock code={mcpSnippet(client, url)} />
+            </TabPanel>
           ))}
-        </TabsList>
-        <TabsContent value="web">
-          <p className="text-sm text-muted-foreground">
-            {t('mcp.clients.webSteps')}
-          </p>
-        </TabsContent>
-        {CLIENTS.map((client) => (
-          <TabsContent key={client} value={client}>
-            <CodeBlock code={mcpSnippet(client, url)} />
-          </TabsContent>
-        ))}
-      </Tabs>
-      <p className="text-xs text-muted-foreground">{t('mcp.page.note')}</p>
-    </div>
+        </Tabs>
+        <p className="mt-4 text-hint text-fg-subtle">{t('mcp.page.note')}</p>
+      </div>
+    </>
   );
 }
 
 function Notice({ children }: { children: ReactNode }) {
   return (
-    <div className="flex gap-3 rounded-xl border border-dashed p-5 text-sm text-muted-foreground">
-      <TriangleAlert className="size-4 shrink-0" />
+    <div className="flex gap-3 px-5 py-4 text-body text-fg-subtle">
+      <WarningIcon size="md" className="mt-1 shrink-0 text-sev-warning-fg" />
       <p>{children}</p>
     </div>
   );

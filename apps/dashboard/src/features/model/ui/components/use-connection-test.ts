@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { toast } from 'sonner';
 import { useTranslations } from 'use-intl';
 import { readableMessage } from '@/shared/lib/form-errors';
@@ -10,19 +11,22 @@ import { testModel } from '../../api/mutations';
  */
 export function useConnectionTest() {
   const t = useTranslations('models');
-  return async (name: string, request: Parameters<typeof testModel>[0]) => {
-    const probe = await testModel(request);
-    if (!probe.success) toast.error(readableMessage(probe.error));
-    else if (probe.data.ok)
-      toast.success(name, {
-        description: t('test.ok', { ms: probe.data.latency_ms }),
-      });
-    else
-      toast.error(name, {
-        description: t('test.failed', {
-          status: probe.data.status ?? '—',
-          message: probe.data.message,
-        }),
-      });
-  };
+  return useCallback(
+    async (name: string, request: Parameters<typeof testModel>[0]) => {
+      const probe = await testModel(request);
+      if (!probe.success) toast.error(readableMessage(probe.error));
+      else if (probe.data.ok)
+        toast.success(name, {
+          description: t('test.ok', { ms: probe.data.latency_ms }),
+        });
+      else
+        toast.error(name, {
+          description: t('test.failed', {
+            status: probe.data.status ?? '—',
+            message: probe.data.message,
+          }),
+        });
+    },
+    [t],
+  );
 }

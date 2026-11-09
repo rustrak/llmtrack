@@ -48,7 +48,21 @@ export default defineConfig(({ mode }) => {
   return {
     base: '/',
     resolve: {
-      alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
+      alias: [
+        {
+          find: '@',
+          replacement: fileURLToPath(new URL('./src', import.meta.url)),
+        },
+        // @rustrak/ui comes from GitHub, where its `dist/` is not built: Vite
+        // compiles its source instead. `@rustrak/ui/*.css` still resolves
+        // through the package's own exports.
+        {
+          find: /^@rustrak\/ui$/,
+          replacement: fileURLToPath(
+            new URL('./node_modules/@rustrak/ui/src/index.ts', import.meta.url),
+          ),
+        },
+      ],
     },
     plugins: [
       tailwindcss(),

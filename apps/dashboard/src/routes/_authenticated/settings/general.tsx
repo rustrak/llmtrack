@@ -4,7 +4,8 @@ import { getSettings } from '@/features/settings/api/queries';
 import { GeneralForm } from '@/features/settings/ui/components/general-form';
 import { unwrap } from '@/shared/api/http';
 import { translator } from '@/shared/i18n/intl';
-import { Section, SettingsHeader } from './-components/section';
+import { SettingSection } from '@/shared/ui/components/setting-row';
+import { SettingsHeader } from '@/shared/ui/components/settings-header';
 
 export const Route = createFileRoute('/_authenticated/settings/general')({
   beforeLoad: ({ context }) => {
@@ -21,14 +22,14 @@ function GeneralPage() {
   const t = useTranslations('settings');
   const { settings } = Route.useLoaderData();
   return (
-    <div>
+    <>
       <SettingsHeader
         title={t('general.title')}
-        subtitle={t('general.subtitle')}
+        description={t('general.subtitle')}
       />
-      <Section title={t('general.gateway')}>
+      <SettingSection title={t('general.gateway')}>
         <GeneralForm settings={settings} />
-      </Section>
-    </div>
+      </SettingSection>
+    </>
   );
 }

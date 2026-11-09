@@ -1,5 +1,13 @@
+import {
+  Avatar,
+  Button,
+  DeleteIcon,
+  Input,
+  Menu,
+  OverflowIcon,
+  Tag,
+} from '@rustrak/ui';
 import { useRouter } from '@tanstack/react-router';
-import { Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useTranslations } from 'use-intl';
@@ -7,15 +15,11 @@ import type { Member } from '@/shared/api/schemas';
 import { readableMessage } from '@/shared/lib/form-errors';
 import { Choice } from '@/shared/ui/components/choice';
 import {
-  ActionsCell,
-  Cell,
-  ColumnHead,
-  DataRow,
-  DataTable,
-  DataTableEmpty,
-} from '@/shared/ui/components/data-table';
-import { Button } from '@/shared/ui/components/shadcn/button';
-import { Input } from '@/shared/ui/components/shadcn/input';
+  SettingSection,
+  SettingsEmpty,
+  SettingsListItem,
+} from '@/shared/ui/components/setting-row';
+import { TeamsIcon } from '@/shared/ui/icons';
 import { addMember, removeMember, updateMember } from '../../api/mutations';
 
 /**
@@ -69,11 +73,13 @@ export function MembersPanel({
   );
 
   return (
-    <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">{t('members.hint')}</p>
+    <SettingSection
+      title={t('detail.membersTab')}
+      description={t('members.hint')}
+    >
       {canManage && (
         <form
-          className="flex flex-wrap items-start gap-2"
+          className="flex flex-wrap items-start gap-2 border-b border-border-divider px-5 py-3"
           onSubmit={async (event) => {
             event.preventDefault();
             setPending(true);
@@ -89,10 +95,11 @@ export function MembersPanel({
             await router.invalidate();
           }}
         >
-          <div className="min-w-64 flex-1 space-y-1">
+          <div className="flex min-w-64 flex-1 flex-col gap-1">
             {choices ? (
               <Choice
                 aria-label={t('members.emailLabel')}
+                size="sm"
                 placeholder={
                   choices.length
                     ? t('members.pickUser')
@@ -108,81 +115,107 @@ export function MembersPanel({
               />
             ) : (
               <Input
+                size="sm"
                 type="email"
                 placeholder={t('members.emailPlaceholder')}
                 aria-label={t('members.emailLabel')}
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
+                invalid={error !== null}
                 required
               />
             )}
-            {error && <p className="text-sm text-destructive">{error}</p>}
+            {error && <p className="text-hint text-danger-fg">{error}</p>}
           </div>
           <Choice
-            aria-label="Role"
+            aria-label={t('members.role')}
+            size="sm"
             className="w-36"
             value={role}
             onChange={setRole}
             options={roles}
           />
-          <Button type="submit" disabled={pending || email === ''}>
+          <Button
+            type="submit"
+            variant="primary"
+            size="sm"
+            loading={pending}
+            disabled={email === ''}
+          >
             {t('members.add')}
           </Button>
         </form>
       )}
-      <DataTable
-        head={
-          <>
-            <ColumnHead>{t('members.email')}</ColumnHead>
-            <ColumnHead>{t('members.role')}</ColumnHead>
-            {canManage && <ColumnHead className="w-12" />}
-          </>
-        }
-        empty={
-          members.length === 0 && <DataTableEmpty title={t('members.empty')} />
-        }
-      >
-        {members.map((member) => (
-          <DataRow key={member.user_id}>
-            <Cell className="font-medium">{member.email}</Cell>
-            <Cell>
-              {canManage ? (
-                <Choice
-                  aria-label={t('members.roleOf', { email: member.email })}
-                  className="h-8 w-36"
-                  value={member.role}
-                  onChange={(next) =>
-                    run(
-                      () => updateMember(teamId, member.user_id, next),
-                      t('members.roleUpdated'),
-                    )
-                  }
-                  options={roles}
-                />
-              ) : (
-                roles.find((r) => r.value === member.role)?.label
-              )}
-            </Cell>
-            {canManage && (
-              <ActionsCell>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label={t('members.remove', { email: member.email })}
-                  onClick={() =>
-                    run(
-                      () => removeMember(teamId, member.user_id),
-                      t('members.removed', { email: member.email }),
-                    )
-                  }
+      {members.length === 0 ? (
+        <SettingsEmpty
+          icon={<TeamsIcon size="2xl" />}
+          title={t('members.empty')}
+        />
+      ) : (
+        members.map((member) => (
+          <SettingsListItem
+            key={member.user_id}
+            leading={<Avatar name={member.email} />}
+            title={
+              <span className="flex min-w-0 items-center gap-2">
+                <span className="truncate">{member.email}</span>
+                <Tag
+                  variant="soft"
+                  tone={member.role === 'admin' ? 'brand' : 'neutral'}
                 >
-                  <Trash2 />
-                </Button>
-              </ActionsCell>
-            )}
-          </DataRow>
-        ))}
-      </DataTable>
-    </div>
+                  {roles.find((r) => r.value === member.role)?.label}
+                </Tag>
+              </span>
+            }
+            actions={
+              canManage && (
+                <Menu
+                  align="end"
+                  trigger={
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      icon={OverflowIcon}
+                      aria-label={t('detail.moreActions')}
+                    />
+                  }
+                  actions={[
+                    {
+                      id: 'role',
+                      label: t('members.role'),
+                      items: roles.map((r) => ({
+                        id: r.value,
+                        label: r.label,
+                        selected: member.role === r.value,
+                        onSelect: () => {
+                          if (r.value !== member.role)
+                            run(
+                              () =>
+                                updateMember(teamId, member.user_id, r.value),
+                              t('members.roleUpdated'),
+                            );
+                        },
+                      })),
+                    },
+                    {
+                      id: 'remove',
+                      label: t('members.remove', { email: member.email }),
+                      icon: DeleteIcon,
+                      tone: 'danger',
+                      separated: true,
+                      onSelect: () =>
+                        run(
+                          () => removeMember(teamId, member.user_id),
+                          t('members.removed', { email: member.email }),
+                        ),
+                    },
+                  ]}
+                />
+              )
+            }
+          />
+        ))
+      )}
+    </SettingSection>
   );
 }

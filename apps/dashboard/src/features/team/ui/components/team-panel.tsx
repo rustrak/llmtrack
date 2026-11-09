@@ -1,12 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Users } from 'lucide-react';
+import { Button, Input, SegmentedControl, SegmentedItem } from '@rustrak/ui';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useTranslations } from 'use-intl';
 import type { ModelRef, Team } from '@/shared/api/schemas';
-import { LimitSections } from '@/shared/ui/components/limit-sections';
-import { ModelPicker } from '@/shared/ui/components/model-picker';
-import { Button } from '@/shared/ui/components/shadcn/button';
 import {
   Form,
   FormControl,
@@ -15,15 +12,11 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/shared/ui/components/shadcn/form';
-import { Input } from '@/shared/ui/components/shadcn/input';
+} from '@/shared/ui/components/form';
+import { LimitSections } from '@/shared/ui/components/limit-sections';
+import { ModelPicker } from '@/shared/ui/components/model-picker';
 import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-} from '@/shared/ui/components/shadcn/tabs';
-import {
-  ModEnterHint,
+  modEnter,
   PanelBody,
   PanelFooter,
   SidePanel,
@@ -31,6 +24,7 @@ import {
 } from '@/shared/ui/components/side-panel';
 import { useServerErrors } from '@/shared/ui/hooks/use-form-errors';
 import { useMoney } from '@/shared/ui/hooks/use-money';
+import { TeamsIcon } from '@/shared/ui/icons';
 import { createTeam, updateTeam } from '../../api/mutations';
 import {
   type TeamFormValues,
@@ -61,7 +55,7 @@ export function TeamPanel({
     <SidePanel
       open={open}
       onOpenChange={(next) => !next && onClose()}
-      icon={Users}
+      icon={TeamsIcon}
       title={
         team
           ? t('dialog.editTitle', { name: team.name })
@@ -132,17 +126,16 @@ function TeamForm({ team, models, onClose, onSaved }: TeamFormProps) {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>{t('form.models')}</FormLabel>
-                <Tabs
+                <SegmentedControl
+                  aria-label={t('form.models')}
                   value={field.value ? 'all' : 'restricted'}
                   onValueChange={(next) => field.onChange(next === 'all')}
                 >
-                  <TabsList className="w-full">
-                    <TabsTrigger value="all">{t('access.all')}</TabsTrigger>
-                    <TabsTrigger value="restricted">
-                      {t('access.restricted')}
-                    </TabsTrigger>
-                  </TabsList>
-                </Tabs>
+                  <SegmentedItem value="all">{t('access.all')}</SegmentedItem>
+                  <SegmentedItem value="restricted">
+                    {t('access.restricted')}
+                  </SegmentedItem>
+                </SegmentedControl>
                 <FormDescription>
                   {field.value
                     ? t('form.allModelsHint')
@@ -168,7 +161,7 @@ function TeamForm({ team, models, onClose, onSaved }: TeamFormProps) {
               )}
             />
           )}
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             <LimitSections budgetHint={t('form.budgetHint')} />
           </div>
         </PanelBody>
@@ -176,9 +169,13 @@ function TeamForm({ team, models, onClose, onSaved }: TeamFormProps) {
           <Button type="button" variant="ghost" onClick={onClose}>
             {tCommon('cancel')}
           </Button>
-          <Button type="submit" disabled={form.formState.isSubmitting}>
+          <Button
+            type="submit"
+            variant="primary"
+            loading={form.formState.isSubmitting}
+            shortcut={modEnter()}
+          >
             {team ? t('dialog.save') : t('dialog.create')}
-            <ModEnterHint />
           </Button>
         </PanelFooter>
       </form>

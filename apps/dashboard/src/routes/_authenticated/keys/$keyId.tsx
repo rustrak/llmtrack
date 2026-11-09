@@ -1,5 +1,5 @@
+import { Tag } from '@rustrak/ui';
 import { createFileRoute, Link, useRouter } from '@tanstack/react-router';
-import { KeyRound } from 'lucide-react';
 import { useTranslations } from 'use-intl';
 import { getKey } from '@/features/key/api/queries';
 import { modelChoices } from '@/features/key/ui/components/create-key-panel';
@@ -34,8 +34,9 @@ import {
   UsageLink,
   useLimitRows,
 } from '@/shared/ui/components/record-overview';
-import { Badge } from '@/shared/ui/components/shadcn/badge';
 import { useMoney } from '@/shared/ui/hooks/use-money';
+import { usePageTrail } from '@/shared/ui/hooks/use-page-trail';
+import { KeysIcon } from '@/shared/ui/icons';
 
 export const Route = createFileRoute('/_authenticated/keys/$keyId')({
   loader: async ({ params }) => {
@@ -79,12 +80,13 @@ function KeyPage() {
   const bucketLabel = useBucketLabel('day');
   const allModels = models.map(({ id, name }) => ({ id, name }));
   const share = budgetShare(apiKey.spend_usd, apiKey.max_budget_usd);
+  usePageTrail([{ label: apiKey.name }]);
 
   return (
     <Page
       title={
         <RecordTitle
-          tile={<KeyRound />}
+          tile={<KeysIcon size="lg" />}
           name={apiKey.name}
           aside={apiKey.key_hint}
         />
@@ -135,7 +137,7 @@ function KeyPage() {
           }
           chart={
             <StackedBars
-              height="h-44"
+              height={176}
               rows={usage.daily.map((d) => ({
                 bucket: d.day,
                 spend: d.cost_usd,
@@ -144,7 +146,7 @@ function KeyPage() {
                 {
                   key: 'spend',
                   label: tUsage('spend'),
-                  color: 'var(--chart-1)',
+                  color: 'var(--color-chart-1)',
                 },
               ]}
               format={(v) => money.usd(v)}
@@ -155,7 +157,7 @@ function KeyPage() {
         <KeyDetails apiKey={apiKey} />
       </div>
       <section className="space-y-3">
-        <h2 className="text-sm font-medium">{t('detail.byModel')}</h2>
+        <h2 className="text-card-title text-fg">{t('detail.byModel')}</h2>
         <UsageRanking
           groups={groupTotals(usage.series, 'spend')}
           metric="spend"
@@ -177,34 +179,38 @@ function KeyFacts({ apiKey }: { apiKey: ApiKey }) {
   return (
     <RecordFacts>
       {apiKey.blocked ? (
-        <Badge variant="destructive">{t('blocked')}</Badge>
+        <Tag tone="error" variant="soft">
+          {t('blocked')}
+        </Tag>
       ) : expired ? (
-        <Badge variant="destructive">{t('expired')}</Badge>
+        <Tag tone="error" variant="soft">
+          {t('expired')}
+        </Tag>
       ) : (
-        <Badge variant="secondary">{t('detail.active')}</Badge>
+        <Tag tone="brand" variant="soft">
+          {t('detail.active')}
+        </Tag>
       )}
       {apiKey.team_id !== null ? (
-        <Badge
-          variant="outline"
-          render={
-            <Link
-              to="/teams/$teamId"
-              params={{ teamId: String(apiKey.team_id) }}
-            />
-          }
+        <Link
+          to="/teams/$teamId"
+          params={{ teamId: String(apiKey.team_id) }}
+          className="inline-flex h-5 items-center rounded-sm bg-surface-chip px-1.5 text-tag text-fg-secondary transition-[background-color,color] duration-fast hover:bg-surface-hover hover:text-fg"
         >
           {apiKey.team_name}
-        </Badge>
+        </Link>
       ) : (
-        <Badge variant="outline">
+        <span className="inline-flex h-5 items-center rounded-sm bg-surface-chip px-1.5 text-tag text-fg-secondary">
           {t('detail.personalOf', { email: apiKey.owner_email ?? '—' })}
-        </Badge>
+        </span>
       )}
       {apiKey.labels.map((label) => (
         <LabelBadge key={label.id} label={label} />
       ))}
       {apiKey.person_name && (
-        <Badge variant="outline">{apiKey.person_name}</Badge>
+        <span className="inline-flex h-5 items-center rounded-sm bg-surface-chip px-1.5 text-tag text-fg-secondary">
+          {apiKey.person_name}
+        </span>
       )}
       <Fact>
         {apiKey.created_by_email

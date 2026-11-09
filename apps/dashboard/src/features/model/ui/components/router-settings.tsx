@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Button, CloseIcon, Input, NewIcon, Tooltip } from '@rustrak/ui';
 import { useRouter } from '@tanstack/react-router';
-import { Plus, X } from 'lucide-react';
 import {
   type Control,
   useController,
@@ -11,20 +11,15 @@ import { toast } from 'sonner';
 import { useTranslations } from 'use-intl';
 import type { RouterSettings } from '@/shared/api/schemas';
 import { Choice } from '@/shared/ui/components/choice';
-import { Caption } from '@/shared/ui/components/page';
-import { Badge } from '@/shared/ui/components/shadcn/badge';
-import { Button } from '@/shared/ui/components/shadcn/button';
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
-  FormLabel,
   FormMessage,
   FormRootError,
-} from '@/shared/ui/components/shadcn/form';
-import { Input } from '@/shared/ui/components/shadcn/input';
+} from '@/shared/ui/components/form';
+import { SettingRow, SettingSection } from '@/shared/ui/components/setting-row';
 import { useServerErrors } from '@/shared/ui/hooks/use-form-errors';
 import { saveRouterSettings } from '../../api/mutations';
 import {
@@ -74,29 +69,34 @@ export function RouterSettingsForm({
       control={form.control}
       name={name}
       render={({ field }) => (
-        <FormItem>
-          <FormLabel>{t(`router.${name}`)}</FormLabel>
-          <FormControl>
-            <Input inputMode="numeric" className="w-32" {...field} />
-          </FormControl>
-          <FormDescription>{t(`router.${name}Hint`)}</FormDescription>
-          <FormMessage />
-        </FormItem>
+        <SettingRow
+          title={t(`router.${name}`)}
+          description={t(`router.${name}Hint`)}
+        >
+          <FormItem>
+            <FormControl>
+              <Input
+                inputMode="numeric"
+                className="font-mono tabular-nums"
+                aria-label={t(`router.${name}`)}
+                {...field}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        </SettingRow>
       )}
     />
   );
 
   return (
     <Form {...form}>
-      <form onSubmit={onSubmit} className="max-w-3xl space-y-8" noValidate>
-        <section className="space-y-4">
-          <Caption>{t('router.reliability')}</Caption>
-          <div className="grid gap-6 sm:grid-cols-3">
-            {number('num_retries')}
-            {number('allowed_fails')}
-            {number('cooldown_time')}
-          </div>
-        </section>
+      <form onSubmit={onSubmit} className="max-w-3xl" noValidate>
+        <SettingSection title={t('router.reliability')}>
+          {number('num_retries')}
+          {number('allowed_fails')}
+          {number('cooldown_time')}
+        </SettingSection>
         {FALLBACK_KINDS.map((kind) => (
           <FallbackEditor
             key={kind}
@@ -105,10 +105,16 @@ export function RouterSettingsForm({
             names={names}
           />
         ))}
-        <FormRootError />
-        <Button type="submit" disabled={form.formState.isSubmitting}>
-          {t('router.save')}
-        </Button>
+        <div className="mt-4 flex items-center justify-end gap-3">
+          <FormRootError />
+          <Button
+            type="submit"
+            variant="primary"
+            loading={form.formState.isSubmitting}
+          >
+            {t('router.save')}
+          </Button>
+        </div>
       </form>
     </Form>
   );
@@ -127,17 +133,14 @@ function FallbackEditor({
   const t = useTranslations('models');
   const { fields, append, remove } = useFieldArray({ control, name: kind });
   return (
-    <section className="space-y-3">
-      <div className="space-y-1">
-        <Caption>{t(`router.${kind}`)}</Caption>
-        <p className="text-sm text-muted-foreground">
-          {t(`router.${kind}Hint`)}
-        </p>
-      </div>
+    <SettingSection
+      title={t(`router.${kind}`)}
+      description={t(`router.${kind}Hint`)}
+    >
       {fields.map((row, index) => (
         <div
           key={row.id}
-          className="flex flex-wrap items-center gap-2 rounded-lg border p-3"
+          className="flex flex-wrap items-center gap-2 border-border-divider border-b px-5 py-3"
         >
           <FallbackRowEditor
             control={control}
@@ -145,28 +148,31 @@ function FallbackEditor({
             index={index}
             names={names}
           />
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            className="ml-auto"
-            aria-label={t('router.removeRule')}
-            onClick={() => remove(index)}
-          >
-            <X />
-          </Button>
+          <Tooltip content={t('router.removeRule')}>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              icon={CloseIcon}
+              className="ml-auto"
+              aria-label={t('router.removeRule')}
+              onClick={() => remove(index)}
+            />
+          </Tooltip>
         </div>
       ))}
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={() => append({ model: '', fallbacks: [] })}
-      >
-        <Plus />
-        {t('router.addRule')}
-      </Button>
-    </section>
+      <div className="px-5 py-2.5">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          icon={NewIcon}
+          onClick={() => append({ model: '', fallbacks: [] })}
+        >
+          {t('router.addRule')}
+        </Button>
+      </div>
+    </SettingSection>
   );
 }
 
@@ -195,6 +201,7 @@ function FallbackRowEditor({
     <>
       <Choice
         aria-label={t('router.whenModel')}
+        size="sm"
         className="w-48"
         value={source.field.value}
         onChange={source.field.onChange}
@@ -204,24 +211,30 @@ function FallbackRowEditor({
           ...names.map((n) => ({ value: n, label: n })),
         ]}
       />
-      <span className="text-sm text-muted-foreground">→</span>
+      <span className="text-fg-ghost">→</span>
       {chosen.map((name, i) => (
-        <Badge key={name} variant="outline" className="gap-1 font-mono">
-          {i + 1}. {name}
+        <span
+          key={name}
+          className="inline-flex h-control-sm items-center gap-1.5 rounded-md border border-border-subtle bg-surface-chip pr-1 pl-2 font-mono text-mono-sm text-fg"
+        >
+          <span className="text-fg-meta">{i + 1}.</span>
+          {name}
           <button
             type="button"
             aria-label={t('router.removeFallback', { name })}
+            className="flex size-5 items-center justify-center rounded-sm text-fg-ghost transition-[background-color,color] duration-fast hover:bg-surface-selected hover:text-fg"
             onClick={() =>
               targets.field.onChange(chosen.filter((n) => n !== name))
             }
           >
-            <X className="size-3" />
+            <CloseIcon size="xs" />
           </button>
-        </Badge>
+        </span>
       ))}
       {remaining.length > 0 && (
         <Choice
           aria-label={t('router.addFallback')}
+          size="sm"
           className="w-44"
           value=""
           onChange={(name) => name && targets.field.onChange([...chosen, name])}

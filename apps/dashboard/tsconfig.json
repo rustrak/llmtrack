@@ -14,7 +14,8 @@
     "jsx": "react-jsx",
     "types": ["vitest/globals", "node", "vite/client"],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@rustrak/ui": ["./node_modules/@rustrak/ui/src/index.ts"]
     }
   },
   "include": ["**/*.ts", "**/*.tsx", "**/*.mts"],

@@ -1,19 +1,22 @@
-import { Download, FileText, Languages, Loader2 } from 'lucide-react';
+import {
+  Button,
+  Checkbox,
+  ExportIcon,
+  Field,
+  FieldHint,
+  FieldLabel,
+  Input,
+  NetworkIcon,
+  SegmentedControl,
+  SegmentedItem,
+  Switch,
+  Textarea,
+} from '@rustrak/ui';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useLocale, useTranslations } from 'use-intl';
 import { readableMessage } from '@/shared/lib/form-errors';
-import { Button } from '@/shared/ui/components/shadcn/button';
-import { Checkbox } from '@/shared/ui/components/shadcn/checkbox';
-import { Input } from '@/shared/ui/components/shadcn/input';
-import { Label } from '@/shared/ui/components/shadcn/label';
-import { Switch } from '@/shared/ui/components/shadcn/switch';
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-} from '@/shared/ui/components/shadcn/tabs';
-import { Textarea } from '@/shared/ui/components/shadcn/textarea';
+import { Caption } from '@/shared/ui/components/page';
 import {
   PanelBody,
   PanelFooter,
@@ -21,6 +24,7 @@ import {
   SidePanel,
 } from '@/shared/ui/components/side-panel';
 import { useMoney } from '@/shared/ui/hooks/use-money';
+import { UsageIcon } from '@/shared/ui/icons';
 import { fetchReport } from '../../api/queries';
 import {
   DEFAULT_SECTIONS,
@@ -128,104 +132,91 @@ export function ReportPanel({
         setOptions(initial());
         setError(null);
       }}
-      icon={FileText}
+      icon={UsageIcon}
       title={t('report.title')}
       description={scopeLabel}
     >
       <PanelBody>
-        <div className="space-y-2">
-          <Label>{t('report.format')}</Label>
-          <Tabs
+        <Field>
+          <FieldLabel>{t('report.format')}</FieldLabel>
+          <SegmentedControl
+            aria-label={t('report.format')}
             value={options.format}
             onValueChange={(next) => set({ format: next as ReportFormat })}
+            className="w-full"
           >
-            <TabsList className="w-full">
-              <TabsTrigger value="pdf">
-                {t('report.formats.pdf.label')}
-              </TabsTrigger>
-              <TabsTrigger value="xlsx">
-                {t('report.formats.xlsx.label')}
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-          <p className="text-xs text-muted-foreground">
-            {t(`report.formats.${options.format}.hint`)}
-          </p>
-        </div>
+            <SegmentedItem value="pdf" className="flex-1">
+              {t('report.formats.pdf.label')}
+            </SegmentedItem>
+            <SegmentedItem value="xlsx" className="flex-1">
+              {t('report.formats.xlsx.label')}
+            </SegmentedItem>
+          </SegmentedControl>
+          <FieldHint>{t(`report.formats.${options.format}.hint`)}</FieldHint>
+        </Field>
 
-        <div className="space-y-2">
-          <Label htmlFor="report-client">{t('report.client')}</Label>
+        <Field>
+          <FieldLabel>{t('report.client')}</FieldLabel>
           <Input
-            id="report-client"
             maxLength={200}
             placeholder={t('report.clientPlaceholder')}
             value={options.client}
             onChange={(e) => set({ client: e.target.value })}
           />
           {teamName && options.client === teamName && (
-            <p className="text-xs text-muted-foreground">
-              {t('report.clientFromTeam')}
-            </p>
+            <FieldHint>{t('report.clientFromTeam')}</FieldHint>
           )}
-        </div>
+        </Field>
 
-        <div className="space-y-2">
-          <Label htmlFor="report-reference">{t('report.reference')}</Label>
+        <Field>
+          <FieldLabel>{t('report.reference')}</FieldLabel>
           <Input
-            id="report-reference"
             maxLength={200}
             placeholder={t('report.referencePlaceholder')}
             value={options.reference}
             onChange={(e) => set({ reference: e.target.value })}
           />
-        </div>
+        </Field>
 
-        <div className="space-y-3">
+        <div className="flex flex-col gap-3">
           <PanelSection
             title={t('report.amounts')}
             summary={amountsSummary}
             forceOpen={markup === null}
           >
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="report-markup">{t('report.markup')}</Label>
-                <div className="relative">
-                  <Input
-                    id="report-markup"
-                    inputMode="decimal"
-                    placeholder="0"
-                    className="pr-8"
-                    aria-invalid={markup === null}
-                    value={options.markup}
-                    onChange={(e) => set({ markup: e.target.value })}
-                  />
-                  <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-muted-foreground">
-                    %
-                  </span>
-                </div>
-                <p
-                  className={
-                    markup === null
-                      ? 'text-xs text-destructive'
-                      : 'text-xs text-muted-foreground'
+            <div className="flex flex-col gap-4">
+              <Field invalid={markup === null}>
+                <FieldLabel>{t('report.markup')}</FieldLabel>
+                <Input
+                  inputMode="decimal"
+                  placeholder="0"
+                  numeric
+                  invalid={markup === null}
+                  value={options.markup}
+                  onChange={(e) => set({ markup: e.target.value })}
+                  action={
+                    <span className="pr-1 text-fg-subtle text-meta">%</span>
                   }
+                />
+                <FieldHint
+                  className={markup === null ? 'text-danger-fg' : undefined}
                 >
                   {markup === null
                     ? t('report.markupInvalid')
                     : t('report.markupHint')}
-                </p>
-              </div>
+                </FieldHint>
+              </Field>
               <div className="flex items-start justify-between gap-4">
-                <div className="space-y-0.5">
-                  <Label htmlFor="report-show-cost">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-fg text-label">
                     {t('report.showCost')}
-                  </Label>
-                  <p className="text-xs text-muted-foreground">
+                  </span>
+                  <span className="text-fg-subtle text-hint">
                     {t('report.showCostHint')}
-                  </p>
+                  </span>
                 </div>
                 <Switch
-                  id="report-show-cost"
+                  aria-label={t('report.showCost')}
                   checked={options.showCost && !!markup}
                   disabled={!markup}
                   onCheckedChange={(next) => set({ showCost: next })}
@@ -242,11 +233,10 @@ export function ReportPanel({
             })}
             forceOpen={options.sections.length === 0}
           >
-            <div className="space-y-4">
+            <div className="flex flex-col gap-4">
               <div className="flex gap-1">
                 <Button
                   type="button"
-                  variant="outline"
                   size="xs"
                   onClick={() => set({ sections: [...offered] })}
                 >
@@ -254,7 +244,6 @@ export function ReportPanel({
                 </Button>
                 <Button
                   type="button"
-                  variant="outline"
                   size="xs"
                   onClick={() => set({ sections: [] })}
                 >
@@ -262,30 +251,32 @@ export function ReportPanel({
                 </Button>
               </div>
               {groups.map((group) => (
-                <div key={group.key} className="space-y-1.5">
-                  <p className="text-xs font-medium text-muted-foreground">
-                    {t(`report.groups.${group.key}`)}
-                  </p>
-                  <div className="divide-y rounded-lg border">
-                    {group.sections.map((section) => (
-                      <label
-                        key={section}
-                        className="flex cursor-pointer items-center gap-3 px-3 py-2 text-sm hover:bg-muted/50"
-                      >
-                        <Checkbox
-                          checked={options.sections.includes(section)}
-                          onCheckedChange={(next) =>
-                            toggle(section, next === true)
-                          }
-                        />
-                        <span>{t(`report.section.${section}.label`)}</span>
-                      </label>
-                    ))}
+                <div key={group.key} className="flex flex-col gap-1.5">
+                  <Caption>{t(`report.groups.${group.key}`)}</Caption>
+                  <div className="divide-y divide-border-divider rounded-lg border border-border-subtle">
+                    {group.sections.map((section) => {
+                      const label = t(`report.section.${section}.label`);
+                      return (
+                        <label
+                          key={section}
+                          className="flex cursor-pointer items-center gap-3 px-3 py-2 text-body text-fg transition-[background-color] duration-fast hover:bg-surface-hover"
+                        >
+                          <Checkbox
+                            aria-label={label}
+                            checked={options.sections.includes(section)}
+                            onCheckedChange={(next) =>
+                              toggle(section, next === true)
+                            }
+                          />
+                          <span>{label}</span>
+                        </label>
+                      );
+                    })}
                   </div>
                 </div>
               ))}
               {narrowed.length > 0 && (
-                <p className="text-xs text-muted-foreground">
+                <p className="text-fg-subtle text-hint">
                   {t('report.narrowed')}
                 </p>
               )}
@@ -304,12 +295,12 @@ export function ReportPanel({
           </PanelSection>
         </div>
 
-        {error && <p className="text-sm text-destructive">{error}</p>}
+        {error && <p className="text-danger-fg text-hint">{error}</p>}
       </PanelBody>
 
       <PanelFooter>
-        <span className="mr-auto flex min-w-0 items-center gap-1.5 truncate text-xs text-muted-foreground">
-          <Languages className="size-3.5 shrink-0" />
+        <span className="mr-auto flex min-w-0 items-center gap-1.5 truncate text-fg-subtle text-meta">
+          <NetworkIcon size="sm" className="shrink-0" />
           {t('report.profile', {
             language: t(
               `report.language.${locale.startsWith('es') ? 'es' : 'en'}`,
@@ -321,10 +312,12 @@ export function ReportPanel({
           {t('report.cancel')}
         </Button>
         <Button
+          variant="primary"
+          icon={ExportIcon}
+          loading={pending}
           onClick={download}
-          disabled={pending || markup === null || options.sections.length === 0}
+          disabled={markup === null || options.sections.length === 0}
         >
-          {pending ? <Loader2 className="animate-spin" /> : <Download />}
           {pending ? t('report.working') : t('report.download')}
         </Button>
       </PanelFooter>

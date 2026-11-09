@@ -28,6 +28,7 @@ import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authen
 import { Route as AuthenticatedSettingsAppearanceRouteImport } from './routes/_authenticated/settings/appearance';
 import { Route as AuthenticatedSettingsGeneralRouteImport } from './routes/_authenticated/settings/general';
 import { Route as AuthenticatedSettingsMcpRouteImport } from './routes/_authenticated/settings/mcp';
+import { Route as AuthenticatedSettingsPreferencesRouteImport } from './routes/_authenticated/settings/preferences';
 import { Route as AuthenticatedSettingsPricingRouteImport } from './routes/_authenticated/settings/pricing';
 import { Route as AuthenticatedSettingsProfileRouteImport } from './routes/_authenticated/settings/profile';
 import { Route as AuthenticatedTeamsIndexRouteImport } from './routes/_authenticated/teams/index';
@@ -131,6 +132,12 @@ const AuthenticatedSettingsMcpRoute =
     path: '/mcp',
     getParentRoute: () => AuthenticatedSettingsRoute,
   } as any);
+const AuthenticatedSettingsPreferencesRoute =
+  AuthenticatedSettingsPreferencesRouteImport.update({
+    id: '/preferences',
+    path: '/preferences',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any);
 const AuthenticatedSettingsPricingRoute =
   AuthenticatedSettingsPricingRouteImport.update({
     id: '/pricing',
@@ -172,6 +179,7 @@ export interface FileRoutesByFullPath {
   '/settings/appearance': typeof AuthenticatedSettingsAppearanceRoute;
   '/settings/general': typeof AuthenticatedSettingsGeneralRoute;
   '/settings/mcp': typeof AuthenticatedSettingsMcpRoute;
+  '/settings/preferences': typeof AuthenticatedSettingsPreferencesRoute;
   '/settings/pricing': typeof AuthenticatedSettingsPricingRoute;
   '/settings/profile': typeof AuthenticatedSettingsProfileRoute;
   '/teams/$teamId': typeof AuthenticatedTeamsTeamIdRoute;
@@ -195,6 +203,7 @@ export interface FileRoutesByTo {
   '/settings/appearance': typeof AuthenticatedSettingsAppearanceRoute;
   '/settings/general': typeof AuthenticatedSettingsGeneralRoute;
   '/settings/mcp': typeof AuthenticatedSettingsMcpRoute;
+  '/settings/preferences': typeof AuthenticatedSettingsPreferencesRoute;
   '/settings/pricing': typeof AuthenticatedSettingsPricingRoute;
   '/settings/profile': typeof AuthenticatedSettingsProfileRoute;
   '/teams/$teamId': typeof AuthenticatedTeamsTeamIdRoute;
@@ -221,6 +230,7 @@ export interface FileRoutesById {
   '/_authenticated/settings/appearance': typeof AuthenticatedSettingsAppearanceRoute;
   '/_authenticated/settings/general': typeof AuthenticatedSettingsGeneralRoute;
   '/_authenticated/settings/mcp': typeof AuthenticatedSettingsMcpRoute;
+  '/_authenticated/settings/preferences': typeof AuthenticatedSettingsPreferencesRoute;
   '/_authenticated/settings/pricing': typeof AuthenticatedSettingsPricingRoute;
   '/_authenticated/settings/profile': typeof AuthenticatedSettingsProfileRoute;
   '/_authenticated/teams/$teamId': typeof AuthenticatedTeamsTeamIdRoute;
@@ -247,6 +257,7 @@ export interface FileRouteTypes {
     | '/settings/appearance'
     | '/settings/general'
     | '/settings/mcp'
+    | '/settings/preferences'
     | '/settings/pricing'
     | '/settings/profile'
     | '/teams/$teamId'
@@ -270,6 +281,7 @@ export interface FileRouteTypes {
     | '/settings/appearance'
     | '/settings/general'
     | '/settings/mcp'
+    | '/settings/preferences'
     | '/settings/pricing'
     | '/settings/profile'
     | '/teams/$teamId'
@@ -295,6 +307,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings/appearance'
     | '/_authenticated/settings/general'
     | '/_authenticated/settings/mcp'
+    | '/_authenticated/settings/preferences'
     | '/_authenticated/settings/pricing'
     | '/_authenticated/settings/profile'
     | '/_authenticated/teams/$teamId'
@@ -446,6 +459,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsMcpRouteImport;
       parentRoute: typeof AuthenticatedSettingsRoute;
     };
+    '/_authenticated/settings/preferences': {
+      id: '/_authenticated/settings/preferences';
+      path: '/preferences';
+      fullPath: '/settings/preferences';
+      preLoaderRoute: typeof AuthenticatedSettingsPreferencesRouteImport;
+      parentRoute: typeof AuthenticatedSettingsRoute;
+    };
     '/_authenticated/settings/pricing': {
       id: '/_authenticated/settings/pricing';
       path: '/pricing';
@@ -481,6 +501,7 @@ interface AuthenticatedSettingsRouteChildren {
   AuthenticatedSettingsAppearanceRoute: typeof AuthenticatedSettingsAppearanceRoute;
   AuthenticatedSettingsGeneralRoute: typeof AuthenticatedSettingsGeneralRoute;
   AuthenticatedSettingsMcpRoute: typeof AuthenticatedSettingsMcpRoute;
+  AuthenticatedSettingsPreferencesRoute: typeof AuthenticatedSettingsPreferencesRoute;
   AuthenticatedSettingsPricingRoute: typeof AuthenticatedSettingsPricingRoute;
   AuthenticatedSettingsProfileRoute: typeof AuthenticatedSettingsProfileRoute;
   AuthenticatedSettingsIndexRoute: typeof AuthenticatedSettingsIndexRoute;
@@ -490,6 +511,7 @@ const AuthenticatedSettingsRouteChildren: AuthenticatedSettingsRouteChildren = {
   AuthenticatedSettingsAppearanceRoute: AuthenticatedSettingsAppearanceRoute,
   AuthenticatedSettingsGeneralRoute: AuthenticatedSettingsGeneralRoute,
   AuthenticatedSettingsMcpRoute: AuthenticatedSettingsMcpRoute,
+  AuthenticatedSettingsPreferencesRoute: AuthenticatedSettingsPreferencesRoute,
   AuthenticatedSettingsPricingRoute: AuthenticatedSettingsPricingRoute,
   AuthenticatedSettingsProfileRoute: AuthenticatedSettingsProfileRoute,
   AuthenticatedSettingsIndexRoute: AuthenticatedSettingsIndexRoute,

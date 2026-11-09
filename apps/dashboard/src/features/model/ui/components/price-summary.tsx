@@ -31,7 +31,7 @@ export function PriceSummary({ pricing }: { pricing: Pricing }) {
     );
   }
   return (
-    <span className="text-xs text-muted-foreground tabular-nums">
+    <span className="font-mono text-mono-sm text-fg-subtle tabular-nums">
       {parts.join(' · ')}
     </span>
   );

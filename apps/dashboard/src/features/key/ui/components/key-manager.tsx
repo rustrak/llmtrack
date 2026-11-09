@@ -1,10 +1,9 @@
+import { Button, NewIcon } from '@rustrak/ui';
 import { useRouter } from '@tanstack/react-router';
-import { Plus } from 'lucide-react';
 import type React from 'react';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useTranslations } from 'use-intl';
 import type { ApiKey, LabelRef, ModelRef } from '@/shared/api/schemas';
-import { Button } from '@/shared/ui/components/shadcn/button';
 import { CreateKeyPanel, type KeyTeam, modelChoices } from './create-key-panel';
 import { KeyActions } from './key-actions';
 import { KeysTable } from './keys-table';
@@ -32,27 +31,32 @@ export function KeyManager({
   publicUrl: string | null;
 } & Pick<
   React.ComponentProps<typeof KeysTable>,
-  'sort' | 'onSort' | 'toolbar' | 'footer' | 'empty'
+  'total' | 'params' | 'onParams' | 'empty'
 >) {
   const router = useRouter();
+  // Stable, so the table's columns are not rebuilt on every render.
+  const actions = useCallback(
+    (key: ApiKey) => (
+      <KeyActions
+        apiKey={key}
+        choices={modelChoices(
+          teams.find((x) => x.id === key.team_id),
+          allModels,
+        )}
+        people={teams.find((x) => x.id === key.team_id)?.people}
+        labels={labels}
+        publicUrl={publicUrl}
+        onChanged={() => router.invalidate()}
+      />
+    ),
+    [teams, allModels, labels, publicUrl, router],
+  );
   return (
     <KeysTable
       {...table}
       keys={keys}
       showTeam={teamId === undefined}
-      actions={(key) => (
-        <KeyActions
-          apiKey={key}
-          choices={modelChoices(
-            teams.find((x) => x.id === key.team_id),
-            allModels,
-          )}
-          people={teams.find((x) => x.id === key.team_id)?.people}
-          labels={labels}
-          publicUrl={publicUrl}
-          onChanged={() => router.invalidate()}
-        />
-      )}
+      actions={actions}
     />
   );
 }
@@ -75,8 +79,11 @@ export function CreateKeyButton({
   const [creating, setCreating] = useState(false);
   return (
     <>
-      <Button onClick={() => setCreating(true)}>
-        <Plus />
+      <Button
+        variant="primary"
+        icon={NewIcon}
+        onClick={() => setCreating(true)}
+      >
         {t('create.button')}
       </Button>
       <CreateKeyPanel

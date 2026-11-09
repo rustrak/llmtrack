@@ -1,10 +1,10 @@
+import { Button, NewIcon, Tab, TabList, Tabs } from '@rustrak/ui';
 import {
   createFileRoute,
   useNavigate,
   useRouter,
 } from '@tanstack/react-router';
-import { AlertTriangle, MoreHorizontal, Plus } from 'lucide-react';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 import { useTranslations } from 'use-intl';
 import { deleteModel, updateModel } from '@/features/model/api/mutations';
@@ -15,6 +15,7 @@ import {
   type ModelListParams,
 } from '@/features/model/api/queries';
 import { ModelPanel } from '@/features/model/ui/components/model-panel';
+import { ModelsTable } from '@/features/model/ui/components/models-table';
 import { RouterSettingsForm } from '@/features/model/ui/components/router-settings';
 import { useConnectionTest } from '@/features/model/ui/components/use-connection-test';
 import { unwrap } from '@/shared/api/http';
@@ -23,40 +24,11 @@ import { translator } from '@/shared/i18n/intl';
 import { readableMessage } from '@/shared/lib/form-errors';
 import { MAX_PAGE_SIZE, parseListParams } from '@/shared/lib/list-params';
 import { ConfirmDialog } from '@/shared/ui/components/confirm-dialog';
-import {
-  ActionsCell,
-  Cell,
-  ColumnHead,
-  DataRow,
-  DataTable,
-  DataTableEmpty,
-  FilterPill,
-  ListFooter,
-  SearchField,
-  SortHead,
-} from '@/shared/ui/components/data-table';
+import { FilterPill, ListQueryBar } from '@/shared/ui/components/list-filters';
 import { Page } from '@/shared/ui/components/page';
-import { Badge } from '@/shared/ui/components/shadcn/badge';
-import { Button } from '@/shared/ui/components/shadcn/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/shared/ui/components/shadcn/dropdown-menu';
-import { Switch } from '@/shared/ui/components/shadcn/switch';
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/shared/ui/components/shadcn/tabs';
 import { useCurrentUser } from '@/shared/ui/hooks/use-current-user';
-import { useMoney } from '@/shared/ui/hooks/use-money';
 
 const STATUSES = ['active', 'inactive'] as const;
-/** What `GET /api/models` sorts by when not told. */
-const DEFAULT_SORT = 'name';
 
 export const Route = createFileRoute('/_authenticated/models')({
   validateSearch: (search: Record<string, unknown>): ModelListParams => {
@@ -93,37 +65,6 @@ export const Route = createFileRoute('/_authenticated/models')({
   component: ModelsPage,
 });
 
-/** Where a model's price comes from, with the price-list entry it uses. */
-function PricingSource({ model }: { model: Model }) {
-  const tPricing = useTranslations('pricing');
-  switch (model.pricing_source) {
-    case 'none':
-      return (
-        <Badge variant="destructive" title={tPricing('source.noneHint')}>
-          <AlertTriangle />
-          {tPricing('source.none')}
-        </Badge>
-      );
-    case 'free':
-      return (
-        <Badge variant="secondary" title={tPricing('source.freeHint')}>
-          {tPricing('source.free')}
-        </Badge>
-      );
-    case 'custom':
-      return <Badge variant="secondary">{tPricing('source.custom')}</Badge>;
-    default:
-      return (
-        <div className="space-y-1">
-          <Badge variant="outline">{tPricing('source.catalog')}</Badge>
-          <p className="max-w-40 truncate font-mono text-xs text-muted-foreground">
-            {model.catalog_key}
-          </p>
-        </div>
-      );
-  }
-}
-
 function ModelsPage() {
   const t = useTranslations('models');
   const tTable = useTranslations('table');
@@ -133,45 +74,47 @@ function ModelsPage() {
   const set = (patch: ModelListParams) =>
     navigate({ search: (prev) => ({ ...prev, page: undefined, ...patch }) });
   const filtered = Boolean(search.q || search.provider || search.status);
-  const sortable = (field: string, label: string) => (
-    <SortHead
-      field={field}
-      sort={search.sort}
-      fallback={DEFAULT_SORT}
-      onSort={(sort) => set({ sort })}
-    >
-      {label}
-    </SortHead>
-  );
   const isAdmin = useCurrentUser().role === 'admin';
   const router = useRouter();
-  const money = useMoney();
   // Which model the panel shows stays set while it slides out.
   const [editing, setEditingModel] = useState<Model | undefined>();
   const [panelOpen, setPanelOpen] = useState(false);
-  const setEditing = (model: Model | 'new') => {
+  // Stable, like everything handed to the table: a new function each render
+  // rebuilds its columns, and their row menus with them.
+  const setEditing = useCallback((model: Model | 'new') => {
     setEditingModel(model === 'new' ? undefined : model);
     setPanelOpen(true);
-  };
+  }, []);
   const [deleting, setDeleting] = useState<Model | null>(null);
-  const label = (id: string) => providers.find((p) => p.id === id)?.label ?? id;
+  const [tab, setTab] = useState<'models' | 'router'>('models');
+  const label = useCallback(
+    (id: string) => providers.find((p) => p.id === id)?.label ?? id,
+    [providers],
+  );
+  const providerOptions = providers.map((p) => ({
+    value: p.id,
+    label: p.label,
+  }));
   const testConnection = useConnectionTest();
-  const test = (model: Model) =>
-    testConnection(model.name, {
-      model_id: model.id,
-      provider: model.provider,
-      upstream_model: model.upstream_model,
-      api_base: model.api_base,
-      api_version: model.api_version,
-    });
-  const price = (value: number | undefined) =>
-    value === undefined ? '—' : money.usd(value);
-
-  const toggle = async (model: Model, is_active: boolean) => {
-    const result = await updateModel(model.id, { is_active });
-    if (!result.success) toast.error(readableMessage(result.error));
-    await router.invalidate();
-  };
+  const test = useCallback(
+    (model: Model) =>
+      testConnection(model.name, {
+        model_id: model.id,
+        provider: model.provider,
+        upstream_model: model.upstream_model,
+        api_base: model.api_base,
+        api_version: model.api_version,
+      }),
+    [testConnection],
+  );
+  const toggle = useCallback(
+    async (model: Model, is_active: boolean) => {
+      const result = await updateModel(model.id, { is_active });
+      if (!result.success) toast.error(readableMessage(result.error));
+      await router.invalidate();
+    },
+    [router],
+  );
 
   return (
     <Page
@@ -180,207 +123,119 @@ function ModelsPage() {
       description={t('subtitle')}
       actions={
         isAdmin && (
-          <Button onClick={() => setEditing('new')}>
-            <Plus />
+          <Button
+            variant="primary"
+            icon={NewIcon}
+            onClick={() => setEditing('new')}
+          >
             {t('add')}
           </Button>
         )
       }
+      tabs={
+        routerSettings && (
+          <Tabs
+            value={tab}
+            onValueChange={(next) => setTab(next as 'models' | 'router')}
+          >
+            <TabList>
+              <Tab value="models">{t('tabs.models')}</Tab>
+              <Tab value="router">{t('tabs.router')}</Tab>
+            </TabList>
+          </Tabs>
+        )
+      }
     >
-      <Tabs defaultValue="models" className="min-h-0 flex-1">
-        {routerSettings && (
-          <TabsList>
-            <TabsTrigger value="models">{t('tabs.models')}</TabsTrigger>
-            <TabsTrigger value="router">{t('tabs.router')}</TabsTrigger>
-          </TabsList>
-        )}
-        <TabsContent value="models" className="flex min-h-0 flex-col pt-2">
-          <DataTable
-            toolbar={
-              <>
-                <SearchField
-                  value={search.q}
-                  onChange={(q) => set({ q })}
-                  placeholder={t('search')}
-                />
-                <FilterPill
-                  label={t('filters.provider')}
-                  value={search.provider}
-                  onChange={(provider) => set({ provider })}
-                  options={providers.map((p) => ({
-                    value: p.id,
-                    label: p.label,
-                  }))}
-                />
-                <FilterPill
-                  label={t('filters.status')}
-                  value={search.status}
-                  onChange={(v) =>
-                    set({ status: STATUSES.find((s) => s === v) })
-                  }
-                  options={STATUSES.map((value) => ({
+      {tab === 'models' || !routerSettings ? (
+        <div className="flex min-h-0 flex-1 flex-col gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <ListQueryBar
+              className="min-w-0 flex-1 sm:max-w-md max-sm:basis-full"
+              placeholder={t('search')}
+              search={search}
+              onChange={(patch) => set(patch as ModelListParams)}
+              fields={[
+                {
+                  key: 'provider',
+                  label: t('filters.provider'),
+                  variant: 'options',
+                  multiple: false,
+                  options: providerOptions,
+                },
+                {
+                  key: 'status',
+                  label: t('filters.status'),
+                  variant: 'options',
+                  multiple: false,
+                  options: STATUSES.map((value) => ({
                     value,
                     label: t(`statusFilter.${value}`),
-                  }))}
-                />
-                {filtered && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() =>
-                      set({
-                        q: undefined,
-                        provider: undefined,
-                        status: undefined,
-                      })
-                    }
-                  >
-                    {tTable('clearFilters')}
-                  </Button>
-                )}
-                <p className="ml-auto text-xs text-muted-foreground">
-                  {t('pricesPerMillion')}
-                </p>
-              </>
-            }
-            head={
-              <>
-                {sortable('name', t('table.name'))}
-                {sortable('provider', t('table.provider'))}
-                {sortable('upstream_model', t('table.upstream'))}
-                <ColumnHead>{t('table.pricing')}</ColumnHead>
-                <ColumnHead className="text-right">
-                  {t('table.input')}
-                </ColumnHead>
-                <ColumnHead className="text-right">
-                  {t('table.output')}
-                </ColumnHead>
-                <ColumnHead className="text-right">
-                  {t('table.cacheRead')}
-                </ColumnHead>
-                <ColumnHead>{t('table.key')}</ColumnHead>
-                <ColumnHead>{t('table.active')}</ColumnHead>
-                {isAdmin && <ColumnHead className="w-12" />}
-              </>
-            }
-            empty={
-              models.data.length === 0 &&
-              (filtered ? (
-                <DataTableEmpty
-                  title={tTable('noResults')}
-                  description={tTable('noResultsHint')}
-                />
-              ) : (
-                <DataTableEmpty
-                  title={t('empty.title')}
-                  description={t('empty.description')}
-                />
-              ))
-            }
-            footer={
-              <ListFooter
-                list={models}
-                onChange={(patch) =>
-                  navigate({ search: (prev) => ({ ...prev, ...patch }) })
+                    tone: value === 'active' ? 'brand' : 'error',
+                  })),
+                },
+              ]}
+            />
+            <FilterPill
+              label={t('filters.provider')}
+              value={search.provider}
+              onChange={(provider) => set({ provider })}
+              options={providerOptions}
+            />
+            <FilterPill
+              label={t('filters.status')}
+              value={search.status}
+              onChange={(v) => set({ status: STATUSES.find((s) => s === v) })}
+              options={STATUSES.map((value) => ({
+                value,
+                label: t(`statusFilter.${value}`),
+              }))}
+            />
+            {filtered && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() =>
+                  set({ q: undefined, provider: undefined, status: undefined })
                 }
-              />
-            }
-          >
-            {models.data.map((model) => (
-              <DataRow
-                key={model.id}
-                className={model.is_active ? undefined : 'opacity-60'}
-                onOpen={isAdmin ? () => setEditing(model) : undefined}
               >
-                <Cell className="font-mono font-medium">
-                  {model.name}
-                  {model.deployments > 1 && (
-                    <p className="font-sans text-xs font-normal text-muted-foreground">
-                      {model.weight === null
-                        ? t('deployment')
-                        : t('deploymentWeight', { weight: model.weight })}
-                    </p>
-                  )}
-                </Cell>
-                <Cell>
-                  <Badge variant="secondary">{label(model.provider)}</Badge>
-                </Cell>
-                <Cell>
-                  <p className="font-mono text-xs">{model.upstream_model}</p>
-                  <p className="max-w-56 truncate font-mono text-xs text-muted-foreground">
-                    {model.effective_api_base}
-                  </p>
-                </Cell>
-                <Cell>
-                  <PricingSource model={model} />
-                </Cell>
-                <Cell className="text-right tabular-nums">
-                  {price(model.pricing?.input)}
-                </Cell>
-                <Cell className="text-right tabular-nums">
-                  {price(model.pricing?.output)}
-                </Cell>
-                <Cell className="text-right tabular-nums text-muted-foreground">
-                  {price(model.pricing?.cache_read)}
-                </Cell>
-                <Cell>
-                  {model.has_api_key ? (
-                    <Badge variant="outline">{t('keyStored')}</Badge>
-                  ) : (
-                    <span className="text-sm text-muted-foreground">
-                      {t('keyNone')}
-                    </span>
-                  )}
-                </Cell>
-                <Cell>
-                  <Switch
-                    checked={model.is_active}
-                    disabled={!isAdmin}
-                    onCheckedChange={(next) => toggle(model, next)}
-                    aria-label={t('activeLabel', { name: model.name })}
-                  />
-                </Cell>
-                {isAdmin && (
-                  <ActionsCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger
-                        render={
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            aria-label={t('actionsFor', { name: model.name })}
-                          />
-                        }
-                      >
-                        <MoreHorizontal />
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => setEditing(model)}>
-                          {t('edit')}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => test(model)}>
-                          {t('test.button')}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="text-destructive"
-                          onClick={() => setDeleting(model)}
-                        >
-                          {t('delete')}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </ActionsCell>
-                )}
-              </DataRow>
-            ))}
-          </DataTable>
-        </TabsContent>
-        {routerSettings && (
-          <TabsContent value="router" className="min-h-0 overflow-y-auto pt-2">
-            <RouterSettingsForm settings={routerSettings} names={names} />
-          </TabsContent>
-        )}
-      </Tabs>
+                {tTable('clearFilters')}
+              </Button>
+            )}
+            <p className="ml-auto text-meta text-fg-subtle">
+              {t('pricesPerMillion')}
+            </p>
+          </div>
+          <ModelsTable
+            models={models.data}
+            total={models.total}
+            params={search}
+            onParams={(patch) =>
+              navigate({ search: (prev) => ({ ...prev, ...patch }) })
+            }
+            providerLabel={label}
+            isAdmin={isAdmin}
+            onToggle={toggle}
+            onEdit={setEditing}
+            onTest={test}
+            onDelete={setDeleting}
+            empty={
+              filtered
+                ? {
+                    title: tTable('noResults'),
+                    description: tTable('noResultsHint'),
+                  }
+                : {
+                    title: t('empty.title'),
+                    description: t('empty.description'),
+                  }
+            }
+          />
+        </div>
+      ) : (
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <RouterSettingsForm settings={routerSettings} names={names} />
+        </div>
+      )}
       <ModelPanel
         open={panelOpen}
         model={editing}

@@ -3,46 +3,21 @@ import { cn } from '@/shared/lib/utils';
 
 /** Each palette colour, spelled out so Tailwind keeps the classes. */
 const TONES: Record<LabelColor, { badge: string; dot: string }> = {
-  gray: {
-    badge: 'border-zinc-500/30 bg-zinc-500/10 text-zinc-700 dark:text-zinc-300',
-    dot: 'bg-zinc-500',
-  },
-  red: {
-    badge: 'border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300',
-    dot: 'bg-red-500',
-  },
+  gray: { badge: 'bg-label-gray/12 text-label-gray', dot: 'bg-label-gray' },
+  red: { badge: 'bg-label-red/12 text-label-red', dot: 'bg-label-red' },
   orange: {
-    badge:
-      'border-orange-500/30 bg-orange-500/10 text-orange-700 dark:text-orange-300',
-    dot: 'bg-orange-500',
+    badge: 'bg-label-orange/12 text-label-orange',
+    dot: 'bg-label-orange',
   },
-  amber: {
-    badge:
-      'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300',
-    dot: 'bg-amber-500',
-  },
-  green: {
-    badge:
-      'border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-300',
-    dot: 'bg-green-500',
-  },
-  teal: {
-    badge: 'border-teal-500/30 bg-teal-500/10 text-teal-700 dark:text-teal-300',
-    dot: 'bg-teal-500',
-  },
-  blue: {
-    badge: 'border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-300',
-    dot: 'bg-blue-500',
-  },
+  amber: { badge: 'bg-label-amber/12 text-label-amber', dot: 'bg-label-amber' },
+  green: { badge: 'bg-label-green/12 text-label-green', dot: 'bg-label-green' },
+  teal: { badge: 'bg-label-teal/12 text-label-teal', dot: 'bg-label-teal' },
+  blue: { badge: 'bg-label-blue/12 text-label-blue', dot: 'bg-label-blue' },
   violet: {
-    badge:
-      'border-violet-500/30 bg-violet-500/10 text-violet-700 dark:text-violet-300',
-    dot: 'bg-violet-500',
+    badge: 'bg-label-violet/12 text-label-violet',
+    dot: 'bg-label-violet',
   },
-  pink: {
-    badge: 'border-pink-500/30 bg-pink-500/10 text-pink-700 dark:text-pink-300',
-    dot: 'bg-pink-500',
-  },
+  pink: { badge: 'bg-label-pink/12 text-label-pink', dot: 'bg-label-pink' },
 };
 
 /** The swatch of a colour, for pickers. */
@@ -57,7 +32,7 @@ export function LabelDot({
     <span
       aria-hidden
       className={cn(
-        'size-2.5 shrink-0 rounded-full',
+        'size-2.5 shrink-0 rounded-pill',
         TONES[color].dot,
         className,
       )}
@@ -65,6 +40,7 @@ export function LabelDot({
   );
 }
 
+/** A label as a soft tag: the dot, the name, tinted with the label's hue. */
 export function LabelBadge({
   label,
 }: {
@@ -73,7 +49,7 @@ export function LabelBadge({
   return (
     <span
       className={cn(
-        'inline-flex h-5 max-w-48 items-center gap-1.5 rounded-md border px-1.5 text-xs font-medium',
+        'inline-flex h-5 max-w-48 items-center gap-1.5 rounded-sm px-1.5 text-tag',
         TONES[label.color].badge,
       )}
     >

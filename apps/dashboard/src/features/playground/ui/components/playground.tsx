@@ -1,14 +1,21 @@
-import { Eraser, Send, Square } from 'lucide-react';
+import {
+  ArrowRightIcon,
+  Button,
+  cn,
+  DeleteIcon,
+  Field,
+  FieldHint,
+  FieldLabel,
+  Input,
+  MuteIcon,
+  Text,
+  Textarea,
+} from '@rustrak/ui';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'use-intl';
 import type { ApiKey } from '@/shared/api/schemas';
 import { readableMessage } from '@/shared/lib/form-errors';
-import { cn } from '@/shared/lib/utils';
 import { Choice } from '@/shared/ui/components/choice';
-import { Button } from '@/shared/ui/components/shadcn/button';
-import { Input } from '@/shared/ui/components/shadcn/input';
-import { Label } from '@/shared/ui/components/shadcn/label';
-import { Textarea } from '@/shared/ui/components/shadcn/textarea';
 import { useMoney } from '@/shared/ui/hooks/use-money';
 import {
   type ChatReply,
@@ -101,14 +108,18 @@ export function Playground({ keys }: { keys: ApiKey[] }) {
   };
 
   if (keys.length === 0) {
-    return <p className="text-sm text-muted-foreground">{t('noKeys')}</p>;
+    return (
+      <Text render={<p />} tone="subtle">
+        {t('noKeys')}
+      </Text>
+    );
   }
 
   return (
     <div className="grid min-h-0 flex-1 gap-6 lg:grid-cols-[18rem_1fr]">
-      <aside className="space-y-4">
-        <div className="space-y-1.5">
-          <Label>{t('key')}</Label>
+      <aside className="flex flex-col gap-4">
+        <Field>
+          <FieldLabel>{t('key')}</FieldLabel>
           <Choice
             aria-label={t('key')}
             value={keyId}
@@ -118,10 +129,10 @@ export function Playground({ keys }: { keys: ApiKey[] }) {
               label: `${k.name} · ${k.team_name ?? t('personal')}`,
             }))}
           />
-          <p className="text-xs text-muted-foreground">{t('keyHint')}</p>
-        </div>
-        <div className="space-y-1.5">
-          <Label>{t('model')}</Label>
+          <FieldHint>{t('keyHint')}</FieldHint>
+        </Field>
+        <Field>
+          <FieldLabel>{t('model')}</FieldLabel>
           <Choice
             aria-label={t('model')}
             value={model}
@@ -130,59 +141,59 @@ export function Playground({ keys }: { keys: ApiKey[] }) {
             disabled={models.length === 0}
             options={models.map((name) => ({ value: name, label: name }))}
           />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="pg-system">{t('system')}</Label>
+        </Field>
+        <Field>
+          <FieldLabel>{t('system')}</FieldLabel>
           <Textarea
-            id="pg-system"
+            rows={4}
             className="max-h-48"
             placeholder={t('systemPlaceholder')}
             value={system}
             onChange={(event) => setSystem(event.target.value)}
           />
-        </div>
+        </Field>
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <Label htmlFor="pg-temperature">{t('temperature')}</Label>
+          <Field>
+            <FieldLabel>{t('temperature')}</FieldLabel>
             <Input
-              id="pg-temperature"
+              className="font-mono"
               inputMode="decimal"
               placeholder="1"
               value={temperature}
               onChange={(event) => setTemperature(event.target.value)}
             />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="pg-max-tokens">{t('maxTokens')}</Label>
+          </Field>
+          <Field>
+            <FieldLabel>{t('maxTokens')}</FieldLabel>
             <Input
-              id="pg-max-tokens"
+              className="font-mono"
               inputMode="numeric"
               placeholder={t('default')}
               value={maxTokens}
               onChange={(event) => setMaxTokens(event.target.value)}
             />
-          </div>
+          </Field>
         </div>
       </aside>
 
-      <section className="flex min-h-[28rem] flex-col rounded-xl border bg-card">
-        <div className="flex items-center justify-between border-b px-4 py-2">
-          <span className="text-sm text-muted-foreground">
+      <section className="flex min-h-[28rem] flex-col overflow-hidden rounded-2xl border border-border-subtle bg-surface">
+        <div className="flex h-row-head items-center justify-between border-border-divider border-b px-4">
+          <span className="truncate font-mono text-mono-sm text-fg-secondary">
             {model || t('noModels')}
           </span>
           <Button
             variant="ghost"
             size="sm"
+            icon={DeleteIcon}
             disabled={messages.length === 0 || running !== null}
             onClick={() => setMessages([])}
           >
-            <Eraser />
             {t('clear')}
           </Button>
         </div>
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
           {messages.length === 0 && (
-            <p className="py-12 text-center text-sm text-muted-foreground">
+            <p className="py-12 text-center text-body text-fg-subtle">
               {t('empty')}
             </p>
           )}
@@ -196,7 +207,7 @@ export function Playground({ keys }: { keys: ApiKey[] }) {
           <div ref={bottom} />
         </div>
         <form
-          className="flex items-end gap-2 border-t p-3"
+          className="flex items-end gap-2 border-border-divider border-t p-3"
           onSubmit={(event) => {
             event.preventDefault();
             send();
@@ -204,7 +215,9 @@ export function Playground({ keys }: { keys: ApiKey[] }) {
         >
           <Textarea
             aria-label={t('message')}
-            className="max-h-48 min-h-10"
+            rows={1}
+            boxClassName="flex-1"
+            className="max-h-48"
             placeholder={t('messagePlaceholder')}
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
@@ -218,15 +231,18 @@ export function Playground({ keys }: { keys: ApiKey[] }) {
           {running ? (
             <Button
               type="button"
-              variant="outline"
+              icon={MuteIcon}
               onClick={() => running.abort()}
             >
-              <Square />
               {t('stop')}
             </Button>
           ) : (
-            <Button type="submit" disabled={!draft.trim() || !model}>
-              <Send />
+            <Button
+              type="submit"
+              variant="primary"
+              icon={ArrowRightIcon}
+              disabled={!draft.trim() || !model}
+            >
               {t('send')}
             </Button>
           )}
@@ -259,17 +275,19 @@ function MessageBubble({
     <div className={cn('flex flex-col gap-1', mine && 'items-end')}>
       <div
         className={cn(
-          'max-w-[85%] whitespace-pre-wrap rounded-lg px-3 py-2 text-sm',
-          mine ? 'bg-primary text-primary-foreground' : 'bg-muted',
+          'max-w-[85%] whitespace-pre-wrap rounded-lg px-3 py-2 text-body',
+          mine
+            ? 'bg-surface-brand text-fg-on-brand'
+            : 'bg-surface-chip text-fg',
         )}
       >
         {message.content || (pending ? '…' : '')}
       </div>
       {message.error && (
-        <p className="text-xs text-destructive">{message.error}</p>
+        <p className="text-hint text-danger-fg">{message.error}</p>
       )}
       {reply && (
-        <p className="text-xs text-muted-foreground tabular-nums">
+        <p className="font-mono text-mono-sm text-fg-meta tabular-nums">
           {[
             reply.ttftMs !== null && t('ttft', { value: ms(reply.ttftMs) }),
             t('total', { value: ms(reply.totalMs) }),

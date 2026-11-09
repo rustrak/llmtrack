@@ -1,19 +1,18 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import {
+  Button,
+  Dialog,
+  DialogBody,
+  DialogClose,
+  DialogFooter,
+  DialogHeader,
+  Input,
+} from '@rustrak/ui';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useTranslations } from 'use-intl';
 import { z } from 'zod';
 import { Choice } from '@/shared/ui/components/choice';
-import { PasswordInput } from '@/shared/ui/components/password-input';
-import { Button } from '@/shared/ui/components/shadcn/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/shared/ui/components/shadcn/dialog';
 import {
   Form,
   FormControl,
@@ -22,8 +21,8 @@ import {
   FormLabel,
   FormMessage,
   FormRootError,
-} from '@/shared/ui/components/shadcn/form';
-import { Input } from '@/shared/ui/components/shadcn/input';
+} from '@/shared/ui/components/form';
+import { PasswordInput } from '@/shared/ui/components/password-input';
 import { useServerErrors } from '@/shared/ui/hooks/use-form-errors';
 import { createUser } from '../../api/mutations';
 
@@ -35,6 +34,7 @@ export function CreateUserDialog({
   onSaved: () => void;
 }) {
   const t = useTranslations('users');
+  const tCommon = useTranslations('common');
   const schema = z.object({
     email: z.email(t('form.emailInvalid')),
     password: z.string().min(8, t('form.passwordShort')),
@@ -59,14 +59,14 @@ export function CreateUserDialog({
   });
 
   return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{t('create.title')}</DialogTitle>
-          <DialogDescription>{t('create.description')}</DialogDescription>
-        </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={onSubmit} className="space-y-4" noValidate>
+    <Dialog open onOpenChange={(open) => !open && onClose()} size="md">
+      <DialogHeader
+        title={t('create.title')}
+        description={t('create.description')}
+      />
+      <Form {...form}>
+        <form onSubmit={onSubmit} className="flex min-h-0 flex-col" noValidate>
+          <DialogBody className="flex flex-col gap-4">
             <FormField
               control={form.control}
               name="email"
@@ -112,14 +112,21 @@ export function CreateUserDialog({
               )}
             />
             <FormRootError />
-            <DialogFooter>
-              <Button type="submit" disabled={form.formState.isSubmitting}>
-                {t('create.submit')}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
+          </DialogBody>
+          <DialogFooter>
+            <DialogClose
+              render={<Button variant="secondary">{tCommon('cancel')}</Button>}
+            />
+            <Button
+              type="submit"
+              variant="primary"
+              loading={form.formState.isSubmitting}
+            >
+              {t('create.submit')}
+            </Button>
+          </DialogFooter>
+        </form>
+      </Form>
     </Dialog>
   );
 }

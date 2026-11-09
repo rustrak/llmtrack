@@ -1,7 +1,8 @@
-import '@fontsource-variable/geist';
+import '@fontsource-variable/inter/opsz.css';
 import '@fontsource-variable/geist-mono';
 import './styles.css';
 
+import { DialogProvider } from '@rustrak/ui';
 import { RouterProvider } from '@tanstack/react-router';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -27,14 +28,18 @@ async function bootstrap() {
 
   createRoot(container).render(
     <StrictMode>
+      {/* `data-theme` is what @rustrak/ui reads: dark unless it says light. */}
       <ThemeProvider
-        attribute="class"
+        attribute="data-theme"
         defaultTheme="dark"
         enableSystem
         disableTransitionOnChange
       >
         <Messages>
-          <RouterProvider router={router} />
+          {/* Hosts `confirm()` and `alert()` from @rustrak/ui. */}
+          <DialogProvider>
+            <RouterProvider router={router} />
+          </DialogProvider>
           <Toaster />
         </Messages>
       </ThemeProvider>
